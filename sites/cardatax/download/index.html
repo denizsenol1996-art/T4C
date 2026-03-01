@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Download — Transfer4Cars</title>
+<meta name="theme-color" content="#0f1a24">
+<link rel="icon" type="image/png" sizes="32x32" href="/m/favicon-32.png">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060a10;--card:#0c1119;--border:#1a2332;--green:#5ebd3e;--green-glow:rgba(94,189,62,.12);--t1:#f0f2f5;--t2:#94a3b8;--t3:#64748b;--radius:16px}
+body{background:var(--bg);color:var(--t1);font-family:'Outfit',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* Background */
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(94,189,62,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(94,189,62,.015) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+.bg-glow{position:fixed;top:-30%;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse,rgba(94,189,62,.06),transparent 70%);pointer-events:none}
+
+/* Layout */
+.page{position:relative;z-index:1;max-width:540px;margin:0 auto;padding:40px 20px 60px}
+
+/* Header */
+.app-icon{width:100px;height:100px;border-radius:22px;margin:0 auto 20px;display:block;box-shadow:0 8px 40px rgba(0,0,0,.4)}
+.app-name{text-align:center;font-size:28px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+.app-name span{color:var(--green)}
+.app-sub{text-align:center;color:var(--t3);font-size:14px;margin-bottom:32px}
+
+/* CTA */
+.cta-card{background:linear-gradient(135deg,rgba(94,189,62,.08),rgba(94,189,62,.02));border:2px solid rgba(94,189,62,.25);border-radius:var(--radius);padding:28px;text-align:center;margin-bottom:24px}
+.cta-card h2{font-size:20px;font-weight:700;margin-bottom:8px}
+.cta-card p{color:var(--t2);font-size:14px;margin-bottom:20px}
+.cta-btn{display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#000;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;transition:all .2s;text-decoration:none}
+.cta-btn:hover{box-shadow:0 6px 30px var(--green-glow);transform:translateY(-1px)}
+
+/* URL box */
+.url-box{display:flex;align-items:center;gap:8px;background:#0a0e15;border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-top:16px;max-width:360px;margin-left:auto;margin-right:auto}
+.url-box code{flex:1;font-size:13px;color:var(--green);font-family:'Courier New',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.url-copy{background:none;border:1px solid var(--border);border-radius:6px;color:var(--t2);padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
+.url-copy:hover{border-color:var(--green);color:var(--green)}
+.url-copy.copied{border-color:var(--green);color:var(--green)}
+
+/* Steps */
+.platform{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px}
+.platform h3{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700;margin-bottom:18px}
+.platform h3 .emoji{font-size:22px}
+.steps{display:flex;flex-direction:column;gap:14px}
+.step{display:flex;align-items:flex-start;gap:12px}
+.step-num{background:var(--green);color:#000;border-radius:50%;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;margin-top:1px}
+.step-text{font-size:14px;line-height:1.5}
+.step-text strong{color:var(--t1)}
+.step-text .sub{color:var(--t3);font-size:13px;margin-top:2px}
+
+/* Features */
+.features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+.feat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+.feat .icon{font-size:24px;margin-bottom:6px}
+.feat .label{font-size:12px;color:var(--t2);font-weight:500}
+
+/* Note */
+.note{background:rgba(94,189,62,.04);border:1px dashed rgba(94,189,62,.2);border-radius:12px;padding:16px;display:flex;align-items:flex-start;gap:10px;margin-bottom:24px}
+.note .icon{font-size:22px;flex-shrink:0}
+.note p{font-size:13px;color:var(--t2);line-height:1.5}
+.note strong{color:var(--t1)}
+
+/* Footer */
+.footer{text-align:center;margin-top:40px;padding-top:24px;border-top:1px solid var(--border)}
+.footer a{color:var(--t3);font-size:13px;text-decoration:none;transition:color .2s}
+.footer a:hover{color:var(--green)}
+.footer .ver{font-size:11px;color:var(--t3);margin-top:8px;opacity:.6}
+
+/* Detect if already in standalone (installed) */
+@media(display-mode:standalone){
+  .cta-card{border-color:var(--green)}
+  .installed-msg{display:block!important}
+  .not-installed{display:none!important}
+}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="page">
+  <img src="/m/icon-192.png" alt="T4C" class="app-icon">
+  <div class="app-name">Transfer<span>4</span>Cars</div>
+  <div class="app-sub">Dealer Toolkit — Taxatie & Inspectie App</div>
+
+  <!-- Features grid -->
+  <div class="features">
+    <div class="feat"><div class="icon">📷</div><div class="label">Kenteken Scanner</div></div>
+    <div class="feat"><div class="icon">📊</div><div class="label">Directe Taxatie</div></div>
+    <div class="feat"><div class="icon">🔍</div><div class="label">Schade Inspectie</div></div>
+    <div class="feat"><div class="icon">📸</div><div class="label">Foto & Branding</div></div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-card">
+    <div class="not-installed">
+      <h2>Installeer de App</h2>
+      <p>Voeg T4C toe aan je startscherm — werkt als een echte app</p>
+      <a href="/m/" class="cta-btn" id="openBtn">Open Dealer Toolkit →</a>
+      <div class="url-box">
+        <code id="appUrl"></code>
+        <button class="url-copy" id="copyBtn" onclick="copyUrl()">Kopieer</button>
+      </div>
+    </div>
+    <div class="installed-msg" style="display:none">
+      <h2>✅ App is geïnstalleerd!</h2>
+      <p>Je kunt Transfer4Cars openen vanaf je startscherm</p>
+    </div>
+  </div>
+
+  <!-- iOS -->
+  <div class="platform">
+    <h3><span class="emoji">🍏</span> iPhone / iPad</h3>
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">1</span>
+        <div class="step-text"><strong>Open de link hierboven in Safari</strong><div class="sub">Dit werkt alleen in Safari — niet Chrome of andere browsers</div></div>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <div class="step-text"><strong>Tik op het deel-icoon ⬆️</strong><div class="sub">Onderaan het scherm — vierkantje met pijltje omhoog</div></div>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <div class="step-text"><strong>Kies "Zet op beginscherm"</strong><div class="sub">Scroll naar beneden als je het niet direct ziet</div></div>
+      </div>
+      <div class="step">
+        <span class="step-num">4</span>
+        <div class="step-text"><strong>Tik "Voeg toe"</strong><div class="sub">De app verschijnt met het Transfer4Cars logo</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Android -->
+  <div class="platform">
+    <h3><span class="emoji">🤖</span> Android</h3>
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">1</span>
+        <div class="step-text"><strong>Open de link hierboven in Chrome</strong></div>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <div class="step-text"><strong>Tik op ⋮ (drie puntjes)</strong><div class="sub">Rechtsboven in Chrome</div></div>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <div class="step-text"><strong>Kies "App installeren"</strong><div class="sub">Of "Toevoegen aan startscherm" — de app downloadt automatisch</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Note -->
+  <div class="note">
+    <span class="icon">💡</span>
+    <p><strong>Na installatie:</strong> Open de app vanaf je startscherm. Je logt één keer in en blijft ingelogd. De app draait fullscreen zonder browser-balk.</p>
+  </div>
+
+  <div class="footer">
+    <a href="/">← Terug naar Transfer4Cars</a>
+    <div class="ver">T4C v9.7</div>
+  </div>
+</div>
+
+<script>
+// Show dynamic URL
+document.getElementById('appUrl').textContent = location.origin + '/m/';
+
+function copyUrl() {
+  const url = location.origin + '/m/';
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ Gekopieerd';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Kopieer'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// If already standalone, show installed message
+if (window.matchMedia('(display-mode: standalone)').matches) {
+  document.querySelector('.installed-msg').style.display = 'block';
+  document.querySelector('.not-installed').style.display = 'none';
+}
+</script>
+</body>
+</html>

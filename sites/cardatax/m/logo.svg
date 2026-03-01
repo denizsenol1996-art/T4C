@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 180">
+  <defs>
+    <linearGradient id="topLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8a929a"/>
+      <stop offset="28%" stop-color="#c8cdd3"/>
+      <stop offset="48%" stop-color="#dfe3e7"/>
+      <stop offset="62%" stop-color="#5ebd3e"/>
+      <stop offset="100%" stop-color="#2d7a16"/>
+    </linearGradient>
+    <linearGradient id="botLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#707880"/>
+      <stop offset="22%" stop-color="#a0a8b0"/>
+      <stop offset="45%" stop-color="#c0c8d0"/>
+      <stop offset="62%" stop-color="#5ebd3e"/>
+      <stop offset="100%" stop-color="#2d7a16"/>
+    </linearGradient>
+    <linearGradient id="topShine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="35%" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="55%" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path d="M 80,65 C 115,63 150,53 190,37 C 220,24 250,12 285,7 C 315,3 345,7 370,17 C 390,25 405,39 411,49" fill="none" stroke="url(#topLine)" stroke-width="7.5" stroke-linecap="round"/>
+  <path d="M 95,61 C 125,58 160,49 200,33 C 230,21 260,10 293,5 C 322,1 350,4 374,13 C 392,20 406,33 413,43" fill="none" stroke="url(#topShine)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 85,77 C 135,74 185,69 235,61 C 280,54 320,50 355,50 C 382,50 402,55 413,62 C 418,66 416,69 411,68" fill="none" stroke="url(#botLine)" stroke-width="6" stroke-linecap="round"/>
+  <path d="M 100,74 C 145,71 190,67 240,59 C 285,52 325,48 358,48 C 382,48 400,52 410,57" fill="none" stroke="url(#topShine)" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="68" y="125" font-family="'Outfit','Inter','Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="42" letter-spacing="1">
+    <tspan fill="#e8eaf0">Car</tspan><tspan fill="#5ebd3e">Data</tspan><tspan fill="#e8eaf0">x</tspan>
+  </text>
+  <text x="70" y="148" font-family="'Outfit','Inter','Helvetica Neue',Arial,sans-serif" font-weight="500" font-size="12" letter-spacing="4" fill="#5ebd3e" opacity="0.7">INTELLIGENCE PRICING</text>
+</svg>

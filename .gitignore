@@ -1,0 +1,37 @@
+# Dependencies
+backend/node_modules/
+apps/*/node_modules/
+apps/*/android/
+apps/*/ios/
+
+# Secrets - NOOIT naar GitHub
+backend/.env
+*.env.local
+
+# Database & data
+data/
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Build outputs
+apps/*/dist/
+apps/*/www/
+apps/*/.capacitor/
+
+# Uploads & user data
+uploads/
+backups/

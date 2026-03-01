@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="nl" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aanbod — Transfer4Cars</title>
+<meta name="theme-color" content="#0a1018">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="dark"]{
+  --bg1:#0a1018;--bg2:#0f1a24;--bg3:#152230;--bg4:#1a2836;--bg5:#243447;
+  --green:#5ebd3e;--green-l:#7dd35e;--green-d:#4a9e2f;--green-soft:rgba(94,189,62,.10);
+  --text1:#fff;--text2:#c8d6e0;--text3:#8b9db0;--text4:#4a6275;
+  --border:rgba(94,189,62,.15);--border-l:rgba(255,255,255,.08);
+  --card-shadow:0 4px 24px rgba(0,0,0,.3);
+}
+[data-theme="light"]{
+  --bg1:#f4f6f8;--bg2:#ffffff;--bg3:#f0f2f5;--bg4:#e4e8ec;--bg5:#d0d5dc;
+  --green:#3da534;--green-l:#4db844;--green-d:#2e8a27;--green-soft:rgba(61,165,52,.08);
+  --text1:#111827;--text2:#374151;--text3:#6b7280;--text4:#9ca3af;
+  --border:rgba(61,165,52,.2);--border-l:rgba(0,0,0,.08);
+  --card-shadow:0 4px 24px rgba(0,0,0,.06);
+}
+*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg1);color:var(--text2);line-height:1.6;transition:background .3s,color .3s}
+h1,h2,h3,h4{font-family:'Outfit',sans-serif;color:var(--text1);line-height:1.2}
+a{color:var(--green);text-decoration:none;transition:color .2s}a:hover{color:var(--green-l)}
+img{max-width:100%;display:block}.container{max-width:1280px;margin:0 auto;padding:0 24px}
+/* NAV */
+.top-nav{position:sticky;top:0;z-index:100;background:rgba(15,26,36,.95);backdrop-filter:blur(20px);border-bottom:2px solid var(--green);padding:0}
+[data-theme="light"] .top-nav{background:rgba(255,255,255,.95)}
+.top-nav .container{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:flex;align-items:baseline;font-family:'Outfit',sans-serif;font-size:20px;letter-spacing:1px;text-decoration:none}
+.logo-t{font-weight:900;color:var(--text1);text-transform:uppercase}.logo-4{font-weight:900;color:var(--green);font-size:24px;margin:0 1px}.logo-c{font-weight:400;color:var(--text1);text-transform:lowercase;letter-spacing:2px}
+.nav-right{display:flex;align-items:center;gap:12px}
+.nav-link{padding:8px 16px;color:var(--text2);font-size:14px;font-weight:500;border-radius:8px;transition:all .2s;text-decoration:none}.nav-link:hover{color:var(--text1);background:var(--green-soft)}
+.theme-toggle{width:36px;height:36px;border-radius:8px;border:1px solid var(--border-l);background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s}
+.theme-toggle:hover{border-color:var(--green);color:var(--green)}
+/* PAGE HEAD */
+.page-head{padding:40px 0 24px;border-bottom:1px solid var(--border-l);margin-bottom:32px}
+.page-head h1{font-size:clamp(28px,4vw,40px);font-weight:900;margin-bottom:8px}.page-head h1 span{color:var(--green)}
+.page-head p{color:var(--text3);font-size:15px}
+.page-stats{display:flex;gap:24px;margin-top:16px;flex-wrap:wrap}
+.page-stat{font-size:13px;color:var(--text3)}.page-stat strong{color:var(--green);font-size:16px;font-weight:800}
+/* FILTERS */
+.filter-bar{display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap}
+.filter-input,.filter-select{padding:12px 16px;background:var(--bg3);border:1px solid var(--border-l);border-radius:10px;color:var(--text1);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s}
+.filter-input{flex:1;min-width:200px;max-width:400px}.filter-select{min-width:150px}
+.filter-input:focus,.filter-select:focus{border-color:var(--green)}
+.filter-select option{background:var(--bg3)}
+[data-theme="light"] .filter-select option{background:#fff}
+/* GRID */
+.car-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.car-card{background:var(--bg2);border:1px solid var(--border-l);border-radius:14px;overflow:hidden;transition:all .3s;cursor:pointer}
+[data-theme="light"] .car-card{background:#fff}
+.car-card:hover{transform:translateY(-3px);border-color:var(--green);box-shadow:var(--card-shadow)}
+.car-img{height:200px;overflow:hidden;background:var(--bg4);position:relative}
+.car-img img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
+.car-card:hover .car-img img{transform:scale(1.05)}
+.car-no-img{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text4);font-size:48px}
+.car-badge{position:absolute;top:12px;left:12px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase}
+.badge-featured{background:var(--green);color:#fff}
+.badge-new{background:#2563eb;color:#fff}
+.car-info{padding:16px 18px}
+.car-title{font-family:'Outfit',sans-serif;font-size:17px;font-weight:700;color:var(--text1);margin-bottom:4px}
+.car-variant{font-size:12px;color:var(--text3);margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.car-specs{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.car-spec{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.car-spec svg{width:13px;height:13px;color:var(--green)}
+.car-highlights{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.car-hl{font-size:10px;padding:3px 8px;border-radius:4px;background:var(--green-soft);color:var(--green);font-weight:600}
+.car-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid var(--border-l)}
+.car-price{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:var(--green)}
+.car-cta{padding:8px 18px;background:var(--green);color:#fff;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .2s}
+.car-cta:hover{background:var(--green-l)}
+/* DETAIL MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:flex-start;justify-content:center;backdrop-filter:blur(6px);overflow-y:auto;padding:40px 16px}
+.modal-overlay.show{display:flex}
+.detail{background:var(--bg2);border:1px solid var(--border);border-radius:16px;max-width:900px;width:100%;position:relative;overflow:hidden}
+[data-theme="light"] .detail{background:#fff}
+.detail-close{position:absolute;top:16px;right:16px;z-index:10;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.6);border:none;color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.detail-gallery{position:relative;height:400px;background:var(--bg4);overflow:hidden}
+.detail-gallery img{width:100%;height:100%;object-fit:cover}
+.detail-gallery-nav{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.gallery-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.4);border:none;cursor:pointer;transition:all .2s}
+.gallery-dot.active{background:#fff;transform:scale(1.2)}
+.detail-body{padding:32px}
+.detail-titlebar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.detail-title{font-size:28px;font-weight:900}.detail-subtitle{color:var(--text3);font-size:15px;margin-top:4px}
+.detail-price{font-family:'Outfit',sans-serif;font-size:36px;font-weight:900;color:var(--green);white-space:nowrap}
+.detail-specs{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+.detail-spec{background:var(--bg3);border-radius:10px;padding:14px;text-align:center}
+.detail-spec-val{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text1);margin-bottom:2px}
+.detail-spec-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px}
+.detail-section{margin-bottom:24px}
+.detail-section h3{font-size:16px;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--green);display:inline-block}
+.detail-desc{color:var(--text2);font-size:15px;line-height:1.8}
+.detail-highlights{display:flex;flex-wrap:wrap;gap:8px}
+.detail-hl{display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--green-soft);border-radius:8px;font-size:13px;color:var(--text1);font-weight:500}
+.detail-hl svg{width:16px;height:16px;color:var(--green)}
+.detail-actions{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+.btn-primary{padding:16px 36px;background:var(--green);color:#fff;font-weight:700;border-radius:10px;font-size:16px;border:none;cursor:pointer;transition:all .3s;font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px}
+.btn-primary:hover{background:var(--green-l);transform:translateY(-2px)}
+.btn-outline{padding:16px 36px;background:transparent;color:var(--text1);font-weight:600;border-radius:10px;font-size:16px;border:2px solid var(--border);cursor:pointer;transition:all .3s;font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px}
+.btn-outline:hover{border-color:var(--green);color:var(--green)}
+.empty{text-align:center;padding:80px 20px;color:var(--text4)}
+.empty h3{color:var(--text3);margin-top:12px}
+/* FOOTER */
+.page-footer{margin-top:60px;padding:30px 0;border-top:1px solid var(--border-l);text-align:center;font-size:13px;color:var(--text4)}
+@media(max-width:1024px){.car-grid{grid-template-columns:repeat(2,1fr)}.detail-specs{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){.car-grid{grid-template-columns:1fr}.detail-specs{grid-template-columns:repeat(2,1fr)}.detail-gallery{height:260px}.detail-titlebar{flex-direction:column}.filter-bar{flex-direction:column}.filter-input{max-width:100%}}
+</style>
+</head>
+<body>
+<nav class="top-nav"><div class="container"><a href="/verkoop/" class="logo"><span class="logo-t">TRANSFER</span><span class="logo-4">4</span><span class="logo-c">cars</span></a><div class="nav-right"><a href="/verkoop/" class="nav-link">&larr; Home</a><a href="/verkoop/#contact" class="nav-link">Contact</a><a href="/m/" class="nav-link" style="color:var(--green)">App</a><button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">&#9790;</button></div></div></nav>
+
+<div class="container">
+<div class="page-head"><h1>Ons <span>Aanbod</span></h1><p>Alle beschikbare voertuigen — zorgvuldig geselecteerd en vrij van schadeverleden</p><div class="page-stats"><div class="page-stat"><strong id="totalCount">0</strong> voertuigen</div><div class="page-stat"><strong id="brandCount">0</strong> merken</div></div></div>
+
+<div class="filter-bar"><input class="filter-input" id="fSearch" placeholder="Zoek op merk, model, variant..." oninput="applyFilters()"><select class="filter-select" id="fFuel" onchange="applyFilters()"><option value="">Alle brandstoffen</option><option>Benzine</option><option>Diesel</option><option>Hybride</option><option>Elektrisch</option></select><select class="filter-select" id="fPrice" onchange="applyFilters()"><option value="">Alle prijzen</option><option value="3000">Tot &euro;3.000</option><option value="5000">Tot &euro;5.000</option><option value="10000">Tot &euro;10.000</option><option value="15000">Tot &euro;15.000</option><option value="20000">Tot &euro;20.000</option></select><select class="filter-select" id="fBody" onchange="applyFilters()"><option value="">Alle carrosserie</option><option>Hatchback</option><option>Sedan</option><option>SUV</option><option>Stationwagon</option><option>MPV</option><option>Coupe</option><option>Bestelbus</option></select><select class="filter-select" id="fSort" onchange="applyFilters()"><option value="featured">Uitgelicht</option><option value="price_asc">Prijs laag-hoog</option><option value="price_desc">Prijs hoog-laag</option><option value="year_desc">Bouwjaar nieuw-oud</option><option value="km_asc">Km-stand laag-hoog</option><option value="newest">Nieuwst toegevoegd</option></select></div>
+
+<div class="car-grid" id="grid"></div>
+</div>
+
+<div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeDetail()">
+<div class="detail" id="detailContent"></div>
+</div>
+
+<div class="container"><div class="page-footer">&copy; 2025 Transfer4Cars &mdash; <a href="/verkoop/">Terug naar homepage</a></div></div>
+
+<script>
+let allCars=[],allPhotos={};
+function toggleTheme(){const h=document.documentElement,c=h.getAttribute('data-theme'),n=c==='dark'?'light':'dark';h.setAttribute('data-theme',n);localStorage.setItem('t4c-theme',n);document.getElementById('themeBtn').innerHTML=n==='dark'?'\u263E':'\u2600'}
+(function(){const s=localStorage.getItem('t4c-theme');if(s){document.documentElement.setAttribute('data-theme',s);if(s==='light')document.getElementById('themeBtn').innerHTML='\u2600'}})();
+
+function SV(name,w,h){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="'+(w||14)+'" height="'+(h||14)+'">'+({calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',gauge:'<circle cx="12" cy="12" r="10"/><path d="M12 8v4l2.5 1.5"/>',fuel:'<path d="M3 22V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v17"/><path d="M13 10h3a2 2 0 0 1 2 2v5a2 2 0 0 0 4 0V9.83a2 2 0 0 0-.59-1.42L18 5"/><path d="M3 22h10"/>',zap:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',check:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',car:'<path d="M5 17H3v-3.15a1 1 0 0 1 .84-.99L9 11l2.7-3.6a1 1 0 0 1 .8-.4h5.24a2 2 0 0 1 1.8 1.1l.8 1.63A6 6 0 0 1 22 12.42V17h-3"/>'}[name]||'')+'</svg>'}
+
+async function load(){
+  try{
+    const r=await fetch('/api/public/voorraad');const d=await r.json();
+    if(d.ok){allCars=d.cars||[];applyFilters();
+      document.getElementById('totalCount').textContent=allCars.length;
+      const brands=new Set(allCars.map(c=>c.make));document.getElementById('brandCount').textContent=brands.size;
+    }
+  }catch(e){}
+}
+
+function applyFilters(){
+  const q=(document.getElementById('fSearch').value||'').toLowerCase();
+  const fuel=document.getElementById('fFuel').value;
+  const price=parseInt(document.getElementById('fPrice').value)||0;
+  const body=document.getElementById('fBody').value;
+  const sort=document.getElementById('fSort').value;
+  let cars=allCars.filter(c=>{
+    const t=(c.make+' '+c.model+' '+(c.model_variant||'')+' '+(c.beschrijving||'')).toLowerCase();
+    if(q&&!t.includes(q))return false;
+    if(fuel&&c.fuel!==fuel)return false;
+    if(price&&c.vraag_prijs>price)return false;
+    if(body&&c.body!==body)return false;
+    return true;
+  });
+  if(sort==='price_asc')cars.sort((a,b)=>a.vraag_prijs-b.vraag_prijs);
+  else if(sort==='price_desc')cars.sort((a,b)=>b.vraag_prijs-a.vraag_prijs);
+  else if(sort==='year_desc')cars.sort((a,b)=>b.year-a.year);
+  else if(sort==='km_asc')cars.sort((a,b)=>a.km-b.km);
+  else if(sort==='featured')cars.sort((a,b)=>(b.featured||0)-(a.featured||0));
+  renderGrid(cars);
+}
+
+function renderGrid(cars){
+  const g=document.getElementById('grid');
+  if(!cars.length){g.innerHTML='<div class="empty" style="grid-column:1/-1">'+SV('car',48,48)+'<h3>Geen voertuigen gevonden</h3><p style="margin-top:8px">Probeer andere filters</p></div>';return}
+  g.innerHTML=cars.map(c=>{
+    const p=c.cover_photo?(c.cover_photo.startsWith('http')?c.cover_photo:'/photos/'+c.cover_photo):'';
+    const km=c.km?c.km.toLocaleString('nl-NL'):'?';
+    const hls=(c.highlights||'').split(',').filter(Boolean).slice(0,3);
+    return '<div class="car-card" onclick="openDetail('+c.id+')"><div class="car-img">'+(p?'<img src="'+p+'" alt="'+c.make+'" loading="lazy">':'<div class="car-no-img">'+SV('car',48,48)+'</div>')+(c.featured?'<div class="car-badge badge-featured">Uitgelicht</div>':'')+'</div><div class="car-info"><div class="car-title">'+c.make+' '+c.model+'</div><div class="car-variant">'+(c.model_variant||'')+'</div><div class="car-specs"><span class="car-spec">'+SV('calendar')+' '+c.year+'</span><span class="car-spec">'+SV('gauge')+' '+km+' km</span><span class="car-spec">'+SV('fuel')+' '+(c.fuel||'?')+'</span>'+(c.power_hp?'<span class="car-spec">'+SV('zap')+' '+c.power_hp+' pk</span>':'')+'</div>'+(hls.length?'<div class="car-highlights">'+hls.map(h=>'<span class="car-hl">'+h.trim()+'</span>').join('')+'</div>':'')+'<div class="car-bottom"><div class="car-price">\u20AC'+(c.vraag_prijs?.toLocaleString('nl-NL')||'?')+'</div><button class="car-cta">Bekijk</button></div></div></div>'
+  }).join('');
+}
+
+async function openDetail(id){
+  try{
+    const r=await fetch('/api/public/voorraad/'+id);const d=await r.json();if(!d.ok)return;
+    const c=d.car;const photos=d.photos||[];
+    const imgs=photos.map(p=>p.filename.startsWith('http')?p.filename:'/photos/'+p.filename);
+    const mainImg=imgs[0]||'';
+    const km=c.km?c.km.toLocaleString('nl-NL'):'?';
+    const hls=(c.highlights||'').split(',').filter(Boolean);
+
+    document.getElementById('detailContent').innerHTML=
+      '<button class="detail-close" onclick="closeDetail()">&times;</button>'+
+      '<div class="detail-gallery">'+(mainImg?'<img id="detailMainImg" src="'+mainImg+'" alt="'+c.make+'">':'')+(imgs.length>1?'<div class="detail-gallery-nav">'+imgs.map((img,i)=>'<button class="gallery-dot'+(i===0?' active':'')+'" onclick="event.stopPropagation();document.getElementById(\'detailMainImg\').src=\''+img+'\';document.querySelectorAll(\'.gallery-dot\').forEach((d,j)=>d.classList.toggle(\'active\',j==='+i+'))"></button>').join('')+'</div>':'')+'</div>'+
+      '<div class="detail-body">'+
+        '<div class="detail-titlebar"><div><div class="detail-title">'+c.make+' '+c.model+'</div><div class="detail-subtitle">'+(c.model_variant||'')+'</div></div><div class="detail-price">\u20AC'+(c.vraag_prijs?.toLocaleString('nl-NL')||'?')+'</div></div>'+
+        '<div class="detail-specs">'+
+          '<div class="detail-spec"><div class="detail-spec-val">'+c.year+'</div><div class="detail-spec-lbl">Bouwjaar</div></div>'+
+          '<div class="detail-spec"><div class="detail-spec-val">'+km+' km</div><div class="detail-spec-lbl">Km-stand</div></div>'+
+          '<div class="detail-spec"><div class="detail-spec-val">'+(c.fuel||'?')+'</div><div class="detail-spec-lbl">Brandstof</div></div>'+
+          '<div class="detail-spec"><div class="detail-spec-val">'+(c.transmission||'Handgeschakeld')+'</div><div class="detail-spec-lbl">Transmissie</div></div>'+
+          (c.power_hp?'<div class="detail-spec"><div class="detail-spec-val">'+c.power_hp+' pk</div><div class="detail-spec-lbl">Vermogen</div></div>':'')+
+          (c.body?'<div class="detail-spec"><div class="detail-spec-val">'+c.body+'</div><div class="detail-spec-lbl">Carrosserie</div></div>':'')+
+          (c.color?'<div class="detail-spec"><div class="detail-spec-val">'+c.color+'</div><div class="detail-spec-lbl">Kleur</div></div>':'')+
+          (c.doors?'<div class="detail-spec"><div class="detail-spec-val">'+c.doors+'</div><div class="detail-spec-lbl">Deuren</div></div>':'')+
+          (c.seats?'<div class="detail-spec"><div class="detail-spec-val">'+c.seats+'</div><div class="detail-spec-lbl">Zitplaatsen</div></div>':'')+
+          (c.apk_until?'<div class="detail-spec"><div class="detail-spec-val">'+c.apk_until+'</div><div class="detail-spec-lbl">APK tot</div></div>':'')+
+          (c.engine_label?'<div class="detail-spec"><div class="detail-spec-val">'+c.engine_label+'</div><div class="detail-spec-lbl">Motor</div></div>':'')+
+        '</div>'+
+        (c.beschrijving?'<div class="detail-section"><h3>Omschrijving</h3><div class="detail-desc">'+c.beschrijving+'</div></div>':'')+
+        (hls.length?'<div class="detail-section"><h3>Kenmerken &amp; opties</h3><div class="detail-highlights">'+hls.map(h=>'<div class="detail-hl">'+SV('check',16,16)+' '+h.trim()+'</div>').join('')+'</div></div>':'')+
+        '<div class="detail-actions"><a href="tel:+31687997168" class="btn-primary" style="color:#fff">'+SV('phone',18,18)+' Bellen</a><a href="mailto:info@transfer4cars.com?subject=Interesse: '+c.make+' '+c.model+'" class="btn-outline">'+SV('mail',18,18)+' E-mail</a><a href="https://wa.me/31687997168?text=Hoi, ik heb interesse in de '+c.make+' '+c.model+' ('+c.year+') voor \u20AC'+(c.vraag_prijs||'')+'" target="_blank" class="btn-outline" style="border-color:#25D366;color:#25D366">WhatsApp</a></div>'+
+      '</div>';
+
+    document.getElementById('detailModal').classList.add('show');
+    document.body.style.overflow='hidden';
+  }catch(e){}
+}
+function closeDetail(){document.getElementById('detailModal').classList.remove('show');document.body.style.overflow=''}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetail()});
+
+load();
+</script>
+</body>
+</html>

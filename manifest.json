@@ -1,0 +1,203 @@
+{
+  "version": "10.7.0",
+  "codename": "Data Intelligence",
+  "date": "2026-02-21",
+  "platform": {
+    "cardatax": {
+      "domain": "cardatax.nl",
+      "description": "Taxatie & Dealer Platform",
+      "components": [
+        "app",
+        "m",
+        "login",
+        "download",
+        "admin"
+      ]
+    },
+    "transfer4cars": {
+      "domain": "transfer4cars.com",
+      "description": "Verkoop & Veiling Website",
+      "components": [
+        "showroom",
+        "veilingen"
+      ]
+    }
+  },
+  "files": {
+    "server": [
+      "backend/server.js",
+      "backend/db.js",
+      "backend/guardian.js",
+      "backend/branding.js",
+      "backend/package.json",
+      "backend/.env.example"
+    ],
+    "cardatax": [
+      "sites/cardatax/app/index.html",
+      "sites/cardatax/app/assets/*",
+      "sites/cardatax/m/index.html",
+      "sites/cardatax/m/manifest.json",
+      "sites/cardatax/m/sw.js",
+      "sites/cardatax/login/index.html",
+      "sites/cardatax/download/index.html",
+      "sites/cardatax/admin/index.html"
+    ],
+    "transfer4cars": [
+      "sites/transfer4cars/index.html",
+      "sites/transfer4cars/aanbod/index.html"
+    ],
+    "never_touch": [
+      "data/",
+      "logs/",
+      "backend/node_modules/",
+      "backend/.env"
+    ],
+    "apps": [
+      "apps/transfer4cars/package.json",
+      "apps/transfer4cars/capacitor.config.ts",
+      "apps/transfer4cars/build.js",
+      "apps/cardatax-taxatie/package.json",
+      "apps/cardatax-taxatie/capacitor.config.ts",
+      "apps/cardatax-taxatie/build.js"
+    ]
+  },
+  "integrations": {
+    "rdw": {
+      "status": "active",
+      "type": "opendata"
+    },
+    "marktplaats": {
+      "status": "active",
+      "type": "scraper"
+    },
+    "autoscout24": {
+      "status": "active",
+      "type": "scraper"
+    },
+    "autotrack": {
+      "status": "active",
+      "type": "scraper"
+    },
+    "gaspedaal": {
+      "status": "active",
+      "type": "scraper"
+    },
+    "openai": {
+      "status": "ready",
+      "type": "api",
+      "note": "GPT-4o — plug & play zodra key in .env staat",
+      "endpoints": [
+        "/api/ai/prijsanalyse",
+        "/api/ai/marktanalyse",
+        "/api/ai/schade-analyse",
+        "/api/ai/verkooptekst",
+        "/api/ai/chat",
+        "/api/ai/status"
+      ]
+    },
+    "vinacles": {
+      "status": "planned",
+      "type": "api",
+      "note": "NAP + voertuighistorie + uitvoeringen"
+    },
+    "carfax": {
+      "status": "planned",
+      "type": "api",
+      "note": "Internationaal schadeverleden"
+    },
+    "anthropic": {
+      "status": "planned",
+      "type": "api",
+      "note": "Claude AI — second opinion + vision"
+    },
+    "finnik": {
+      "status": "active",
+      "type": "api",
+      "note": "Nieuwprijs, waarde-indicatie, BPM rest, bijtelling, wegenbelasting, energielabel"
+    }
+  },
+  "changelog": {
+    "10.6.0": [
+      "Admin panel volledig herbouwd — professioneel design met dark/light theme",
+      "Dashboard met 8 stat-kaarten, quick actions en recente activiteit",
+      "Mobiele navigatie: hamburger menu, slide-in sidebar",
+      "11 paginas: Dashboard, Inbox, Biedingen, Voorraad, Taxaties, Veilingen, Portfolio, Deals, Gebruikers, AI Services, Server",
+      "Navigatie gegroepeerd: Overzicht, Beheer, Handel, Systeem",
+      "Backend: wachtwoord reset via admin panel",
+      "Backend: ai.log toegevoegd aan toegestane logbestanden",
+      "Design: Inter + JetBrains Mono, kleurenschema met groen accent",
+      "Responsive: breakpoints op 768px en 1100px",
+      "Capacitor app scaffolding: Transfer4Cars + CardDatax Taxatie",
+      "GitHub-ready: .gitignore, update.sh, SETUP-GUIDE.md"
+    ],
+    "10.5.0": [
+      "ATR/ETR scoringssysteem (1-10) met kleurcodes",
+      "Typegoedkeuringsnummer (typeapproval) zichtbaar in taxatie",
+      "Backend opgeschoond: 18 ongebruikte endpoints verwijderd",
+      "Veilingsysteem basis in admin panel",
+      "Rollenstructuur: admin, t4c, inkoper, dealer, koper"
+    ],
+    "10.1.0": [
+      "GPT-4o AI service ingebouwd (prijsanalyse, marktanalyse, schade-analyse, verkooptekst, chat)",
+      "Admin panel compleet vernieuwd — professioneel commandocentrum",
+      "Dark/Light theme toggle",
+      "AI Services pagina met status monitoring en test console",
+      ".env support voor API keys (dotenv)",
+      "AI logging naar ai.log"
+    ],
+    "10.0.0": [
+      "Platform restructure: 2 domeinen, 1 backend",
+      "Sites/cardatax en sites/transfer4cars gescheiden",
+      "Domain router toegevoegd",
+      "Smart UPDATE.bat met manifest"
+    ],
+    "10.6.1": [
+      "Desktop app (/app/) herbouwd: standalone HTML, zelfde server-side API als mobiel",
+      "AI validatie (ChatGPT) nu zichtbaar in taxatieresultaat met oordeel + vertrouwen%",
+      "Desktop en mobiel geven nu identieke prijzen (beide via /api/dealer/price)",
+      "CarDatax branding consistent in desktop en mobiele app",
+      "Admin/t4c exclusieve knoppen: Zet als Aanbod / Start Veiling na taxatie",
+      "Oude React build vervangen door lichtgewicht HTML (387KB → 37KB)"
+    ],
+    "10.6.2": [
+      "ChatGPT validatie volledig verborgen — heet nu CarDatax validatie intern",
+      "Afleverkosten verwijderd uit prijskaart",
+      "AI correctie bij te hoge/lage prijs: past automatisch alle prijzen aan (drempel verlaagd naar 60%)",
+      "Catalogusfoto via Wikipedia API (/api/image endpoint)",
+      "BPM rest-waarde berekening toegevoegd aan taxatieresultaat",
+      "Nieuwprijs prominent in quick specs grid",
+      "Uitvoering: type/variant/uitvoering uit RDW samengevoegd",
+      "APK keuringen nu met gebreken per keuring",
+      "Terugroepacties sectie toegevoegd",
+      "Geregistreerde objecten (trekhaak etc.) weergegeven",
+      "Milieu & Verbruik sectie met CO2, euroklasse, verbruik",
+      "KM historie met geschatte huidige stand en gem. km/jaar",
+      "Mobiele app: foto ophalen + CarDatax validatie label"
+    ],
+    "10.6.4": [
+      "Volledige CarDatax rebrand — alle Transfer4Cars/T4C referenties verwijderd",
+      "Nieuw CarDatax SVG logo met Intelligence Pricing ondertitel",
+      "Mobiele app: logo, headers, meta tags, manifest, versienummer bijgewerkt",
+      "Desktop app: sidebar brand, PDF naamgeving, CarDatax Bod B2B/B2C layout",
+      "Served desktop app: prijskaart redesign met B2B/B2C scheiding",
+      "ATR/ETR: alleen score weergave (geen prijzen meer)",
+      "Velocity hernoemd naar Verkoopsnelheid / verwijderd uit hoofdweergave",
+      "Scores: 3 kolommen (ATR Score, ETR Score, Liquiditeit)",
+      "Landing page, login, download, admin: allemaal CarDatax branding"
+    ],
+    "10.7.0": [
+      "RDW uitgebreid: 9 → 14 endpoints (tenaamstellingen, milieu, handelsbenaming, brandstof-specifiek, typegoedkeuring)",
+      "Finnik scraper: 3 → 8 velden (BPM rest, bijtelling, wegenbelasting, energielabel, netto bijtelling)",
+      "BPM rest berekening: officiële PIT gids afschrijvingstabel per maand (02-01-2025)",
+      "Pricing formule: eigenaren-factor, import-korting, BPM rest in confidence",
+      "Smart Summary: 13 → 24 tips (eigenaren, import, BPM, emissieklasse, bijtelling)",
+      "AI prompt verrijkt met ownerCount, isExDealer, bpmRest, bijtelling, emissieklasse",
+      "PDF pagina 2: eigenaren, BPM rest, bijtelling, verbruik stad/snelweg, roetfilter",
+      "Desktop app: eigenaren + bijtelling in Financieel sectie",
+      "Scores gescheiden van prijzen (5-box rij)",
+      "Crash logging: CRASH.txt in logs/ voor debugging",
+      "Dubbele make naam fix (TOYOTA TOYOTA AYGO → TOYOTA AYGO)",
+      "Marktdata redesign: percentile bar i.p.v. redundante prijzen"
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "secret": "CHANGE_THIS_TO_RANDOM_STRING_t4c2025",
+  "users": [
+    {
+      "username": "admin",
+      "password": "t4c2025!",
+      "role": "admin",
+      "name": "Admin"
+    },
+    {
+      "username": "dealer",
+      "password": "dealer2025",
+      "role": "dealer",
+      "name": "Dealer"
+    }
+  ]
+}

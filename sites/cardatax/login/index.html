@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inloggen — T4C Enterprise</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#050608;--s1:#0a0d12;--s2:#0f1318;--accent:#00FF9C;--accent-dim:#00cc7d;--glow:rgba(0,255,156,.12);--t1:#f0f2f5;--t2:#94a3b8;--t3:#475569;--t4:#1e293b;--red:#ef4444;--font:'Sora',sans-serif;--mono:'JetBrains Mono',monospace}
+body{background:var(--bg);color:var(--t1);font-family:var(--font);min-height:100vh;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
+
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,156,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,156,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+.grid-bg::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 40% at 50% 30%,rgba(0,255,156,.05),transparent 70%)}
+
+.login-wrap{position:relative;z-index:1;width:100%;max-width:420px;padding:32px}
+
+.logo{text-align:center;margin-bottom:40px}
+.logo-mark{font-size:40px;font-weight:800;letter-spacing:-3px;margin-bottom:4px}
+.logo-mark .dim{color:var(--t3)}.logo-mark .lit{color:var(--accent)}
+.logo-sub{font-family:var(--mono);font-size:11px;color:var(--t3);letter-spacing:2px;text-transform:uppercase}
+
+.card{background:var(--s1);border:1px solid rgba(255,255,255,.04);border-radius:16px;padding:36px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,156,.15),transparent)}
+
+.card h2{font-size:18px;font-weight:600;margin-bottom:28px;letter-spacing:-.3px}
+
+.field{margin-bottom:20px}
+.field label{display:block;font-family:var(--mono);font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.field input{width:100%;padding:13px 16px;background:var(--s2);border:1px solid rgba(255,255,255,.06);border-radius:10px;color:var(--t1);font-size:14px;font-family:var(--font);outline:none;transition:border-color .25s}
+.field input:focus{border-color:rgba(0,255,156,.3)}
+.field input::placeholder{color:var(--t4)}
+
+.btn{width:100%;padding:14px;border:none;border-radius:10px;background:var(--accent);color:#000;font-weight:700;font-size:14px;cursor:pointer;font-family:var(--font);transition:all .25s;margin-top:8px;letter-spacing:.2px}
+.btn:hover{box-shadow:0 6px 30px var(--glow);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+
+.error{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:10px;padding:11px 16px;font-size:13px;color:var(--red);margin-bottom:20px;display:none}
+
+.back{text-align:center;margin-top:24px}
+.back a{font-size:13px;color:var(--t3);transition:color .2s;display:inline-flex;align-items:center;gap:6px}
+.back a:hover{color:var(--t2)}
+.back a svg{width:14px;height:14px}
+
+.version{text-align:center;margin-top:32px;font-family:var(--mono);font-size:10px;color:var(--t4);letter-spacing:1px}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="login-wrap">
+  <div class="logo">
+    <img src="/logo.svg" alt="Transfer4Cars" style="width:260px;max-width:70vw;margin:0 auto;display:block">
+    <div class="logo-sub" style="margin-top:12px">Enterprise Platform</div>
+  </div>
+  <div class="card">
+    <h2>Inloggen</h2>
+    <div class="error" id="error"></div>
+    <form id="loginForm">
+      <div class="field">
+        <label>Gebruikersnaam</label>
+        <input type="text" id="username" placeholder="gebruikersnaam" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>Wachtwoord</label>
+        <input type="password" id="password" placeholder="wachtwoord" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn" id="submitBtn">Inloggen</button>
+    </form>
+  </div>
+  <div class="back"><a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Terug naar home</a></div>
+  <div class="version">v9.7</div>
+</div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  var btn = document.getElementById('submitBtn');
+  var err = document.getElementById('error');
+  btn.disabled = true;
+  btn.textContent = 'Laden...';
+  err.style.display = 'none';
+  try {
+    var res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value
+      })
+    });
+    var data = await res.json();
+    if (data.ok) {
+      localStorage.setItem('t4c_token', data.token);
+      window.location.href = window.innerWidth <= 768 ? '/m/' : '/app/';
+    } else {
+      err.textContent = data.error || 'Onjuiste inloggegevens';
+      err.style.display = 'block';
+    }
+  } catch(ex) {
+    err.textContent = 'Verbindingsfout';
+    err.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Inloggen';
+});
+</script>
+</body>
+</html>
