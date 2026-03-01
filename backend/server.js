@@ -7,8 +7,6 @@ const axios = require("axios")
 const cheerio = require("cheerio")
 const fs = require("fs")
 const path = require("path")
-let sharp
-try { sharp = require("sharp") } catch(e) { console.warn("[WARN] sharp not installed — run: npm install sharp") }
 const jwt = require("jsonwebtoken")
 const { initDB, stmts, getJwtSecret, verifyUser, getStats, backup, DATA_DIR, queryAll, queryOne, run } = require("./db")
 
@@ -2352,154 +2350,66 @@ app.post("/api/generate-car-images", express.json(), async (req, res) => {
       })
     }
 
-    // Build car description
+    // Build the car description
     const colorEn = COLOR_MAP[(color || "").toUpperCase()] || (color || "grey").toLowerCase()
     const colorDesc = colorSecondary ? `${colorEn} with ${COLOR_MAP[(colorSecondary||"").toUpperCase()]||colorSecondary.toLowerCase()} accents` : `${colorEn} metallic`
     const bodyEn = BODY_MAP[(body || "").toLowerCase()] || (body || "hatchback").toLowerCase()
     const trimInfo = [variant, generation, subModel, trimLevel].filter(Boolean).join(" ")
-    const carDesc = `${year || 2020} ${make} ${model}${trimInfo ? " " + trimInfo : ""}`
+    const carDesc = `${year || 2020} ${make} ${model}${trimInfo ? " " + trimInfo : ""}, ${bodyEn}, ${colorDesc}`
+
+    // 5 turntable angles: front → right-front → right → rear → left
     const plateText = plate || "XX-999-X"
-
-    // Simple clean prompts — gpt-image-1 handles text + car models correctly
-    const scene = `Photorealistic car dealership photograph of a ${carDesc}, ${bodyEn}, ${colorDesc} paint. The car is centered on a round dark glossy turntable platform. Smooth gradient grey studio background, bright professional automotive lighting that clearly illuminates the entire car, soft reflections on the polished dark floor. No people, no text overlays, no watermarks. Do not add any aftermarket parts, stripes, accents, body kits or modifications — show the car exactly as it comes from the factory.`
-
+    const studioBg = "Clean neutral grey studio background with soft even lighting and subtle reflections on a polished dark floor, like a car showroom turntable. Professional car dealership photography, ultra sharp focus, no text or watermarks other than the license plate."
     const prompts = [
-      { angle: "1-front",       prompt: `${scene} Straight front view, head-on, perfectly centered, showing the full front of the car. A Dutch yellow license plate is mounted on the front bumper. The plate text reads exactly: ${plateText}` },
-      { angle: "2-front-right", prompt: `${scene} Front-right 45 degree angle showing grille and passenger side. A Dutch yellow license plate is mounted on the front bumper. The plate text reads exactly: ${plateText}` },
-      { angle: "3-right",       prompt: `${scene} Perfect side profile view showing the PASSENGER side (right side) of the car. The car faces LEFT in the image. Full car visible from front to rear bumper.` },
-      { angle: "4-rear",        prompt: `${scene} Rear 3/4 view. A Dutch yellow license plate is mounted on the rear bumper. The plate text reads exactly: ${plateText}` },
-      { angle: "5-left",        prompt: `${scene} Perfect side profile view showing the DRIVER side (left side) of the car. The car faces RIGHT in the image. Full car visible from front to rear bumper.` }
+      { angle: "1-front",       prompt: `Photorealistic studio photograph of a ${carDesc}. Straight front view, centered, showing the full car head-on. Dutch yellow license plate clearly reads "${plateText}" on the front bumper. ${studioBg}` },
+      { angle: "2-front-right", prompt: `Photorealistic studio photograph of a ${carDesc}. Front 3/4 right view (turned roughly 45 degrees to the right), showing front and right side. Dutch yellow license plate clearly reads "${plateText}" on the front. ${studioBg}` },
+      { angle: "3-right",       prompt: `Photorealistic studio photograph of a ${carDesc}. Full right side profile view, perfectly level, showing the entire passenger side of the car. ${studioBg}` },
+      { angle: "4-rear",        prompt: `Photorealistic studio photograph of a ${carDesc}. Straight rear view, centered, showing the full car from behind. Dutch yellow license plate clearly reads "${plateText}" on the rear. ${studioBg}` },
+      { angle: "5-left",        prompt: `Photorealistic studio photograph of a ${carDesc}. Full left side profile view, perfectly level, showing the entire driver side of the car. ${studioBg}` }
     ]
 
-    console.log(`[IMG] Generating 5 images for ${carDesc} (${plateClean}) via gpt-image-1.5...`)
+    console.log(`[DALL-E] Generating 4 images for ${make} ${model} (${plateClean})...`)
+
+    // Create cache dir
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
 
-    // ═══ PLATE CORRECTION: Vision detect + Sharp composite ═══
-    const plateAngles = { "1-front": true, "4-rear": true }
-
-    function makePlateSvg(text, w, h) {
-      const t = (text || "").replace(/[^A-Z0-9-]/gi, "")
-      const nlW = Math.round(w * 0.10)
-      const r = Math.round(h * 0.1)
-      const sw = Math.max(1, Math.round(h * 0.035))
-      return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
-        <rect width="${w}" height="${h}" rx="${r}" fill="#F5C518" stroke="#333" stroke-width="${sw}"/>
-        <rect x="0" y="0" width="${nlW}" height="${h}" rx="${r}" fill="#003DA5"/>
-        <rect x="${r}" y="0" width="${nlW - r}" height="${h}" fill="#003DA5"/>
-        <text x="${Math.round(nlW * 0.5)}" y="${Math.round(h * 0.38)}" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="${Math.round(h * 0.18)}" fill="#FFD700" font-weight="bold">★ ★ ★</text>
-        <text x="${Math.round(nlW * 0.5)}" y="${Math.round(h * 0.7)}" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="${Math.round(h * 0.28)}" fill="white" font-weight="bold">NL</text>
-        <text x="${Math.round(nlW + (w - nlW) * 0.5)}" y="${Math.round(h * 0.74)}" text-anchor="middle" font-family="'Kenteken','Arial Black',Impact,sans-serif" font-size="${Math.round(h * 0.54)}" font-weight="900" letter-spacing="${Math.round(w * 0.008)}" fill="#1a1a1a">${t}</text>
-      </svg>`
-    }
-
-    async function fixPlate(imgBuffer, plateStr) {
-      if (!sharp) return imgBuffer
-      try {
-        // Extract raw pixels to find the yellow rectangle
-        const img = sharp(imgBuffer)
-        const meta = await img.metadata()
-        const w = meta.width, h = meta.height
-        const { data, info } = await img.raw().toBuffer({ resolveWithObject: true })
-        const channels = info.channels
-
-        // Scan for bright yellow pixels (R>180, G>160, B<100)
-        // Build a binary mask of yellow pixels
-        const mask = new Uint8Array(w * h)
-        for (let i = 0; i < w * h; i++) {
-          const r = data[i * channels], g = data[i * channels + 1], b = data[i * channels + 2]
-          if (r > 180 && g > 150 && b < 110 && r > b * 2) mask[i] = 1
-        }
-
-        // Find bounding box of the largest connected yellow region
-        // Simple approach: find min/max of yellow pixels in the upper 75% of image (not reflections)
-        let minX = w, maxX = 0, minY = h, maxY = 0, count = 0
-        const yLimit = Math.round(h * 0.78) // ignore bottom 22% (floor reflections)
-        for (let y = 0; y < yLimit; y++) {
-          for (let x = 0; x < w; x++) {
-            if (mask[y * w + x]) {
-              if (x < minX) minX = x
-              if (x > maxX) maxX = x
-              if (y < minY) minY = y
-              if (y > maxY) maxY = y
-              count++
-            }
-          }
-        }
-
-        if (count < 200) {
-          console.warn(`[Plate] Only ${count} yellow pixels found — skipping`)
-          return imgBuffer
-        }
-
-        const plateW = maxX - minX
-        const plateH = maxY - minY
-
-        // Sanity: plate should be roughly rectangular (aspect ratio 3:1 to 6:1)
-        const ratio = plateW / Math.max(1, plateH)
-        if (ratio < 2 || ratio > 8 || plateW < 30 || plateH < 8) {
-          console.warn(`[Plate] Yellow region weird shape: ${plateW}x${plateH} ratio=${ratio.toFixed(1)} — skipping`)
-          return imgBuffer
-        }
-
-        console.log(`[Plate] Found yellow region: (${minX},${minY}) ${plateW}x${plateH} pixels=${count}`)
-
-        // Generate plate SVG matching detected size exactly
-        const svgBuf = Buffer.from(makePlateSvg(plateStr, plateW, plateH))
-        const platePng = await sharp(svgBuf).png().toBuffer()
-
-        // Composite plate over the yellow region
-        const result = await sharp(imgBuffer)
-          .composite([{ input: platePng, left: minX, top: minY }])
-          .png()
-          .toBuffer()
-
-        console.log(`[Plate] ✓ Composited at (${minX},${minY}) ${plateW}x${plateH}`)
-        return result
-      } catch(e) {
-        console.warn(`[Plate] Pixel detection failed:`, e.message)
-        return imgBuffer
-      }
-    }
-
-    // Generate all 5 — gpt-image-1 returns base64
+    // Call DALL-E 3 for all 4 angles in parallel
     const results = await Promise.allSettled(prompts.map(async ({ angle, prompt }) => {
       try {
-        const resp = await axios.post("https://api.openai.com/v1/images/generations", {
-          model: "gpt-image-1.5",
+        const dalleResp = await axios.post("https://api.openai.com/v1/images/generations", {
+          model: "dall-e-3",
           prompt,
           n: 1,
-          size: "1536x1024",
-          quality: "high"
+          size: "1792x1024",
+          quality: "standard",
+          response_format: "url"
         }, {
           headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          timeout: 180000
+          timeout: 120000 // 2 min per image
         })
 
-        const b64 = resp.data?.data?.[0]?.b64_json
-        if (!b64) throw new Error("No image data in response")
+        const imgUrl = dalleResp.data?.data?.[0]?.url
+        if (!imgUrl) throw new Error("No image URL in response")
 
-        let imgBuffer = Buffer.from(b64, "base64")
+        // Download image
+        const imgResp = await axios.get(imgUrl, { responseType: "arraybuffer", timeout: 30000 })
         const savePath = path.join(cacheDir, angle + ".png")
+        fs.writeFileSync(savePath, imgResp.data)
 
-        // Plate compositing disabled — testing if gpt-image-1.5 renders text correctly
-        // if (plateAngles[angle] && plate) {
-        //   imgBuffer = await fixPlate(imgBuffer, plate)
-        // }
-
-        fs.writeFileSync(savePath, imgBuffer)
-
-        console.log(`[IMG] ✓ ${angle} saved for ${plateClean}`)
+        console.log(`[DALL-E] ✓ ${angle} saved for ${plateClean}`)
         return { angle, url: `/photos/generated/${plateClean}/${angle}.png` }
       } catch (err) {
-        console.error(`[IMG] ✗ ${angle} failed:`, err.response?.data?.error?.message || err.message)
+        console.error(`[DALL-E] ✗ ${angle} failed:`, err.response?.data?.error?.message || err.message)
         return { angle, url: "", error: err.response?.data?.error?.message || err.message }
       }
     }))
 
     const images = results.map(r => r.status === "fulfilled" ? r.value : { angle: "?", url: "", error: "Failed" })
     const successCount = images.filter(i => i.url).length
-    console.log(`[IMG] Done: ${successCount}/5 images for ${plateClean}`)
+
+    console.log(`[DALL-E] Done: ${successCount}/4 images generated for ${plateClean}`)
     res.json({ ok: true, cached: false, generated: successCount, images })
+
   } catch (err) {
     console.error("[DALL-E] Error:", err.message)
     res.status(500).json({ error: err.message })
