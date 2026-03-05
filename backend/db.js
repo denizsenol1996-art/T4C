@@ -379,6 +379,7 @@ async function initDB() {
   try { db.run("ALTER TABLE users ADD COLUMN active INTEGER DEFAULT 1") } catch {}
   try { db.run("ALTER TABLE users ADD COLUMN company TEXT DEFAULT ''") } catch {}
 
+  try { db.run(`CREATE TABLE IF NOT EXISTS crawl_queue (id INTEGER PRIMARY KEY AUTOINCREMENT, make TEXT NOT NULL, model TEXT NOT NULL, year INTEGER NOT NULL, transmission TEXT DEFAULT '', last_crawled_at INTEGER DEFAULT 0, created_at INTEGER DEFAULT (strftime('%s','now')), UNIQUE(make,model,year,transmission))`) } catch(e) {}
   console.log("[DB] Schema verified")
 
   // ── MIGRATE from JSON files ──
@@ -707,6 +708,10 @@ const stmts = {
   
   // Taxatie delete
   deleteTaxatie: { run: (id) => run("DELETE FROM taxaties WHERE id=?", [id]) },
+  getCrawlQueue: { all: (limit) => queryAll("SELECT * FROM crawl_queue ORDER BY last_crawled_at ASC LIMIT ?", [limit||8]) },
+  addToCrawlQueue: { run: (make, model, year, trans) => run("INSERT OR IGNORE INTO crawl_queue (make,model,year,transmission) VALUES (?,?,?,?)", [make,model,year,trans||'']) },
+  updateCrawlTime: { run: (make, model, year, trans) => run("UPDATE crawl_queue SET last_crawled_at=? WHERE make=? AND model=? AND year=? AND transmission=?", [Math.floor(Date.now()/1000),make,model,year,trans||'']) },
+  savePriceTrend: { run: (mk,ml,yr,month,avg,median,p0,p1,cnt,sold,src) => run("INSERT OR REPLACE INTO market_snapshots (make,model,year,month,avg_price,median_price,price_low,price_high,sample_size,sold_count,source) VALUES (?,?,?,?,?,?,?,?,?,?,?)", [mk,ml,yr,month,avg,median,p0,p1,cnt,sold,src]) },
   dbSize: () => fs.existsSync(DB_PATH) ? Math.round(fs.statSync(DB_PATH).size / 1024) : 0,
 }
 

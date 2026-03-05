@@ -2343,7 +2343,7 @@ app.post("/api/generate-car-images", express.json(), async (req, res) => {
     const angles = ["1-front", "2-front-right", "3-right", "4-rear", "5-left"]
     const cached = angles.every(a => fs.existsSync(path.join(cacheDir, a + ".png")))
     if (cached) {
-      console.log(`[DALL-E] Cache hit for ${plateClean}`)
+      console.log(`[IMG] Cache hit for ${plateClean}`)
       return res.json({
         ok: true, cached: true,
         images: angles.map(a => ({ angle: a, url: `/photos/generated/${plateClean}/${a}.png` }))
@@ -2357,18 +2357,18 @@ app.post("/api/generate-car-images", express.json(), async (req, res) => {
     const trimInfo = [variant, generation, subModel, trimLevel].filter(Boolean).join(" ")
     const carDesc = `${year || 2020} ${make} ${model}${trimInfo ? " " + trimInfo : ""}, ${bodyEn}, ${colorDesc}`
 
-    // 5 turntable angles: front → right-front → right → rear → left
+    // 5 turntable angles — include plate text so DALL-E picks the right model, UI overlay corrects the text
     const plateText = plate || "XX-999-X"
-    const studioBg = "Clean neutral grey studio background with soft even lighting and subtle reflections on a polished dark floor, like a car showroom turntable. Professional car dealership photography, ultra sharp focus, no text or watermarks other than the license plate."
+    const studioBg = "on a round dark showroom turntable platform. Clean neutral grey studio background with soft even lighting and subtle reflections on a polished dark floor. Professional car dealership photography, ultra sharp focus, 8K quality."
     const prompts = [
-      { angle: "1-front",       prompt: `Photorealistic studio photograph of a ${carDesc}. Straight front view, centered, showing the full car head-on. Dutch yellow license plate clearly reads "${plateText}" on the front bumper. ${studioBg}` },
-      { angle: "2-front-right", prompt: `Photorealistic studio photograph of a ${carDesc}. Front 3/4 right view (turned roughly 45 degrees to the right), showing front and right side. Dutch yellow license plate clearly reads "${plateText}" on the front. ${studioBg}` },
-      { angle: "3-right",       prompt: `Photorealistic studio photograph of a ${carDesc}. Full right side profile view, perfectly level, showing the entire passenger side of the car. ${studioBg}` },
-      { angle: "4-rear",        prompt: `Photorealistic studio photograph of a ${carDesc}. Straight rear view, centered, showing the full car from behind. Dutch yellow license plate clearly reads "${plateText}" on the rear. ${studioBg}` },
-      { angle: "5-left",        prompt: `Photorealistic studio photograph of a ${carDesc}. Full left side profile view, perfectly level, showing the entire driver side of the car. ${studioBg}` }
+      { angle: "1-front",       prompt: `Photorealistic studio photograph of a ${carDesc}. Front 3/4 view showing the full car. Dutch yellow license plate reading "${plateText}" on the front bumper. Car is placed ${studioBg}` },
+      { angle: "2-front-right", prompt: `Photorealistic studio photograph of a ${carDesc}. Front 3/4 right view, turned roughly 45 degrees to the right, showing front and right side. Dutch yellow license plate on the front. Car is placed ${studioBg}` },
+      { angle: "3-right",       prompt: `Photorealistic studio photograph of a ${carDesc}. Full right side profile view, perfectly level, showing the entire passenger side of the car. Car is placed ${studioBg}` },
+      { angle: "4-rear",        prompt: `Photorealistic studio photograph of a ${carDesc}. Rear 3/4 view showing the full car from behind. Dutch yellow license plate reading "${plateText}" on the rear bumper. Car is placed ${studioBg}` },
+      { angle: "5-left",        prompt: `Photorealistic studio photograph of a ${carDesc}. Full left side profile view, perfectly level, showing the entire driver side of the car. Car is placed ${studioBg}` }
     ]
 
-    console.log(`[DALL-E] Generating 4 images for ${make} ${model} (${plateClean})...`)
+    console.log(`[IMG] Generating 4 images for ${make} ${model} (${plateClean})...`)
 
     // Create cache dir
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
@@ -2377,12 +2377,11 @@ app.post("/api/generate-car-images", express.json(), async (req, res) => {
     const results = await Promise.allSettled(prompts.map(async ({ angle, prompt }) => {
       try {
         const dalleResp = await axios.post("https://api.openai.com/v1/images/generations", {
-          model: "dall-e-3",
+          model: "gpt-image-1.5",
           prompt,
           n: 1,
-          size: "1792x1024",
-          quality: "standard",
-          response_format: "url"
+          size: "1536x1024",
+          quality: "medium",
         }, {
           headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
           timeout: 120000 // 2 min per image
@@ -2396,10 +2395,10 @@ app.post("/api/generate-car-images", express.json(), async (req, res) => {
         const savePath = path.join(cacheDir, angle + ".png")
         fs.writeFileSync(savePath, imgResp.data)
 
-        console.log(`[DALL-E] ✓ ${angle} saved for ${plateClean}`)
+        console.log(`[IMG] ✓ ${angle} saved for ${plateClean}`)
         return { angle, url: `/photos/generated/${plateClean}/${angle}.png` }
       } catch (err) {
-        console.error(`[DALL-E] ✗ ${angle} failed:`, err.response?.data?.error?.message || err.message)
+        console.error(`[IMG] ✗ ${angle} failed:`, err.response?.data?.error?.message || err.message)
         return { angle, url: "", error: err.response?.data?.error?.message || err.message }
       }
     }))
@@ -2407,11 +2406,11 @@ app.post("/api/generate-car-images", express.json(), async (req, res) => {
     const images = results.map(r => r.status === "fulfilled" ? r.value : { angle: "?", url: "", error: "Failed" })
     const successCount = images.filter(i => i.url).length
 
-    console.log(`[DALL-E] Done: ${successCount}/4 images generated for ${plateClean}`)
+    console.log(`[IMG] Done: ${successCount}/4 images generated for ${plateClean}`)
     res.json({ ok: true, cached: false, generated: successCount, images })
 
   } catch (err) {
-    console.error("[DALL-E] Error:", err.message)
+    console.error("[IMG] Error:", err.message)
     res.status(500).json({ error: err.message })
   }
 })
@@ -3988,6 +3987,31 @@ app.post("/api/voorraad/:id/photos", authMiddleware, staffOnly, express.raw({ ty
     stmts.addCarPhoto.run(carId, brandedFilename, existing.length, isCover)
 
     res.json({ ok: true, filename: brandedFilename, original: origFilename, branded: true, cover: !!isCover })
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
+
+// Photo upload via kenteken (mobile app - JSON+base64)
+app.post("/api/voorraad/plate/:kenteken/photos", authMiddleware, staffOnly, express.json({ limit: "15mb" }), async (req, res) => {
+  try {
+    const kenteken = req.params.kenteken.replace(/[^a-zA-Z0-9]/g,"").toUpperCase()
+    const car = db.prepare("SELECT id FROM voorraad WHERE REPLACE(UPPER(kenteken),\"-\",\"\") = ?").get(kenteken)
+    if (!car) return res.status(404).json({ ok: false, error: "Auto niet gevonden: " + kenteken })
+    const { image, filename } = req.body
+    if (!image) return res.status(400).json({ ok: false, error: "Geen image data" })
+    const ext = (filename || "foto.jpg").split(".").pop() || "jpeg"
+    const ts = Date.now()
+    const origFilename = `car-${car.id}-${ts}-orig.${ext}`
+    const brandedFilename = `car-${car.id}-${ts}.${ext}`
+    const origPath = path.join(PHOTOS_DIR, origFilename)
+    const brandedPath = path.join(PHOTOS_DIR, brandedFilename)
+    fs.writeFileSync(origPath, Buffer.from(image, "base64"))
+    try { await brandPhoto(origPath, brandedPath) }
+    catch { fs.copyFileSync(origPath, brandedPath) }
+    const existing = stmts.getVoorraadPhotos.all(car.id)
+    const isCover = existing.length === 0 ? 1 : 0
+    stmts.addCarPhoto.run(car.id, brandedFilename, existing.length, isCover)
+    res.json({ ok: true, filename: brandedFilename, cover: !!isCover })
   } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
 })
 
