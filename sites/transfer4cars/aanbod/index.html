@@ -110,6 +110,10 @@ img{max-width:100%;display:block}.container{max-width:1280px;margin:0 auto;paddi
 @media(max-width:1024px){.car-grid{grid-template-columns:repeat(2,1fr)}.detail-specs{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:640px){.car-grid{grid-template-columns:1fr}.detail-specs{grid-template-columns:repeat(2,1fr)}.detail-gallery{height:260px}.detail-titlebar{flex-direction:column}.filter-bar{flex-direction:column}.filter-input{max-width:100%}}
 </style>
+<script>
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&(e.key==='I'||e.key==='J'))||(e.ctrlKey&&e.key==='u'))e.preventDefault()});
+</script>
 </head>
 <body>
 <nav class="top-nav"><div class="container"><a href="/verkoop/" class="logo"><span class="logo-t">TRANSFER</span><span class="logo-4">4</span><span class="logo-c">cars</span></a><div class="nav-right"><a href="/verkoop/" class="nav-link">&larr; Home</a><a href="/verkoop/#contact" class="nav-link">Contact</a><a href="/m/" class="nav-link" style="color:var(--green)">App</a><button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">&#9790;</button></div></div></nav>

@@ -159,6 +159,10 @@ body::before{content:'';position:fixed;top:-200px;right:-200px;width:600px;heigh
 
 @media(max-width:700px){.grid{grid-template-columns:1fr}.nav-link{padding:6px 10px;font-size:12px}.hero h1{font-size:26px}.ag{grid-template-columns:1fr}.as{flex-direction:row;flex-wrap:wrap}.wi{flex-direction:column;align-items:flex-start}.pr{grid-template-columns:1fr}.specs{grid-template-columns:repeat(2,1fr)}.det-img{height:200px}.bf{flex-direction:column}.ux-panel{width:100%}}
 </style>
+<script>
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&(e.key==='I'||e.key==='J'))||(e.ctrlKey&&e.key==='u'))e.preventDefault()});
+</script>
 </head>
 <body>
 

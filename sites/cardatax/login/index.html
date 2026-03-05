@@ -43,6 +43,10 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font);min-height:100
 
 .version{text-align:center;margin-top:32px;font-family:var(--mono);font-size:10px;color:var(--t4);letter-spacing:1px}
 </style>
+<script>
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&(e.key==='I'||e.key==='J'))||(e.ctrlKey&&e.key==='u'))e.preventDefault()});
+</script>
 </head>
 <body>
 <div class="grid-bg"></div>

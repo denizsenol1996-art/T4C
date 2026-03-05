@@ -75,6 +75,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Outfit',sans-serif;min-he
   .not-installed{display:none!important}
 }
 </style>
+<script>
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&(e.key==='I'||e.key==='J'))||(e.ctrlKey&&e.key==='u'))e.preventDefault()});
+</script>
 </head>
 <body>
 <div class="bg-grid"></div>
