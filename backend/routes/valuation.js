@@ -9,7 +9,7 @@ const { med, validate, buildSearchUrls } = require("../lib/scrapers")
 const { getApiKey, hasApiKey } = require("../lib/ai")
 const { authMiddleware, staffOnly } = require("../lib/auth")
 const { writeLog } = require("../lib/state")
-const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore } = require("../lib/scoring")
+const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
 router.post("/api/dealer/price", express.json(), async (req, res) => {
   try {
     let d = req.body
@@ -720,6 +720,8 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
     const _margeScore = calculateMargeScore(d, { marginPct: finalMarginPct, liquidityScore, riskScore })
     const _vergelijkScore = calculateVergelijkScore(d, { confidence: conf, marktCount: mCount })
     const _totalScore = calculateTotalScore(_qualityScore, _techniekScore, _courantScore, _margeScore, _vergelijkScore)
+    const _scores = { quality: _qualityScore, techniek: _techniekScore, courant: _courantScore, marge: _margeScore, vergelijk: _vergelijkScore, total: _totalScore }
+    const _advice = generateDealerAdvice(_scores, d, { marginPct: finalMarginPct, margin: finalVerkoop - finalBod, marktCount: mCount })
 
 
     res.json({
@@ -749,7 +751,8 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
         courant: _courantScore,
         marge: _margeScore,
         vergelijk: _vergelijkScore,
-        total: _totalScore
+        total: _totalScore,
+        advice: _advice
       }
     })
   } catch (e) {

@@ -4,6 +4,11 @@ self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.o
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())) });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  // JS files: altijd netwerk-first
+  if (e.request.url.includes('.js')) {
+    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    return;
+  }
   e.respondWith(fetch(e.request).then(r => {
     if (r.ok && e.request.url.includes('/m/')) {
       const clone = r.clone();

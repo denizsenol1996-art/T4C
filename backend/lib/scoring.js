@@ -152,25 +152,35 @@ function calculateTechniekScore(v) {
   if (defects.length === 0) {
     score += 1.0
     details.push({ factor: 'Geen APK gebreken', impact: +1.0, type: 'pos' })
-  } else if (defects.length >= 5) {
+  } else if (defects.length >= 8) {
     score -= 1.5
-    details.push({ factor: defects.length + ' APK gebreken', impact: -1.5, type: 'neg' })
-  } else if (defects.length >= 3) {
+    details.push({ factor: defects.length + ' APK gebreken (veel)', impact: -1.5, type: 'neg' })
+  } else if (defects.length >= 5) {
     score -= 0.5
     details.push({ factor: defects.length + ' APK gebreken', impact: -0.5, type: 'neg' })
+  } else if (defects.length >= 3) {
+    score -= 0.3
+    details.push({ factor: defects.length + ' APK gebreken (beperkt)', impact: -0.3, type: 'neg' })
   }
 
-  // Open recalls
+  // Open recalls — 1 recall is minder erg dan 3+
   const recalls = v.recalls || []
-  if (recalls.length > 0) {
+  if (recalls.length >= 3) {
     score -= 1.0
-    details.push({ factor: recalls.length + ' open terugroepactie(s)', impact: -1.0, type: 'neg' })
+    details.push({ factor: recalls.length + ' open terugroepacties', impact: -1.0, type: 'neg' })
+  } else if (recalls.length > 0) {
+    score -= 0.3
+    details.push({ factor: recalls.length + ' open terugroepactie', impact: -0.3, type: 'neg' })
   }
 
-  // Leeftijd motor
+  // Leeftijd motor — betrouwbare merken minder straffen
   const age = new Date().getFullYear() - (v.year || 2015)
+  const RELIABLE_BRANDS = ['TOYOTA','HONDA','MAZDA','SUZUKI','LEXUS','SUBARU']
+  const isReliable = RELIABLE_BRANDS.includes((v.make||'').toUpperCase())
   if (age <= 5) { score += 1.0; details.push({ factor: 'Jonge auto (' + age + 'j)', impact: +1.0, type: 'pos' }) }
+  else if (age >= 15 && isReliable) { score -= 0.3; details.push({ factor: 'Ouder voertuig (' + age + 'j) maar betrouwbaar merk', impact: -0.3, type: 'neg' }) }
   else if (age >= 15) { score -= 1.0; details.push({ factor: 'Oud voertuig (' + age + 'j)', impact: -1.0, type: 'neg' }) }
+  else if (age >= 10 && !isReliable) { score -= 0.5; details.push({ factor: 'Ouder voertuig (' + age + 'j)', impact: -0.5, type: 'neg' }) }
 
   // Emissieklasse
   const emissie = v.emissieKlasse || v.euroClass || ''
@@ -295,11 +305,59 @@ function calculateTotalScore(quality, techniek, courant, marge, vergelijk) {
   let verdict = 'Niet aantrekkelijk'
   if (total >= 8.5) verdict = 'Topexemplaar — vol inzetten'
   else if (total >= 7.5) verdict = 'Zeer interessant — stevig bieden'
-  else if (total >= 6.5) verdict = 'Interessant — marktconform bieden'
+  else if (total >= 6.0) verdict = 'Interessant — marktconform bieden'
   else if (total >= 5.0) verdict = 'Gemiddeld — voorzichtig bieden'
   else if (total >= 3.5) verdict = 'Onder gemiddeld — alleen bij scherpe prijs'
 
-  return { total, verdict, grade: total >= 8 ? 'A+' : total >= 7 ? 'A' : total >= 6 ? 'B' : total >= 5 ? 'C' : 'D' }
+  return { total, verdict, grade: total >= 8.5 ? 'A+' : total >= 7.5 ? 'A' : total >= 6.0 ? 'B' : total >= 5.0 ? 'C' : 'D' }
 }
 
-module.exports = { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore }
+module.exports = { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice }
+
+// ═══ DEALER ADVIES — concreet, kort, bruikbaar ═══
+function generateDealerAdvice(scores, v, r) {
+  const total = scores.total?.total || 5
+  const quality = scores.quality || {}
+  const techniek = scores.techniek || {}
+  const courant = scores.courant || {}
+  const marge = scores.marge || {}
+
+  // Hoofdadvies
+  let action = 'AFWIJZEN'
+  if (total >= 8.5) action = 'DIRECT KOPEN'
+  else if (total >= 7.0) action = 'KOPEN'
+  else if (total >= 6.0) action = 'BIEDEN'
+  else if (total >= 5.0) action = 'VOORZICHTIG'
+
+  const lines = []
+
+  // Positieve punten
+  const pos = (quality.details||[]).filter(d => d.type === 'pos').map(d => d.factor)
+  if (pos.length > 0) lines.push('+ ' + pos.join(', '))
+
+  // Waarschuwingen
+  const warns = []
+  const allDetails = [...(quality.details||[]), ...(techniek.details||[])]
+  const negs = allDetails.filter(d => d.type === 'neg')
+  for (const n of negs) {
+    if (n.factor.includes('terugroepactie')) warns.push('Terugroepactie open — laat oplossen voor verkoop')
+    else if (n.factor.includes('APK gebreken')) warns.push('APK gebreken — inspectie aanbevolen')
+    else if (n.factor.includes('Import')) warns.push('Import — controleer specificatie en historie')
+    else if (n.factor.includes('onderhoudshistorie')) warns.push('Weinig onderhoudshistorie beschikbaar')
+    else if (n.factor.includes('Hoge km')) warns.push(n.factor)
+    else if (n.factor.includes('eigenaren')) warns.push(n.factor)
+  }
+  const uniqueWarns = [...new Set(warns)]
+  if (uniqueWarns.length > 0) lines.push('! ' + uniqueWarns.join(' | '))
+
+  // Marge info
+  const marginPct = r?.marginPct || 0
+  const margin = r?.margin || 0
+  if (margin > 0) lines.push('Marge: ' + margin + ' (' + marginPct + '%)')
+
+  // Markt context
+  const listings = v?.marktCount || 0
+  if (listings > 0) lines.push(listings + ' vergelijkbare online, courant model')
+
+  return { action, lines, total: Math.round(total * 10) / 10 }
+}
