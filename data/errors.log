@@ -1,0 +1,17 @@
+[2026-03-23T17:29:31.929Z] SLOW: GET /api/market took 5026ms
+[2026-03-23T17:29:36.903Z] SLOW: GET /api/vehicle/enriched took 24473ms
+[2026-03-23T17:29:42.070Z] SLOW: GET /api/market took 5068ms
+[2026-03-23T17:30:14.163Z] SLOW: POST /api/generate-car-images took 27280ms
+[2026-03-23T18:00:59.860Z] SLOW: GET /api/market took 12173ms
+[2026-03-23T18:01:05.443Z] SLOW: GET /api/vehicle/enriched took 31804ms
+[2026-03-23T18:01:15.843Z] SLOW: GET /api/market took 10293ms
+[2026-03-23T18:01:47.285Z] SLOW: POST /api/generate-car-images took 26426ms
+[2026-03-23T18:03:22.940Z] SLOW: GET /api/market took 12190ms
+[2026-03-23T18:03:27.983Z] SLOW: GET /api/vehicle/enriched took 33333ms
+[2026-03-23T18:03:37.636Z] SLOW: GET /api/market took 9582ms
+[2026-03-23T18:04:06.199Z] SLOW: POST /api/generate-car-images took 23558ms
+[2026-03-23T18:39:57.988Z] GET /api/vehicle/enriched → 500 (2544ms)
+[2026-03-23T18:41:28.804Z] GET /api/vehicle/enriched → 500 (3421ms)
+[2026-03-23T18:45:03.364Z] GET /api/vehicle/enriched → 500 (2702ms)
+[2026-03-23T18:55:50.654Z] SLOW: GET /api/market took 13113ms
+[2026-03-23T18:55:56.577Z] SLOW: GET /api/vehicle/enriched took 29120ms
