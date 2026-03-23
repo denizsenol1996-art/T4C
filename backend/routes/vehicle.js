@@ -314,7 +314,7 @@ router.get("/api/vehicle/enriched", async (req, res) => {
     const km = parseInt(req.query.km) || 0
     if (!plate || plate.length < 5) return res.status(400).json({ error: "Ongeldig kenteken" })
     const ck = "vehicle_" + plate
-    const cached = getCached(ck)
+    const cached = getCached(ck, 14400000) // 4h cache
     if (cached) return res.json(cached)
 
     const B = "https://opendata.rdw.nl/resource"
