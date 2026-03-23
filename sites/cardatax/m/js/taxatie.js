@@ -24,18 +24,15 @@ async function doTax(){
     if(!v?.make) throw new Error('Kenteken niet gevonden bij RDW');
 
     ldStep(2);
-    // STAP 2: Marktdata ophalen
-    const [mR] = await Promise.allSettled([
-      fetch(`/api/market?make=${encodeURIComponent(v.make)}&model=${encodeURIComponent(v.model)}&year=${v.year}&km=${km||0}&sub=${encodeURIComponent(v.subModel||'')}&body=${encodeURIComponent(v.body||'')}&fuel=${encodeURIComponent(v.fuel||'')}&transmission=${encodeURIComponent(v.transmissionAuto?'automaat':v.transmissionType?'handgeschakeld':'')}`).then(r=>r.json())
+    // STAP 2+3: Marktdata + Prijsberekening PARALLEL (ipv sequentieel)
+    ldStep(2);
+    const [mR, pR] = await Promise.allSettled([
+      fetch(`/api/market?make=${encodeURIComponent(v.make)}&model=${encodeURIComponent(v.model)}&year=${v.year}&km=${km||0}&sub=${encodeURIComponent(v.subModel||'')}&body=${encodeURIComponent(v.body||'')}&fuel=${encodeURIComponent(v.fuel||'')}&transmission=${encodeURIComponent(v.transmissionAuto?'automaat':'')}`).then(r=>r.json()),
+      fetch('/api/dealer/price',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plate:fmtP(p),make:v.make,model:v.model,year:v.year,km:Number(km)||v.km||0,fuel:v.fuel,weightKg:v.weightKg,catalogPrice:v.catalogPrice,bpm:v.bpm,power:v.powerKw,ownerCount:v.ownerCount||0,isExDealer:v.isExDealer||false,bpmRest:v.bpmRest||0,bijtelling:v.bijtelling||null,emissieKlasse:v.emissieKlasse||null,importFlag:v.importFlag,stolenFlag:v.stolenFlag,transmissionAuto:v.transmissionAuto,transmissionType:v.transmissionType,transmissionDetail:v.transmissionDetail,engineLabel:v.engineLabel,subModel:v.subModel,vin:v.vin,motorCode:v.motorCode,generation:v.generation,trimLevel:v.trimLevel,drivetrain:v.drivetrain,engineRiskProfile:v.engineRiskProfile,courantScore:v.courantScore,optionPriceImpact:v.optionPriceImpact})}).then(r=>r.json())
     ]);
-    const m = mR.status==='fulfilled' ? mR.value : null;
-
-    ldStep(3);
-    // STAP 4: Prijsberekening (heeft marktdata nodig)
-    const pR=await fetch('/api/dealer/price',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plate:fmtP(p),make:v.make,model:v.model,year:v.year,km:Number(km)||v.km||0,fuel:v.fuel,weightKg:v.weightKg,catalogPrice:v.catalogPrice,bpm:v.bpm,power:v.powerKw,marketAvg:m?.avg,marketMedian:m?.median,marketCount:m?.count,marketPrices:m?.prices,marketP10:m?.p10,marketP25:m?.p25,marketP75:m?.p75,marketP90:m?.p90,marketQuality:m?.validation?.quality,finnikAvailable:v.source?.finnik===true,finnikWaardeLow:v.finnikData?.waardeLow,finnikWaardeHigh:v.finnikData?.waardeHigh,ownerCount:v.ownerCount||0,isExDealer:v.isExDealer||false,bpmRest:v.bpmRest||0,bijtelling:v.bijtelling||null,emissieKlasse:v.emissieKlasse||null,importFlag:v.importFlag,stolenFlag:v.stolenFlag,transmissionAuto:v.transmissionAuto,transmissionType:v.transmissionType,transmissionDetail:v.transmissionDetail,equipmentLevel:v.equipmentLevel,engineLabel:v.engineLabel,subModel:v.subModel,vin:v.vin,motorCode:v.motorCode,generation:v.generation,trimLevel:v.trimLevel,drivetrain:v.drivetrain,interior:v.interior,optionPackage:v.optionPackage,engineRiskProfile:v.engineRiskProfile,courantScore:v.courantScore,optionPriceImpact:v.optionPriceImpact})});
-    if(!pR.ok) throw new Error('Prijsberekening mislukt');
-    const r=await pR.json();
-
+    const m=mR.status==='fulfilled'?mR.value:null;
+    const r=pR.status==='fulfilled'?pR.value:null;
+    if(!r||r.error) throw new Error(r?.error||'Prijsberekening mislukt');
     ldStep(4);
     last={v,m,r,plate:fmtP(p),km:Number(km)||0,damageCost:0,damageCount:0,intel:null};
     recent=recent.filter(x=>x.plate!==last.plate);
