@@ -467,7 +467,7 @@ router.get("/api/vehicle/enriched", async (req, res) => {
       const _enrichStart = Date.now()
       const _plate = req.query.plate || req.query.kenteken || ''
 
-      const [_finnikR, _as24R, _anwbR, _vinR] = await Promise.allSettled([
+      const [_finnikR, _as24R, _anwbR, _vinR, _marketR] = await Promise.allSettled([
 
         // ── 1. FINNIK ──
         (async () => {
@@ -621,6 +621,21 @@ Antwoord ALLEEN in JSON:
             return null
           }
         })(),
+
+        // ── 5. MARKET DATA (eigen crawler DB) ──
+        (async () => {
+          try {
+            const mk = s(d.merk), ml = s(d.handelsbenaming)
+            if (!mk || !ml) return null
+            const _mr = await axios.get("http://localhost:3000/api/market?make="+encodeURIComponent(mk)+"&model="+encodeURIComponent(ml)+"&year="+year+"&km="+(km||0), {timeout:15000})
+            const _md = _mr.data || {}
+            if (_md.count) {
+              console.log("[MARKT]", mk, ml, year, "->", _md.count, "listings, mediaan:", _md.median)
+              return _md
+            }
+            return {}
+          } catch(e) { console.log("[MARKT] Skip:", e.message); return {} }
+        })(),
       ])
 
       // ── Extract parallel results ──
@@ -641,7 +656,10 @@ Antwoord ALLEEN in JSON:
       const _vinParsed = _vinR.status === 'fulfilled' ? _vinR.value : null
       if (_vinParsed) vinData = { ...vinData, ..._vinParsed }
 
-      console.log(`[PARALLEL] Enrichment done in ${Date.now() - _enrichStart}ms — Finnik:${_finnikR.status} AS24:${_as24R.status} ANWB:${_anwbR.status} VIN:${_vinR.status}`)
+      // Market data extraction
+      const _marketData = (_marketR.status === 'fulfilled' && _marketR.value) ? _marketR.value : {}
+
+      console.log(`[PARALLEL] Enrichment done in ${Date.now() - _enrichStart}ms — Finnik:${_finnikR.status} AS24:${_as24R.status} ANWB:${_anwbR.status} VIN:${_vinR.status} Market:${_marketR.status}`)
 
     const isAuto = vinData.transmission?.toLowerCase()?.includes('automaat') || vinData.transmission?.toLowerCase()?.includes('automatic') || false
     const transmissionType = vinData.transmission || null
@@ -732,13 +750,9 @@ Antwoord ALLEEN in JSON:
     // GPT PRICE WITH MARKET DATA
     if (result.make && result.year) {
       try {
-        let _md = {}
-        try {
-          const _mr = await axios.get("http://localhost:3000/api/market?make="+encodeURIComponent(result.make)+"&model="+encodeURIComponent(result.model)+"&year="+result.year+"&km="+(result.km||0), {timeout:30000})
-          _md = _mr.data || {}
+          // Market data already fetched in parallel block
+          const _md = _marketData || {}
           if (_md.count) { result.marktCount=_md.count; result.marktAvg=_md.avg; result.marktMedian=_md.median; result.marktP25=_md.p25; result.marktP75=_md.p75 }
-          console.log("[MARKT]", result.make, result.model, result.year, "->", _md.count, "listings, mediaan:", _md.median)
-        } catch(e) { console.log("[MARKT] Error:", e.message) }
         const _ak = getApiKey("OPENAI_API_KEY")
         if (_ak && _ak !== "sk-...") {
           const _mi = _md.count ? "Marktdata ("+_md.count+" listings): mediaan EUR "+_md.median+", gem EUR "+_md.avg+", P25 EUR "+_md.p25+", P75 EUR "+_md.p75+". Let op: dit is ALLE varianten van dit model inclusief goedkope basisversies. Corrigeer voor de SPECIFIEKE uitvoering." : "Geen marktdata. Gebruik je eigen expertise."
