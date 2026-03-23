@@ -1,0 +1,9 @@
+{
+  "appId": "com.cardatax.app",
+  "appName": "CarDatax",
+  "webDir": "www",
+  "server": {
+    "url": "https://transfer4cars.com/m/",
+    "cleartext": false
+  }
+}

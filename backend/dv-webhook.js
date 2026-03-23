@@ -677,7 +677,7 @@ function setupDVWebhookRoutes(app, { run: runFn, queryAll: queryAllFn, queryOne:
   })
 
   // ─── PUBLIC: Active vehicles for website (no auth needed) ───
-  app.get("/api/voorraad", (req, res) => {
+  app.get("/api/dv/voorraad", (req, res) => {
     const { merk, model, brandstof, transmissie, min_prijs, max_prijs, min_jaar, max_jaar, sort, limit: lim, offset: off } = req.query
     
     let where = ["status = 'active'", "verkocht = 'n'"]
@@ -725,7 +725,7 @@ function setupDVWebhookRoutes(app, { run: runFn, queryAll: queryAllFn, queryOne:
   })
 
   // ─── PUBLIC: Single vehicle detail ───
-  app.get("/api/voorraad/:hexonId", (req, res) => {
+  app.get("/api/dv/voorraad/:hexonId", (req, res) => {
     const vehicle = queryOneFn(
       "SELECT * FROM dv_vehicles WHERE hexon_id = ? AND status = 'active'", 
       [req.params.hexonId]
@@ -742,7 +742,7 @@ function setupDVWebhookRoutes(app, { run: runFn, queryAll: queryAllFn, queryOne:
   })
 
   // ─── PUBLIC: Available filter values ───
-  app.get("/api/voorraad-filters", (req, res) => {
+  app.get("/api/dv/voorraad-filters", (req, res) => {
     const merken = queryAllFn(
       "SELECT DISTINCT merk FROM dv_vehicles WHERE status = 'active' AND verkocht = 'n' AND merk != '' ORDER BY merk"
     )
@@ -775,9 +775,9 @@ function setupDVWebhookRoutes(app, { run: runFn, queryAll: queryAllFn, queryOne:
   console.log("  GET  /api/dv/vehicles      — Admin: all vehicles")
   console.log("  GET  /api/dv/vehicles/:id   — Admin: single vehicle")
   console.log("  GET  /api/dv/logs          — Admin: webhook logs")
-  console.log("  GET  /api/voorraad         — Public: vehicle listing")
-  console.log("  GET  /api/voorraad/:id     — Public: vehicle detail")
-  console.log("  GET  /api/voorraad-filters — Public: filter options")
+  console.log("  GET  /api/dv/voorraad         — Public: vehicle listing")
+  console.log("  GET  /api/dv/voorraad/:id     — Public: vehicle detail")
+  console.log("  GET  /api/dv/voorraad-filters — Public: filter options")
 }
 
 module.exports = { setupDVWebhookRoutes, setupDVTables }

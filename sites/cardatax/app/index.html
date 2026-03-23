@@ -4,197 +4,1007 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#060810">
-<title>CarDatax — Taxatie Platform</title>
-<link rel="icon" href="/app/favicon-32.png" type="image/png">
+<title>CarDatax — Dealer Platform</title>
+<link rel="icon" href="/m/favicon-32.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
-:root,[data-theme="dark"]{--bg:#060810;--bg2:#0a0e18;--surface:#0f1420;--surface2:#141a28;--surface3:#1a2134;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.10);--border-accent:rgba(34,214,138,.25);--accent:#22d68a;--accent2:#1abc78;--accent-dim:rgba(34,214,138,.10);--accent-glow:rgba(34,214,138,.06);--red:#ff5268;--red-dim:rgba(255,82,104,.10);--orange:#ffb340;--orange-dim:rgba(255,179,64,.10);--blue:#5ba0ff;--text:#e8ecf4;--text2:#8892a8;--text3:#505a70;--text4:#343a4a;--shadow:0 4px 24px rgba(0,0,0,.5);--glow:0 0 40px rgba(34,214,138,.08);--radius:14px;--radius-sm:10px;--radius-xs:8px;--mono:'JetBrains Mono',ui-monospace,monospace;--font:'Inter',system-ui,-apple-system,sans-serif}
-[data-theme="light"]{--bg:#f5f7fa;--bg2:#fff;--surface:#fff;--surface2:#f8f9fc;--surface3:#f0f2f5;--border:rgba(0,0,0,.07);--border2:rgba(0,0,0,.12);--border-accent:rgba(22,166,104,.3);--accent:#16a668;--accent2:#139c5e;--accent-dim:rgba(22,166,104,.08);--accent-glow:rgba(22,166,104,.04);--red:#e83850;--red-dim:rgba(232,56,80,.08);--orange:#d49500;--orange-dim:rgba(212,149,0,.08);--blue:#2b7fff;--text:#1a1e2a;--text2:#5c6478;--text3:#9ca3b4;--text4:#c4c9d4;--shadow:0 4px 24px rgba(0,0,0,.04);--glow:none}
-*{margin:0;padding:0;box-sizing:border-box}html{height:100%}body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}input,select,textarea,button{font-family:inherit}.mono{font-family:var(--mono)}
-::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:radial-gradient(ellipse at 50% 30%,rgba(34,214,138,.04) 0%,transparent 60%)}
-.login-box{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:48px 40px;width:100%;max-width:400px;text-align:center;box-shadow:var(--shadow),var(--glow)}
-.login-box img{height:48px;margin-bottom:8px}.login-box .sub{color:var(--text3);font-size:13px;margin-bottom:32px;letter-spacing:.5px}
-.login-box input{width:100%;padding:13px 16px;background:var(--bg);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:14px;margin-bottom:12px;outline:none;transition:.2s}
-.login-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
-.login-box button{width:100%;padding:14px;background:var(--accent);color:#000;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s}
-.login-box button:hover{filter:brightness(1.1);transform:translateY(-1px)}.login-box button:active{transform:translateY(0)}
-.login-err{color:var(--red);font-size:13px;margin-top:10px;min-height:20px}
-.app{display:none;height:100vh;overflow:hidden}
-.topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-.topbar-logo{height:26px;cursor:pointer;opacity:.9;transition:.15s}.topbar-logo:hover{opacity:1}
-.topbar-role{font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--accent-dim);color:var(--accent);text-transform:uppercase;letter-spacing:.5px}
-.topbar-spacer{flex:1}
-.tb{background:none;border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text2);padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;transition:.15s;white-space:nowrap}
-.tb:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}.tb.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
-.topbar-user{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
-.content{height:calc(100vh - 56px);overflow-y:auto;padding:28px 32px 60px}.content-inner{max-width:1200px;margin:0 auto}
-.tax-bar{display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap}
-.plate-wrap{display:flex;align-items:center;background:#f5c518;border-radius:var(--radius-xs);overflow:hidden;height:48px;box-shadow:0 2px 8px rgba(245,197,24,.2)}
-.plate-nl{background:#003082;color:#fff;font-size:10px;font-weight:700;padding:0 8px;height:100%;display:flex;align-items:center;letter-spacing:.5px}
-.plate-input{background:transparent;border:none;color:#1a1a1a;font-family:var(--mono);font-size:20px;font-weight:700;padding:0 14px;width:180px;text-transform:uppercase;outline:none;letter-spacing:2px}.plate-input::placeholder{color:rgba(26,26,26,.35)}
-.km-wrap{position:relative}.km-input{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:0 40px 0 14px;height:48px;font-size:15px;color:var(--text);width:160px;outline:none;transition:.2s;font-family:var(--mono)}.km-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}.km-unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none}
-.btn-tax{height:48px;padding:0 28px;background:var(--accent);color:#000;border:none;border-radius:var(--radius-xs);font-size:15px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap;letter-spacing:-.3px}.btn-tax:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 4px 16px rgba(34,214,138,.25)}.btn-tax:active{transform:translateY(0)}.btn-tax:disabled{opacity:.5;pointer-events:none}
-.loading{text-align:center;padding:80px 20px;color:var(--text2)}.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}@keyframes spin{to{transform:rotate(360deg)}}.load-step{font-size:13px;margin-top:8px;color:var(--text3)}
-.err-msg{background:var(--red-dim);border:1px solid rgba(255,82,104,.2);border-radius:var(--radius-sm);padding:14px 18px;color:var(--red);font-size:14px;margin-bottom:16px}
-.veh-head{display:flex;gap:20px;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap}.veh-img{width:200px;height:130px;border-radius:var(--radius);overflow:hidden;background:var(--surface);flex-shrink:0;border:1px solid var(--border)}.veh-img img{width:100%;height:100%;object-fit:cover}.veh-name{font-size:24px;font-weight:700;letter-spacing:-.5px;margin-bottom:2px}.veh-variant{font-size:14px;color:var(--accent);margin-bottom:10px;font-weight:500}.veh-badges{display:flex;flex-wrap:wrap;gap:6px}
-.badge{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}.badge.warn{background:var(--orange-dim);color:var(--orange);border-color:rgba(255,179,64,.2)}.badge.danger{background:var(--red-dim);color:var(--red);border-color:rgba(255,82,104,.2)}.badge.good{background:var(--accent-dim);color:var(--accent);border-color:var(--border-accent)}
-.price-card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:24px;margin-bottom:16px;box-shadow:var(--glow)}.pc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}.pc-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;font-weight:600}.pc-bod{font-size:34px;font-weight:800;color:var(--accent);font-family:var(--mono);letter-spacing:-1.5px}.pc-score{font-size:28px;font-weight:700;font-family:var(--mono)}
-.pc-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}.pc-metric{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-xs);padding:12px 8px;text-align:center;transition:.15s}.pc-metric:hover{border-color:var(--border2)}.pc-metric-label{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:600}.pc-metric-val{font-size:18px;font-weight:700;font-family:var(--mono)}
-.profit-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}.profit-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xs);padding:12px 14px;text-align:center}.profit-box.hl{border-color:var(--border-accent);background:var(--accent-glow)}.profit-label{font-size:9px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;font-weight:500}.profit-val{font-size:15px;font-weight:700;font-family:var(--mono)}
-.warns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}.warn-tag{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-xs);font-size:12px;font-weight:600}.warn-tag.yellow{background:var(--orange-dim);color:var(--orange)}.warn-tag.red{background:var(--red-dim);color:var(--red)}
-.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin-bottom:16px}.sum-title{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--accent)}.sum-text{font-size:13px;color:var(--text2);line-height:1.6}
-.sec{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:16px}.sec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.sec-head h2{font-size:16px;font-weight:700;letter-spacing:-.3px}.sec-head .sub{font-size:12px;color:var(--text3)}
-.mk-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}.mk-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center}.mk-box.hl{border-color:var(--border-accent);background:var(--accent-dim)}.mk-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:4px;font-weight:500}.mk-val{font-size:18px;font-weight:700;font-family:var(--mono)}.mk-box.hl .mk-val{color:var(--accent)}
-.pt .pt-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}.pt .pt-row:last-child{border:none}.pt .pt-row.hl{background:var(--accent-dim);margin:0 -22px;padding:12px 22px;border:none;font-weight:700;border-radius:var(--radius-xs)}.pt .pt-row.hl span:last-child{color:var(--accent)}
-.dg{display:grid;grid-template-columns:1fr 1fr;gap:0}.dg-row{display:flex;justify-content:space-between;padding:8px 12px;font-size:13px;border-bottom:1px solid var(--border)}.dg-row:nth-child(odd){background:rgba(255,255,255,.015)}
-.cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px}.col-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}.kv{display:flex;justify-content:space-between;padding:5px 0;font-size:13px}.kv-l{color:var(--text2)}.kv-v{font-weight:500}
-.qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}.qg{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;font-size:13px}.qg-l{color:var(--text2)}.qg-v{font-weight:600;font-family:var(--mono);font-size:12px}
-.act-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}.act-btn{padding:12px 24px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;border:none}.act-btn:hover{transform:translateY(-1px)}.act-btn:active{transform:translateY(0)}.act-btn.primary{background:var(--accent);color:#000}.act-btn.primary:hover{filter:brightness(1.1)}.act-btn.sec{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.act-btn.sec:hover{border-color:var(--accent);color:var(--accent)}.act-btn.highlight{background:linear-gradient(135deg,var(--accent),var(--blue));color:#000;font-weight:700}
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:.15s}.stat:hover{border-color:var(--border2)}.stat-val{font-size:24px;font-weight:700;font-family:var(--mono);margin-bottom:2px;letter-spacing:-.5px}.stat-lbl{font-size:12px;color:var(--text2)}
-.rec-item{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:var(--radius-sm);cursor:pointer;transition:.12s;border-bottom:1px solid var(--border)}.rec-item:hover{background:var(--surface2)}.rec-item:active{background:var(--accent-dim)}.rec-plate{font-family:var(--mono);font-weight:700;font-size:14px;min-width:100px;color:var(--accent)}.rec-car{flex:1;font-size:13px;color:var(--text2)}.rec-price{font-family:var(--mono);font-weight:600;color:var(--text);font-size:14px}
-.page{display:none}.page.active{display:block}
-.toast{position:fixed;top:70px;right:20px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(-10px);transition:.3s;pointer-events:none}.toast.show{opacity:1;transform:translateY(0)}.toast.ok{background:var(--accent);color:#000}.toast.err{background:var(--red);color:#fff}
-@media(max-width:768px){.content{padding:16px}.pc-metrics,.cols{grid-template-columns:1fr 1fr}.profit-grid,.mk-row,.stats-row{grid-template-columns:repeat(2,1fr)}.plate-input{width:130px;font-size:16px}.qgrid{grid-template-columns:repeat(2,1fr)}.dg{grid-template-columns:1fr}.topbar{padding:0 12px;gap:8px}.tax-bar{gap:8px}}
+:root{--bg:#060810;--bg2:#0a0e18;--surface:#0f1420;--surface2:#141a28;--surface3:#1a2134;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.10);--accent:#22d68a;--accent2:#1abc78;--accent-dim:rgba(34,214,138,.10);--red:#ff5268;--red-dim:rgba(255,82,104,.10);--orange:#ffb340;--blue:#5ba0ff;--text:#e8ecf4;--text2:#8892a8;--text3:#505a70;--shadow:0 4px 24px rgba(0,0,0,.5);--radius:14px;--mono:'JetBrains Mono',ui-monospace,monospace;--font:'Inter',system-ui,sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* Layout */
+.app{display:flex;height:100vh}
+.sidebar{width:280px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0}
+.content{flex:1;overflow-y:auto;padding:24px}
+
+/* Sidebar */
+.sb-logo{padding:16px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.sb-logo img{height:28px}
+.sb-logo span{font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.sb-section{padding:12px 12px 4px}
+.sb-label{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin-bottom:6px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text2);transition:.15s;border:1px solid transparent}
+.sb-item:hover{background:rgba(255,255,255,.03);color:var(--text)}
+.sb-item.active{background:var(--accent-dim);color:var(--accent);border-color:rgba(34,214,138,.15)}
+.sb-item .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sb-item .meta{font-size:10px;color:var(--text3);margin-left:auto;font-family:var(--mono)}
+.sb-list{flex:1;overflow-y:auto;padding:4px 12px}
+.sb-entry{padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:.15s;margin-bottom:2px}
+.sb-entry:hover{background:rgba(255,255,255,.03);border-color:var(--border2)}
+.sb-entry.active{background:var(--accent-dim);border-color:rgba(34,214,138,.15)}
+.sb-entry .plate{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)}
+.sb-entry .sub{font-size:11px;color:var(--text3);margin-top:2px}
+.sb-entry .price{font-size:12px;color:var(--accent);font-weight:600;margin-top:3px}
+.sb-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-tab{flex:1;padding:10px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:.15s;letter-spacing:.5px}
+.sb-tab:hover{color:var(--text2)}
+.sb-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* Topbar */
+.tb-title{font-weight:700;font-size:15px;color:var(--text)}
+.tb-spacer{flex:1}
+.tb-btn{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;transition:.15s;font-family:var(--font)}
+.tb-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.tb-user{font-size:12px;color:var(--text2)}
+
+/* Panels */
+.panel{display:none}.panel.active{display:block}
+
+/* Taxatie form */
+.tax-form{max-width:600px;margin:0 auto}
+.plate-input-wrap{display:flex;align-items:center;background:var(--surface);border:2px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:16px;transition:.2s}
+.plate-input-wrap:focus-within{border-color:var(--accent)}
+.plate-nl{background:#003082;color:#fff;padding:10px 12px;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:2px}
+.plate-nl small{font-size:8px;color:rgba(255,255,255,.6)}
+.plate-input{flex:1;background:none;border:none;color:var(--text);font-size:28px;font-weight:800;padding:14px 16px;font-family:var(--mono);letter-spacing:2px;text-transform:uppercase;outline:none}
+.plate-input::placeholder{color:var(--text3);font-weight:400;letter-spacing:1px}
+.km-row{display:flex;gap:12px;margin-bottom:20px}
+.km-input-wrap{flex:1;position:relative}
+.km-input{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:12px 50px 12px 14px;color:var(--text);font-size:16px;font-family:var(--mono);outline:none;transition:.2s}
+.km-input:focus{border-color:var(--accent)}
+.km-suf{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;font-weight:600}
+.tax-btn{width:100%;padding:14px;background:var(--accent);color:#000;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font)}
+.tax-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.tax-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* Steps */
+.steps{display:flex;gap:4px;margin-bottom:24px}
+.step{flex:1;padding:8px 12px;background:var(--surface);border-radius:8px;text-align:center;font-size:11px;color:var(--text3);position:relative;transition:.3s}
+.step.active{background:var(--accent-dim);color:var(--accent)}
+.step.done{background:rgba(34,214,138,.06);color:var(--accent)}
+.step .step-n{font-weight:800;font-size:14px;display:block;margin-bottom:2px}
+
+/* Result */
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;transition:.2s}
+.result-card:hover{border-color:var(--border2)}
+.result-card .label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.result-card .value{font-size:24px;font-weight:800;color:var(--accent);font-family:var(--mono)}
+.result-card .value.red{color:var(--red)}
+.result-card .value.orange{color:var(--orange)}
+.result-card .value.blue{color:var(--blue)}
+.result-card .sub{font-size:11px;color:var(--text3);margin-top:4px}
+.result-full{grid-column:1/-1}
+
+/* Vehicle info */
+.vehicle-header{display:flex;align-items:center;gap:16px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:20px}
+.vehicle-header .make{font-size:22px;font-weight:800}
+.vehicle-header .model{font-size:14px;color:var(--text2)}
+.vehicle-header .plate-badge{font-family:var(--mono);font-size:14px;font-weight:700;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:6px 12px;margin-left:auto}
+.vehicle-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.vtag{font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text2)}
+
+/* AI Verdict */
+.ai-verdict{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px}
+.ai-verdict .ai-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-bottom:8px}
+.ai-verdict .ai-badge.ok{background:rgba(34,214,138,.1);color:var(--accent)}
+.ai-verdict .ai-badge.warn{background:rgba(255,179,64,.1);color:var(--orange)}
+.ai-verdict .ai-badge.bad{background:rgba(255,82,104,.1);color:var(--red)}
+.ai-verdict .ai-text{font-size:13px;color:var(--text2);line-height:1.6}
+
+/* Market list */
+.market-list{max-height:300px;overflow-y:auto}
+.market-item{display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--border)}
+.market-item:last-child{border:none}
+.market-item .source{font-size:11px;color:var(--text3);width:100px;flex-shrink:0}
+.market-item .title{font-size:12px;color:var(--text2);flex:1}
+.market-item .mprice{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text)}
+
+/* 3D Viewer */
+.viewer-3d{width:100%;height:400px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:relative;margin-bottom:20px}
+.viewer-3d canvas{width:100%;height:100%}
+.viewer-controls{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.viewer-controls button{padding:6px 14px;background:rgba(0,0,0,.6);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:11px;cursor:pointer;backdrop-filter:blur(8px)}
+
+/* Loading */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;gap:16px}
+.spinner{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--text2)}
+
+/* Empty state */
+.empty{text-align:center;padding:40px;color:var(--text3)}
+.empty svg{margin-bottom:12px;opacity:.3}
+
+/* Login */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-box{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:40px;width:100%;max-width:380px;text-align:center}
+.login-box input{width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:14px;margin-bottom:10px;outline:none}
+.login-box input:focus{border-color:var(--accent)}
+.login-box .btn{width:100%;padding:13px;background:var(--accent);color:#000;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer}
+.login-err{color:var(--red);font-size:12px;margin-top:8px;min-height:18px}
+
+/* Responsive */
+@media(max-width:768px){.sidebar{display:none}.content{padding:16px}}
 </style>
 </head>
 <body>
-<div class="login-wrap" id="loginWrap">
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-wrap">
   <div class="login-box">
-    <img src="/logo-cardatax.png" alt="CarDatax">
-    <div class="sub">Professioneel Taxatie Platform</div>
-    <input id="loginUser" placeholder="Gebruikersnaam" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
-    <input id="loginPass" type="password" placeholder="Wachtwoord" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-    <button onclick="doLogin()">Inloggen</button>
-    <div class="login-err" id="loginErr"></div>
+    <img src="/m/logo-cardatax-large.png" alt="CarDatax" style="height:50px;margin:0 auto 8px">
+    <div style="color:var(--text3);font-size:12px;margin-bottom:24px;letter-spacing:1px">DEALER PLATFORM</div>
+    <input id="lu" type="text" placeholder="Gebruikersnaam" autofocus>
+    <input id="lp" type="password" placeholder="Wachtwoord" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn" onclick="doLogin()">Inloggen</button>
+    <div class="login-err" id="lErr"></div>
   </div>
 </div>
-<div class="app" id="app">
-  <div class="topbar">
-    <img src="/logo-cardatax.png" class="topbar-logo" onclick="nav('dashboard')" alt="CarDatax">
-    <span class="topbar-role" id="tbRole"></span>
-    <div class="topbar-spacer"></div>
-    <button class="tb" id="navDash" onclick="nav('dashboard')">Dashboard</button>
-    <button class="tb" id="navTax" onclick="nav('taxatie')">Nieuwe Taxatie</button>
-    <button class="tb" id="btnAdmin" style="display:none" onclick="window.open('/admin/','_blank')">Admin</button>
-    <div class="topbar-user">
-      <span id="tbUser" style="font-weight:500"></span>
-      <button class="tb" onclick="toggleTheme()" title="Wissel thema">◑</button>
-      <button class="tb" onclick="doLogout()" style="color:var(--red);border-color:rgba(255,82,104,.3)">Uit</button>
+
+<!-- APP -->
+<div id="app-screen" class="app" style="display:none">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-logo">
+      <img src="/m/logo-cardatax-medium.png" alt="CarDatax">
+      <span>Platform</span>
     </div>
-  </div>
-  <div class="content"><div class="content-inner">
-    <div class="page active" id="pg-dashboard">
-      <div style="font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px" id="greeting"></div>
-      <div style="color:var(--text3);font-size:14px;margin-bottom:28px">CarDatax Taxatie Platform · v10.7.0</div>
-      <div class="tax-bar">
-        <div class="plate-wrap"><div class="plate-nl">NL</div><input class="plate-input" id="dPlate" placeholder="XX-999-X" maxlength="9" oninput="this.value=fmtP(this.value)" onkeydown="if(event.key==='Enter')document.getElementById('dKm').focus()"></div>
-        <div class="km-wrap"><input class="km-input" id="dKm" placeholder="KM stand" onkeydown="if(event.key==='Enter')dashTax()"><span class="km-unit">km</span></div>
-        <button class="btn-tax" onclick="dashTax()">Taxeer</button>
+    <div class="sb-section">
+      <div class="sb-item active" onclick="showPanel('taxatie')">
+        <div class="dot" style="background:var(--accent)"></div>
+        Nieuwe Taxatie
       </div>
-      <div class="stats-row" id="dashStats"></div>
-      <div class="sec"><div class="sec-head"><h2>Recente Taxaties</h2><span class="sub" id="recCount"></span></div><div id="recentList"></div></div>
-    </div>
-    <div class="page" id="pg-taxatie">
-      <div class="tax-bar">
-        <div class="plate-wrap"><div class="plate-nl">NL</div><input class="plate-input" id="plate" placeholder="XX-999-X" maxlength="9" oninput="this.value=fmtP(this.value)" onkeydown="if(event.key==='Enter')document.getElementById('km').focus()"></div>
-        <div class="km-wrap"><input class="km-input" id="km" placeholder="KM stand" onkeydown="if(event.key==='Enter')doTax()"><span class="km-unit">km</span></div>
-        <button class="btn-tax" id="btnTax" onclick="doTax()">Taxeer</button>
+      <div class="sb-item" onclick="showPanel('scanner')">
+        <div class="dot" style="background:var(--orange)"></div>
+        Schade Scanner
       </div>
-      <div id="taxError"></div><div id="taxLoading" style="display:none"></div><div id="taxResult"></div>
     </div>
-  </div></div>
-</div>
-<div class="toast" id="toast"></div>
-<div id="deskModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
-  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:32px;width:100%;max-width:380px;box-shadow:var(--shadow)">
-    <div id="deskModalTitle" style="font-size:16px;font-weight:700;margin-bottom:16px"></div>
-    <input id="deskModalInput" style="width:100%;padding:13px 16px;background:var(--bg);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:16px;font-family:var(--mono);outline:none;box-sizing:border-box" onkeydown="if(event.key==='Enter')document.getElementById('deskModalOk').click();if(event.key==='Escape')closeDeskModal()">
-    <div style="display:flex;gap:10px;margin-top:16px">
-      <button class="act-btn sec" onclick="closeDeskModal()" style="flex:1">Annuleer</button>
-      <button class="act-btn primary" id="deskModalOk" style="flex:1">OK</button>
+    <div class="sb-tabs">
+      <div class="sb-tab active" onclick="switchTab('taxaties')">Taxaties</div>
+      <div class="sb-tab" onclick="switchTab('inspecties')">Inspecties</div>
+    </div>
+    <div class="sb-list" id="sb-list"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="tb-title" id="tb-title">Nieuwe Taxatie</div>
+      <div class="tb-spacer"></div>
+      <button class="tb-btn" onclick="window.open('/admin/')">Admin</button>
+      <div class="tb-user" id="tb-user"></div>
+      <button class="tb-btn" onclick="doLogout()">Uitloggen</button>
+    </div>
+    <div class="content" id="content">
+
+      <!-- TAXATIE PANEL -->
+      <div class="panel active" id="p-taxatie">
+        <div class="tax-form">
+          <div class="steps" id="tax-steps">
+            <div class="step active"><span class="step-n">1</span>Kenteken</div>
+            <div class="step"><span class="step-n">2</span>RDW Data</div>
+            <div class="step"><span class="step-n">3</span>Markt</div>
+            <div class="step"><span class="step-n">4</span>AI Prijs</div>
+          </div>
+          <div class="plate-input-wrap">
+            <div class="plate-nl"><small>★★★</small>NL</div>
+            <input class="plate-input" id="t-plate" placeholder="XX-999-X" maxlength="9" autocapitalize="characters" oninput="this.value=fmtPlate(this.value)">
+          </div>
+          <div class="km-row">
+            <div class="km-input-wrap">
+              <input class="km-input" id="t-km" type="text" inputmode="numeric" placeholder="Tellerstand">
+              <span class="km-suf">km</span>
+            </div>
+          </div>
+          <button class="tax-btn" id="t-btn" onclick="doTaxatie()">Taxeer voertuig</button>
+          <div id="t-error" style="color:var(--red);font-size:12px;text-align:center;margin-top:12px;min-height:18px"></div>
+        </div>
+
+        <!-- RESULT (hidden until taxatie done) -->
+        <div id="t-result" style="display:none;max-width:900px;margin:24px auto 0">
+          <div class="vehicle-header" id="t-vehicle"></div>
+          <div id="t-ai-verdict"></div>
+          <div class="result-grid" id="t-prices"></div>
+          <div id="t-market-section"></div>
+        </div>
+      </div>
+
+      <!-- SCANNER PANEL -->
+      <div class="panel" id="p-scanner">
+        <div style="text-align:center;padding:40px">
+          <div style="font-size:48px;margin-bottom:16px">📷</div>
+          <div style="font-size:18px;font-weight:700;margin-bottom:8px">3D Schade Scanner</div>
+          <div style="color:var(--text3);font-size:13px;margin-bottom:24px">Open de scanner op je telefoon voor de beste ervaring</div>
+          <button class="tb-btn" onclick="window.open('/m/#walkaround')">Open Mobile Scanner</button>
+        </div>
+      </div>
+
+      <!-- DETAIL PANEL (taxatie result from history) -->
+      <div class="panel" id="p-detail">
+        <div id="detail-content"></div>
+      </div>
+
+      <!-- INSPECTIE DETAIL PANEL -->
+      <div class="panel" id="p-inspectie">
+        <div id="inspectie-content"></div>
+        <div id="photo-carousel" style="margin-bottom:20px;display:none">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">Scan Foto's</div>
+          <div style="position:relative;border-radius:14px;overflow:hidden;border:1px solid rgba(34,214,138,.2);background:#000">
+            <img id="pc-img" style="width:100%;display:block;min-height:300px;object-fit:cover">
+            <canvas id="pc-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+            <div id="pc-labels" style="position:absolute;inset:0;pointer-events:none"></div>
+            <div style="position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);padding:5px 14px;border-radius:16px;border:1px solid var(--accent);z-index:5">
+              <span style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:2px">SCANNING</span>
+              <span style="font-size:13px;font-weight:800;color:#fff">100%</span>
+            </div>
+            <div id="pc-angle" style="position:absolute;top:10px;left:10px;z-index:5;font-size:11px;font-weight:700;color:var(--accent);background:rgba(0,0,0,.5);padding:3px 8px;border-radius:8px"></div>
+            <button onclick="navPC(-1)" style="position:absolute;top:50%;left:8px;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:14px;cursor:pointer;z-index:5">‹</button>
+            <button onclick="navPC(1)" style="position:absolute;top:50%;right:8px;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:14px;cursor:pointer;z-index:5">›</button>
+            <div id="pc-dots" style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5"></div>
+          </div>
+        </div>
+        <div class="viewer-3d" id="viewer-3d">
+          <canvas id="viewer-canvas"></canvas>
+          <div class="viewer-controls">
+            <button onclick="camDistance=Math.max(3,camDistance-1);updateCamera()">🔍+</button>
+            <button onclick="rotate3D(-1)">← Draai</button>
+            <button onclick="reset3D()">Reset</button>
+            <button onclick="rotate3D(1)">Draai →</button>
+            <button onclick="camDistance=Math.min(15,camDistance+1);updateCamera()">🔍−</button>
+          </div>
+        </div>
+        <div id="inspectie-gebreken"></div>
+      </div>
+
     </div>
   </div>
 </div>
+
 <script>
-const API=location.origin;let TOKEN=localStorage.getItem('t4c_token')||'',USER={},LAST=null;
-const E=n=>{if(!n||!Number.isFinite(n))return'—';return'€\u00A0'+new Intl.NumberFormat('nl-NL',{maximumFractionDigits:0}).format(n)};
-const N=n=>n?new Intl.NumberFormat('nl-NL').format(n):'—';
-function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
-function fmtP(v){const c=v.replace(/[^A-Za-z0-9]/g,'').toUpperCase().slice(0,6);if(c.length!==6)return c;const rx=[/^([A-Z]{2})(\d{2})(\d{2})$/,/^(\d{2})(\d{2})([A-Z]{2})$/,/^(\d{2})([A-Z]{2})(\d{2})$/,/^([A-Z]{2})(\d{2})([A-Z]{2})$/,/^([A-Z]{2})([A-Z]{2})(\d{2})$/,/^(\d{2})([A-Z]{2})([A-Z]{2})$/,/^(\d{2})([A-Z]{3})(\d{1})$/,/^(\d{1})([A-Z]{3})(\d{2})$/,/^([A-Z]{2})(\d{3})([A-Z]{1})$/,/^([A-Z]{1})(\d{3})([A-Z]{2})$/,/^([A-Z]{3})(\d{2})([A-Z]{1})$/,/^([A-Z]{1})(\d{2})([A-Z]{3})$/,/^(\d{1})([A-Z]{2})(\d{3})$/,/^(\d{3})([A-Z]{2})(\d{1})$/];for(const r of rx){const m=c.match(r);if(m)return m[1]+'-'+m[2]+'-'+m[3]}return c.slice(0,2)+'-'+c.slice(2,4)+'-'+c.slice(4)}
-function toast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3000)}
-function authH(){return{'Authorization':'Bearer '+TOKEN,'Content-Type':'application/json'}}
+const API = '';
+let token = localStorage.getItem('t4c_token');
+let user = null;
+let currentTab = 'taxaties';
+let taxHistory = [];
+let inspHistory = [];
+let lastResult = null;
 
-// Modal helper
-function openDeskModal(title,placeholder,defaultVal,onOk){
-  const m=document.getElementById('deskModal');
-  m.style.display='flex';
-  document.getElementById('deskModalTitle').textContent=title;
-  const inp=document.getElementById('deskModalInput');
-  inp.placeholder=placeholder;inp.value=defaultVal||'';
-  setTimeout(()=>inp.focus(),100);
-  document.getElementById('deskModalOk').onclick=()=>{onOk(inp.value);closeDeskModal()};
+// ═══ AUTH ═══
+function H() { return { 'Authorization': 'Bearer ' + token } }
+
+async function doLogin() {
+  const u = document.getElementById('lu').value, p = document.getElementById('lp').value;
+  const err = document.getElementById('lErr');
+  try {
+    const r = await fetch(API + '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
+    const d = await r.json();
+    if (d.ok) { token = d.token; user = d.user || d; localStorage.setItem('t4c_token', token); initApp(); }
+    else err.textContent = d.error || 'Ongeldige inloggegevens';
+  } catch (e) { err.textContent = 'Verbinding mislukt'; }
 }
-function closeDeskModal(){document.getElementById('deskModal').style.display='none'}
 
-// 401 interceptor
-const _origFetch=window.fetch.bind(window);
-window.fetch=async function(...args){
-  const r=await _origFetch(...args);
-  if(r.status===401 && TOKEN){doLogout();toast('Sessie verlopen','err')}
-  return r;
+function doLogout() { localStorage.removeItem('t4c_token'); token = null; location.reload(); }
+
+async function checkAuth() {
+  if (!token) return false;
+  try {
+    const r = await fetch(API + '/api/me', { headers: H() });
+    const d = await r.json();
+    if (d.ok) { user = d; return true; }
+  } catch {}
+  return false;
+}
+
+// ═══ INIT ═══
+async function initApp() {
+  if (await checkAuth()) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'flex';
+    document.getElementById('tb-user').textContent = user.name || user.username;
+    loadHistory();
+  }
+}
+
+// ═══ SIDEBAR ═══
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.sb-tab').forEach(t => t.classList.toggle('active', t.textContent.toLowerCase().includes(tab)));
+  renderSidebar();
+}
+
+async function loadHistory() {
+  try {
+    const [tr, ir] = await Promise.allSettled([
+      fetch(API + '/api/taxaties?limit=50', { headers: H() }).then(r => r.json()),
+      fetch(API + '/api/inspecties', { headers: H() }).then(r => r.json())
+    ]);
+    taxHistory = tr.status === 'fulfilled' && tr.value.taxaties ? tr.value.taxaties : [];
+    inspHistory = ir.status === 'fulfilled' && ir.value.inspecties ? ir.value.inspecties : [];
+  } catch {}
+  renderSidebar();
+}
+
+function renderSidebar() {
+  const list = document.getElementById('sb-list');
+  if (currentTab === 'taxaties') {
+    if (!taxHistory.length) { list.innerHTML = '<div class="empty">Nog geen taxaties</div>'; return; }
+    list.innerHTML = taxHistory.map((t, i) => `
+      <div class="sb-entry" onclick="openTaxatie(${i})">
+        <div class="plate">${fmtPlate(t.kenteken || '')}</div>
+        <div class="sub">${t.make || ''} ${t.model || ''} · ${t.year || ''}</div>
+        ${t.handelswaarde ? '<div class="price">€' + Math.round(t.handelswaarde).toLocaleString('nl-NL') + '</div>' : ''}
+      </div>
+    `).join('');
+  } else {
+    if (!inspHistory.length) { list.innerHTML = '<div class="empty">Nog geen inspecties</div>'; return; }
+    list.innerHTML = inspHistory.map((ins, i) => `
+      <div class="sb-entry" onclick="openInspectie(${i})">
+        <div class="plate">${fmtPlate(ins.kenteken || '')}</div>
+        <div class="sub">Score: ${ins.overall_score || ins.totaal_score || '?'}/10 · €${Math.round(ins.total_cost || ins.totaal_kosten || 0).toLocaleString('nl-NL')}</div>
+      </div>
+    `).join('');
+  }
+}
+
+// ═══ PANELS ═══
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('p-' + id)?.classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(s => s.classList.remove('active'));
+  const titles = { taxatie: 'Nieuwe Taxatie', scanner: 'Schade Scanner', detail: 'Taxatie Detail', inspectie: 'Inspectie Detail' };
+  document.getElementById('tb-title').textContent = titles[id] || id;
+}
+
+// ═══ TAXATIE ═══
+function setStep(n) {
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.toggle('active', i === n - 1);
+    s.classList.toggle('done', i < n - 1);
+  });
+}
+
+async function doTaxatie() {
+  const plate = document.getElementById('t-plate').value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  const km = document.getElementById('t-km').value.replace(/[^0-9]/g, '');
+  const err = document.getElementById('t-error');
+  const btn = document.getElementById('t-btn');
+  err.textContent = '';
+  if (!plate || plate.length < 5) { err.textContent = 'Voer een geldig kenteken in'; return; }
+
+  btn.disabled = true; btn.textContent = 'Bezig...';
+  document.getElementById('t-result').style.display = 'none';
+
+  try {
+    // Step 1: RDW
+    setStep(1);
+    const vR = await fetch(API + '/api/vehicle/enriched?plate=' + plate + (km ? '&km=' + km : ''), { headers: H() });
+    const v = await vR.json();
+    if (v.error) throw new Error(v.error);
+    if (!v.make) throw new Error('Kenteken niet gevonden bij RDW');
+
+    // Step 2: Market
+    setStep(2);
+    const mR = await fetch(API + '/api/market?make=' + encodeURIComponent(v.make) + '&model=' + encodeURIComponent(v.model) + '&year=' + v.year + '&km=' + (km || 0) + '&sub=' + encodeURIComponent(v.subModel || '') + '&fuel=' + encodeURIComponent(v.fuel || ''));
+    const m = await mR.json();
+
+    // Step 3: Price
+    setStep(3);
+    const pR = await fetch(API + '/api/dealer/price', {
+      method: 'POST', headers: { ...H(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ make: v.make, model: v.model, year: v.year, km: Number(km) || 0, fuel: v.fuel, catalogPrice: v.catalogPrice, bpm: v.bpm, power: v.powerKw, marketAvg: m?.avg, marketMedian: m?.median, marketCount: m?.count, marketPrices: m?.prices, marketP10: m?.p10, marketP25: m?.p25, marketP75: m?.p75, marketP90: m?.p90, finnikAvailable: !!v.finnikData, finnikWaardeLow: v.finnikData?.waardeLow, finnikWaardeHigh: v.finnikData?.waardeHigh, transmissionAuto: v.transmissionAuto, subModel: v.subModel, vin: v.vin })
+    });
+    const p = await pR.json();
+
+    // Step 4: AI Validate
+    setStep(4);
+    let ai = null;
+    try {
+      const aiR = await fetch(API + '/api/ai/validate', {
+        method: 'POST', headers: { ...H(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voertuig: v, marktdata: m, berekendePrijzen: p })
+      });
+      const aiD = await aiR.json();
+      ai = aiD.ai || null;
+    } catch {}
+
+    // Save
+    try {
+      await fetch(API + '/api/taxatie/save', {
+        method: 'POST', headers: { ...H(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kenteken: plate, make: v.make, model: v.model, model_variant: v.subModel || '', year: v.year, fuel: v.fuel, km: Number(km) || 0, color: v.color, body: v.body, power_kw: v.powerKw, power_hp: v.powerHp, engine_label: v.engineLabel, transmission: v.transmissionType, catalog_price: v.catalogPrice, bpm: v.bpm, market_avg: m?.avg, market_median: m?.median, market_count: m?.count, verkoopadviees: p.verkoopadviees, handelswaarde: p.handelswaarde, inkoop_low: p.inkoopLow, inkoop_high: p.inkoopHigh, internet_prijs: p.internetPrijs, apk_until: v.apkUntil, vin: v.vin, ai_json: JSON.stringify(ai) })
+      });
+    } catch {}
+
+    lastResult = { v, m, p, ai };
+    renderResult(v, m, p, ai);
+    loadHistory();
+
+  } catch (e) {
+    err.textContent = e.message || 'Er ging iets mis';
+    setStep(1);
+  }
+  btn.disabled = false; btn.textContent = 'Taxeer voertuig';
+}
+
+function eur(n) { return n ? '€ ' + Math.round(n).toLocaleString('nl-NL') : '—' }
+
+function renderResult(v, m, p, ai) {
+  document.getElementById('t-result').style.display = 'block';
+
+  // Vehicle header
+  document.getElementById('t-vehicle').innerHTML = `
+    <div>
+      <div class="make">${v.make || ''} ${v.model || ''}</div>
+      <div class="model">${v.subModel || v.engineLabel || ''} · ${v.year || ''} · ${v.fuel || ''}</div>
+      <div class="vehicle-tags">
+        <span class="vtag">${v.powerHp || '?'} pk</span>
+        <span class="vtag">${v.transmissionType || '?'}</span>
+        <span class="vtag">${v.color || '?'}</span>
+        ${v.body ? '<span class="vtag">' + v.body + '</span>' : ''}
+        ${v.catalogPrice ? '<span class="vtag">Nieuwprijs ' + eur(v.catalogPrice) + '</span>' : ''}
+      </div>
+    </div>
+    <div class="plate-badge">${fmtPlate(v.kenteken || document.getElementById('t-plate').value)}</div>
+  `;
+
+  // AI verdict
+  if (ai && ai.beschikbaar !== false) {
+    const cls = ai.oordeel === 'correct' ? 'ok' : ai.oordeel === 'twijfel' ? 'warn' : 'bad';
+    const icon = cls === 'ok' ? '✓' : cls === 'warn' ? '⚠' : '✗';
+    document.getElementById('t-ai-verdict').innerHTML = `
+      <div class="ai-verdict">
+        <div class="ai-badge ${cls}">${icon} CarDatax AI: ${ai.oordeel || '?'} (${ai.vertrouwen || '?'}%)</div>
+        ${ai.ai_schatting ? '<div style="font-size:13px;color:var(--text);margin:8px 0">AI inschatting: <strong>' + eur(ai.ai_schatting) + '</strong></div>' : ''}
+        <div class="ai-text">${ai.samenvatting || ''}</div>
+        ${ai.advies ? '<div style="margin-top:8px;font-size:12px"><strong>Advies:</strong> ' + ai.advies + '</div>' : ''}
+      </div>
+    `;
+  } else {
+    document.getElementById('t-ai-verdict').innerHTML = '';
+  }
+
+  // Prices
+  document.getElementById('t-prices').innerHTML = `
+    <div class="result-card">
+      <div class="label">B2B Handelswaarde</div>
+      <div class="value">${eur(p.handelswaarde)}</div>
+      <div class="sub">Dealer-to-dealer</div>
+    </div>
+    <div class="result-card">
+      <div class="label">B2C Verkoopadviees</div>
+      <div class="value blue">${eur(p.verkoopadviees)}</div>
+      <div class="sub">Consumentenprijs</div>
+    </div>
+    <div class="result-card">
+      <div class="label">T4C Inkoopbod</div>
+      <div class="value">${eur(p.t4cBod)}</div>
+      <div class="sub">${eur(p.inkoopLow)} — ${eur(p.inkoopHigh)}</div>
+    </div>
+    <div class="result-card">
+      <div class="label">Internet Vraagprijs</div>
+      <div class="value blue">${eur(p.internetPrijs)}</div>
+      <div class="sub">Online advertentie</div>
+    </div>
+    <div class="result-card">
+      <div class="label">Markt Mediaan</div>
+      <div class="value orange">${eur(m?.median)}</div>
+      <div class="sub">${m?.count || 0} vergelijkbare auto's gevonden</div>
+    </div>
+    <div class="result-card">
+      <div class="label">Winstmarge</div>
+      <div class="value ${(p.profitRetail || 0) > 0 ? '' : 'red'}">${eur(p.profitRetail)}</div>
+      <div class="sub">${p.marginPercent || 0}% · ${p.sellSpeed || '?'} (${p.sellDays || '?'} dgn)</div>
+    </div>
+  `;
+
+  // Market data
+  if (m?.listings?.length) {
+    document.getElementById('t-market-section').innerHTML = `
+      <div style="margin-top:4px;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--text)">Marktdata (${m.listings.length} resultaten)</div>
+      <div class="market-list" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px">
+        ${m.listings.slice(0, 20).map(l => `
+          <div class="market-item">
+            <div class="source">${l.source || '?'}</div>
+            <div class="title">${l.title || l.make + ' ' + l.model}</div>
+            <div class="mprice">${eur(l.price)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } else {
+    document.getElementById('t-market-section').innerHTML = '';
+  }
+
+  document.getElementById('t-result').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ═══ HISTORY DETAIL ═══
+function openTaxatie(idx) {
+  const t = taxHistory[idx];
+  if (!t) return;
+  showPanel('detail');
+  document.getElementById('tb-title').textContent = fmtPlate(t.kenteken || '') + ' — Taxatie';
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="vehicle-header">
+      <div>
+        <div class="make">${t.make || ''} ${t.model || ''}</div>
+        <div class="model">${t.model_variant || ''} · ${t.year || ''} · ${t.fuel || ''}</div>
+        <div class="vehicle-tags">
+          ${t.power_hp ? '<span class="vtag">' + t.power_hp + ' pk</span>' : ''}
+          ${t.transmission ? '<span class="vtag">' + t.transmission + '</span>' : ''}
+          ${t.color ? '<span class="vtag">' + t.color + '</span>' : ''}
+          ${t.km ? '<span class="vtag">' + Number(t.km).toLocaleString('nl-NL') + ' km</span>' : ''}
+        </div>
+      </div>
+      <div class="plate-badge">${fmtPlate(t.kenteken || '')}</div>
+    </div>
+    <div class="result-grid">
+      <div class="result-card"><div class="label">Handelswaarde</div><div class="value">${eur(t.handelswaarde)}</div></div>
+      <div class="result-card"><div class="label">Verkoopadviees</div><div class="value blue">${eur(t.verkoopadviees)}</div></div>
+      <div class="result-card"><div class="label">Inkooprange</div><div class="value">${eur(t.inkoop_low)} — ${eur(t.inkoop_high)}</div></div>
+      <div class="result-card"><div class="label">Internet Prijs</div><div class="value blue">${eur(t.internet_prijs)}</div></div>
+      <div class="result-card"><div class="label">Markt Mediaan</div><div class="value orange">${eur(t.market_median)}</div><div class="sub">${t.market_count || 0} resultaten</div></div>
+      <div class="result-card"><div class="label">Datum</div><div class="value" style="font-size:16px;color:var(--text)">${t.created_at ? new Date(t.created_at).toLocaleDateString('nl-NL') : '—'}</div></div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px">
+      <button class="tb-btn" onclick="reTaxatie('${t.kenteken}',${t.km||0})">Opnieuw taxeren</button>
+      <button class="tb-btn" onclick="window.open('/m/#walkaround')">Schade Scanner</button>
+    </div>
+  `;
+}
+
+function reTaxatie(plate, km) {
+  showPanel('taxatie');
+  document.getElementById('t-plate').value = fmtPlate(plate);
+  document.getElementById('t-km').value = km || '';
+  document.getElementById('t-result').style.display = 'none';
+  setStep(1);
+}
+
+// ═══ INSPECTIE DETAIL + 3D ═══
+let scene3d, camera3d, renderer3d, carGroup, animFrame;
+let camDistance = 7, camAngleY = 0.7, camAngleX = 0.4;
+
+function openInspectie(idx) {
+  const ins = inspHistory[idx];
+  if (!ins) return;
+  showPanel('inspectie');
+  document.getElementById('tb-title').textContent = fmtPlate(ins.kenteken || '') + ' — Inspectie';
+
+  // Parse AI scanner fields (stored as JSON strings in new columns)
+  let damages = [];
+  let summary = ins.summary || ins.opmerkingen || '';
+  let aiScore = ins.overall_score || ins.totaal_score || '?';
+  let paintScore = ins.paint_score || '?';
+  let bodyScore = ins.body_score || '?';
+  let totalCost = ins.total_cost || ins.totaal_kosten || 0;
+
+  try { if (typeof ins.damages === 'string') damages = JSON.parse(ins.damages); else if (Array.isArray(ins.damages)) damages = ins.damages; } catch {}
+
+  document.getElementById('inspectie-content').innerHTML = `
+    <div class="vehicle-header">
+      <div>
+        <div class="make">${fmtPlate(ins.kenteken || '')}</div>
+        <div class="model" style="margin:6px 0 10px">
+          ${summary ? '<div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:10px">' + summary + '</div>' : ''}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Totaal</div>
+            <div style="font-size:24px;font-weight:800;color:${Number(aiScore)>=7?'var(--accent)':Number(aiScore)>=4?'var(--orange)':'var(--red)'}">${aiScore}<span style="font-size:12px;color:var(--text3)">/10</span></div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Lak</div>
+            <div style="font-size:24px;font-weight:800;color:${Number(paintScore)>=7?'var(--accent)':Number(paintScore)>=4?'var(--orange)':'var(--red)'}">${paintScore}<span style="font-size:12px;color:var(--text3)">/10</span></div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Carrosserie</div>
+            <div style="font-size:24px;font-weight:800;color:${Number(bodyScore)>=7?'var(--accent)':Number(bodyScore)>=4?'var(--orange)':'var(--red)'}">${bodyScore}<span style="font-size:12px;color:var(--text3)">/10</span></div>
+          </div>
+        </div>
+        ${totalCost > 0 ? `<div style="background:rgba(255,82,104,.06);border:1px solid rgba(255,82,104,.15);border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-size:12px;color:var(--text2)">Geschatte herstelkosten</span><span style="font-size:20px;font-weight:800;color:var(--red)">${eur(totalCost)}</span></div>` : ''}
+      </div>
+    </div>
+  `;
+
+  // Load gebreken (old) + display AI damages (new)
+  loadGebreken(ins.id, damages);
+
+  // Load scan photos
+  loadScanPhotos(ins.kenteken, damages);
+
+  // Init 3D viewer
+  setTimeout(() => init3DViewer(ins, damages), 100);
+}
+
+async function loadGebreken(inspId, aiDamages) {
+  const container = document.getElementById('inspectie-gebreken');
+  const zoneNL = {motorkap:'Motorkap',voorruit:'Voorruit',dak:'Dak',achterruit:'Achterruit',kofferbak:'Kofferbak',voorbumper:'Voorbumper',achterbumper:'Achterbumper',links_voor:'Links-voor',links_achter:'Links-achter',rechts_voor:'Rechts-voor',rechts_achter:'Rechts-achter',deur_links:'Linker deur',deur_rechts:'Rechter deur',velg_lv:'Velg LV',velg_rv:'Velg RV',velg_la:'Velg LA',velg_ra:'Velg RA',interieur:'Interieur',motor:'Motor'};
+
+  // Show AI damages first (from scanner)
+  if (aiDamages && aiDamages.length) {
+    container.innerHTML = `
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">${aiDamages.length} Schade(s) gedetecteerd</div>
+      ${aiDamages.map(d => `
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px">
+          <div style="width:6px;min-height:36px;border-radius:3px;flex-shrink:0;background:${(d.severity||d.sev)==='ernstig'?'var(--red)':(d.severity||d.sev)==='gemiddeld'?'var(--orange)':'var(--accent)'}"></div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${zoneNL[d.zone]||d.zone||'?'}</div>
+            <div style="font-size:11px;color:var(--text3);margin:2px 0">${d.type||'?'} · ${d.severity||d.sev||'?'}</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.4">${d.description||''}</div>
+          </div>
+          <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--red);white-space:nowrap">${d.cost?eur(d.cost):''}</div>
+        </div>
+      `).join('')}
+    `;
+    if (scene3d) addDamageMarkersFromAI(aiDamages);
+    return;
+  }
+
+  // Fallback: old gebreken table
+  try {
+    const r = await fetch(API + '/api/inspectie/' + inspId, { headers: H() });
+    const d = await r.json();
+    if (d.ok && d.gebreken?.length) {
+      container.innerHTML = `
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">${d.gebreken.length} Gebreken</div>
+        ${d.gebreken.map(g => `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${g.ernst === 'ernstig' ? 'var(--red)' : g.ernst === 'matig' ? 'var(--orange)' : 'var(--accent)'}"></div>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:600;color:var(--text)">${g.locatie || '?'} — ${g.type || '?'}</div>
+              <div style="font-size:11px;color:var(--text3)">${g.omschrijving || ''}</div>
+            </div>
+            <div style="font-family:var(--mono);font-size:12px;color:var(--orange)">${g.kosten ? eur(g.kosten) : ''}</div>
+          </div>
+        `).join('')}
+      `;
+      if (scene3d) addDamageMarkers(d.gebreken);
+    } else {
+      container.innerHTML = '<div class="empty">Geen gebreken geregistreerd</div>';
+    }
+  } catch {}
+}
+
+// ═══ PHOTO CAROUSEL ═══
+let pcPhotos = [], pcIdx = 0, pcDamages = [];
+const pcAngleZones = {
+  front:['voorbumper','motorkap','voorruit','links_voor','rechts_voor'],
+  'front-right':['voorbumper','rechts_voor','deur_rechts','voorruit','motorkap'],
+  right:['rechts_voor','rechts_achter','deur_rechts','velg_rv','velg_ra'],
+  'rear-right':['achterbumper','rechts_achter','kofferbak','achterruit'],
+  rear:['achterbumper','kofferbak','achterruit','links_achter','rechts_achter'],
+  'rear-left':['achterbumper','links_achter','kofferbak','achterruit'],
+  left:['links_voor','links_achter','deur_links','velg_lv','velg_la'],
+  'front-left':['voorbumper','links_voor','deur_links','voorruit','motorkap']
 };
 
-async function doLogin(){const u=document.getElementById('loginUser').value.trim(),p=document.getElementById('loginPass').value,err=document.getElementById('loginErr');if(!u||!p){err.textContent='Vul alle velden in';return}try{const r=await fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});const d=await r.json();if(!d.ok){err.textContent=d.error||'Fout bij inloggen';return}const role=d.user?.role||d.role;if(!['admin','t4c','inkoper'].includes(role)){err.textContent='Geen toegang — alleen t4c/admin/inkoper';return}TOKEN=d.token;USER={name:d.user?.username||d.name||'',role};localStorage.setItem('t4c_token',TOKEN);enterApp()}catch{err.textContent='Server niet bereikbaar'}}
-async function checkAuth(){if(!TOKEN)return;try{const r=await fetch(API+'/api/me',{headers:{'Authorization':'Bearer '+TOKEN}});const d=await r.json();if(d.ok){USER={name:d.name||d.username||'',role:d.role||d.user?.role||''};enterApp()}else doLogout()}catch{doLogout()}}
-function doLogout(){TOKEN='';localStorage.removeItem('t4c_token');document.getElementById('loginWrap').style.display='';document.getElementById('app').style.display='none'}
-function enterApp(){document.getElementById('loginWrap').style.display='none';document.getElementById('app').style.display='block';document.getElementById('tbUser').textContent=USER.name;document.getElementById('tbRole').textContent=USER.role;if(USER.role==='admin'||USER.role==='t4c')document.getElementById('btnAdmin').style.display='';const h=new Date().getHours();document.getElementById('greeting').textContent=(h<6?'Goedenacht':h<12?'Goedemorgen':h<18?'Goedemiddag':'Goedenavond')+', '+(USER.name||'Gebruiker');loadDashboard()}
-function nav(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('pg-'+id)?.classList.add('active');document.getElementById('navDash')?.classList.toggle('active',id==='dashboard');document.getElementById('navTax')?.classList.toggle('active',id==='taxatie');if(id==='dashboard')loadDashboard();if(id==='taxatie'){document.getElementById('taxResult').innerHTML='';document.getElementById('taxError').innerHTML='';document.getElementById('taxLoading').style.display='none'}}
-function dashTax(){document.getElementById('plate').value=document.getElementById('dPlate').value;document.getElementById('km').value=document.getElementById('dKm').value;nav('taxatie');setTimeout(doTax,150)}
-function openTaxatie(plate,km){document.getElementById('plate').value=plate;document.getElementById('km').value=km||'';nav('taxatie');setTimeout(doTax,150)}
+async function loadScanPhotos(kenteken, damages) {
+  pcDamages = damages;
+  const plate = (kenteken || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  const carousel = document.getElementById('photo-carousel');
+  try {
+    const r = await fetch(API + '/api/scan-photos/' + plate, { headers: H() });
+    const d = await r.json();
+    if (d.ok && d.photos && d.photos.length) {
+      pcPhotos = d.photos;
+      pcIdx = 0;
+      carousel.style.display = 'block';
+      document.getElementById('pc-img').src = pcPhotos[0].url;
+      document.getElementById('pc-angle').textContent = pcPhotos[0].angle || '';
+      document.getElementById('pc-dots').innerHTML = pcPhotos.map((_, i) =>
+        `<div onclick="goPC(${i})" style="width:7px;height:7px;border-radius:50%;background:${i === 0 ? 'var(--accent)' : 'rgba(255,255,255,.3)'};cursor:pointer"></div>`
+      ).join('');
+      setTimeout(() => drawPCOverlay(), 50);
+    } else {
+      carousel.style.display = 'none';
+    }
+  } catch { carousel.style.display = 'none'; }
+}
 
-async function loadDashboard(){try{const r=await fetch(API+'/api/taxaties?limit=50',{headers:{'Authorization':'Bearer '+TOKEN}});const d=await r.json();if(d.ok){const tx=d.taxaties||d.rows||[];document.getElementById('recCount').textContent=tx.length+' taxaties';const today=tx.filter(t=>t.created_at?.startsWith(new Date().toISOString().slice(0,10))).length;const avgVal=tx.length?Math.round(tx.reduce((s,t)=>s+(t.handelswaarde||0),0)/tx.length):0;document.getElementById('dashStats').innerHTML='<div class="stat"><div class="stat-val">'+tx.length+'</div><div class="stat-lbl">Totaal taxaties</div></div><div class="stat"><div class="stat-val">'+today+'</div><div class="stat-lbl">Vandaag</div></div><div class="stat"><div class="stat-val">'+(avgVal?E(avgVal):'—')+'</div><div class="stat-lbl">Gem. handelswaarde</div></div><div class="stat"><div class="stat-val">'+tx.filter(t=>t.market_count>10).length+'</div><div class="stat-lbl">Met marktdata</div></div>';document.getElementById('recentList').innerHTML=tx.length?tx.slice(0,15).map(t=>'<div class="rec-item" onclick="openTaxatie(\''+esc((t.kenteken||'').replace(/-/g,''))+'\',\''+(t.km||'')+'\')"><span class="rec-plate">'+esc(t.kenteken)+'</span><span class="rec-car">'+esc(t.make||'')+' '+esc(t.model||'')+' · '+(t.year||'')+'</span><span class="rec-price">'+E(t.handelswaarde)+'</span></div>').join(''):'<div style="text-align:center;padding:40px;color:var(--text3)">Nog geen taxaties</div>'}}catch(e){console.error('Dashboard:',e)}}
+function navPC(dir) { goPC(pcIdx + dir); }
+function goPC(i) {
+  if (i < 0) i = pcPhotos.length - 1;
+  if (i >= pcPhotos.length) i = 0;
+  pcIdx = i;
+  document.getElementById('pc-img').src = pcPhotos[i].url;
+  document.getElementById('pc-angle').textContent = pcPhotos[i].angle || '';
+  document.getElementById('pc-dots').querySelectorAll('div').forEach((d, j) => {
+    d.style.background = j === i ? 'var(--accent)' : 'rgba(255,255,255,.3)';
+  });
+  setTimeout(() => drawPCOverlay(), 50);
+}
 
-async function doTax(){const pRaw=document.getElementById('plate').value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();const kmVal=document.getElementById('km').value.replace(/[^0-9]/g,'');if(!pRaw||pRaw.length<5){document.getElementById('taxError').innerHTML='<div class="err-msg">Voer een geldig kenteken in (minimaal 5 tekens)</div>';return}const plate=fmtP(pRaw);document.getElementById('taxError').innerHTML='';document.getElementById('taxResult').innerHTML='';const ld=document.getElementById('taxLoading');ld.style.display='block';ld.innerHTML='<div class="loading"><div class="spinner"></div><div>Taxatie uitvoeren...</div><div class="load-step" id="loadStep">RDW opvragen...</div></div>';document.getElementById('btnTax').disabled=true;
-try{step('RDW voertuigdata ophalen (14 bronnen)...');const vR=await fetch(API+'/api/vehicle/enriched?plate='+pRaw+(kmVal?'&km='+kmVal:''));if(!vR.ok)throw new Error('Server fout ('+vR.status+')');const v=await vR.json();if(v.error)throw new Error(v.error);if(!v?.make)throw new Error('Kenteken niet gevonden bij RDW');
-step('Marktprijzen scannen...');let m=null;try{const mR=await fetch(API+'/api/market?make='+encodeURIComponent(v.make)+'&model='+encodeURIComponent(v.model)+'&year='+v.year+'&km='+(kmVal||0)+'&sub='+encodeURIComponent(v.subModel||'')+'&body='+encodeURIComponent(v.body||'')+'&fuel='+encodeURIComponent(v.fuel||''));m=await mR.json()}catch{}
-step('Prijzen + AI berekenen...');const pR=await fetch(API+'/api/dealer/price',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({make:v.make,model:v.model,year:v.year,km:Number(kmVal)||v.km||0,fuel:v.fuel,weightKg:v.weightKg,catalogPrice:v.catalogPrice,bpm:v.bpm,power:v.powerKw,marketAvg:m?.avg,marketMedian:m?.median,marketCount:m?.count,marketPrices:m?.prices,marketP10:m?.p10,marketP25:m?.p25,marketP75:m?.p75,marketP90:m?.p90,marketQuality:m?.validation?.quality,finnikAvailable:v.source?.finnik===true,finnikWaardeLow:v.finnikData?.waardeLow,finnikWaardeHigh:v.finnikData?.waardeHigh,ownerCount:v.ownerCount||0,isExDealer:v.isExDealer||false,bpmRest:v.bpmRest||0,bijtelling:v.bijtelling||null,emissieKlasse:v.emissieKlasse||null,importFlag:v.importFlag,stolenFlag:v.stolenFlag,transmissionAuto:v.transmissionAuto,equipmentLevel:v.equipmentLevel,engineLabel:v.engineLabel,subModel:v.subModel})});if(!pR.ok)throw new Error('Prijsberekening mislukt');const r=await pR.json();
-step('Catalogusfoto ophalen...');try{const imgR=await fetch(API+'/api/image?make='+encodeURIComponent(v.make)+'&model='+encodeURIComponent(v.model)+'&year='+v.year+'&variant='+encodeURIComponent(v.modelVariant||''));const imgD=await imgR.json();if(imgD.url)v.imageUrl=imgD.url}catch{}
-LAST={v,m,r,plate,km:Number(kmVal)||0};try{await fetch(API+'/api/taxatie/save',{method:'POST',headers:authH(),body:JSON.stringify({kenteken:plate,make:v.make,model:v.model,model_variant:v.modelVariant||'',year:v.year,fuel:v.fuel,km:Number(kmVal)||0,color:v.color,body:v.body,power_kw:v.powerKw,power_hp:v.powerHp,engine_label:v.engineLabel,catalog_price:v.catalogPrice,bpm:v.bpm,market_avg:m?.avg,market_median:m?.median,market_count:m?.count,p25:m?.p25,p50:m?.median,p75:m?.p75,verkoopadviees:r.verkoopadviees,handelswaarde:r.handelswaarde,inkoop_low:r.inkoopLow,inkoop_high:r.inkoopHigh,internet_prijs:r.internetPrijs,apk_until:v.apkUntil,vin:v.vin,status:'concept'})})}catch{}
-ld.style.display='none';renderResult(v,m,r,plate,Number(kmVal)||0)}catch(e){ld.style.display='none';document.getElementById('taxError').innerHTML='<div class="err-msg">'+esc(e.message)+'</div>'}document.getElementById('btnTax').disabled=false}
-function step(t){const el=document.getElementById('loadStep');if(el)el.textContent=t}
+function drawPCOverlay() {
+  const img = document.getElementById('pc-img');
+  const cv = document.getElementById('pc-canvas');
+  const lb = document.getElementById('pc-labels');
+  if (!img || !cv) return;
+  const w = img.clientWidth, h = img.clientHeight;
+  cv.width = w * 2; cv.height = h * 2; cv.style.width = w + 'px'; cv.style.height = h + 'px';
+  const x = cv.getContext('2d'); x.scale(2, 2);
 
-function renderResult(v,m,r,plate,km){
-  const bod=r.t4cBod||Math.round((r.inkoopLow+r.inkoopHigh)/2),atr=r.verkoopadviees||r.internetPrijs||0,etr=r.handelswaarde||Math.round(atr*.88),marge=atr-bod;
-  const score=r.liquidityScore?Math.round((r.liquidityScore+(r.marketVelocity||50))/20*10)/10:0;
-  const scoreClr=score>=7?'var(--accent)':score>=4?'var(--orange)':'var(--red)',margeClr=marge>3000?'var(--accent)':marge>0?'var(--orange)':'var(--red)';
-  let bpmRest='';if(v.bpm&&v.year){let ageM=Math.max(0,(new Date().getFullYear()-v.year)*12);const tbl=[[0,0,12],[1,12,4],[3,20,3.5],[5,27,1.5],[9,33,1],[18,42,0.75],[30,51,0.5],[42,57,0.42],[54,62,0.42],[66,67,0.42],[78,72,0.25],[90,75,0.25],[102,78,0.25],[114,81,0.19]];let dep=0;for(let t=tbl.length-1;t>=0;t--){if(ageM>=tbl[t][0]){dep=tbl[t][1]+(ageM-tbl[t][0])*tbl[t][2];break}}dep=Math.min(dep,100);const rest=Math.round(v.bpm*(1-dep/100));bpmRest=rest>0?E(rest)+' ('+Math.round(100-dep)+'%)':'€ 0'}
-  let warns='';if(v.stolenFlag)warns+='<span class="warn-tag red">⚠ GESTOLEN</span>';if(v.importFlag)warns+='<span class="warn-tag yellow">⚠ Import</span>';if(v.isExDealer)warns+='<span class="warn-tag yellow">⚠ Ex-bedrijf</span>';if(v.ownerCount>4)warns+='<span class="warn-tag yellow">⚠ '+v.ownerCount+' eigenaren</span>';if(km>200000)warns+='<span class="warn-tag yellow">⚠ Hoge km</span>';
-  let summary=r.smartSummary?.length?r.smartSummary.map(s=>'<div style="padding:4px 0;font-size:13px;color:var(--text2)"><span style="color:var(--accent);margin-right:6px">></span>'+esc(s)+'</div>').join(''):'<div style="font-size:13px;color:var(--text2)">'+esc(r.courantLabel||'Analyse')+'</div>';
-  let uitvoering=v.modelVariant||v.engineLabel||'';
-  let mktHtml='';
-  if(m&&m.count>0){mktHtml='<div class="sec"><div class="sec-head"><h2>Marktanalyse</h2><span class="sub">'+m.count+' autos</span></div><div class="mk-row"><div class="mk-box"><div class="mk-lbl">P25</div><div class="mk-val">'+E(m.p25||m.low)+'</div></div><div class="mk-box hl"><div class="mk-lbl">Mediaan</div><div class="mk-val">'+E(m.median||m.avg)+'</div></div><div class="mk-box"><div class="mk-lbl">P75</div><div class="mk-val">'+E(m.p75||m.high)+'</div></div></div><div class="pt"><div class="pt-row hl"><span>CarDatax Inkoop</span><span>'+E(r.inkoopLow)+' - '+E(r.inkoopHigh)+'</span></div><div class="pt-row"><span>Verkoop B2C</span><span style="color:var(--accent);font-weight:600">'+E(atr)+'</span></div><div class="pt-row"><span>Handelswaarde B2B</span><span style="font-weight:600">'+E(etr)+'</span></div><div class="pt-row"><span>Internet vraagprijs</span><span>'+E(r.internetPrijs)+'</span></div></div></div>'}else{mktHtml='<div class="sec"><div class="sec-head"><h2>Prijsberekening</h2></div><div class="pt"><div class="pt-row hl"><span>CarDatax Inkoop</span><span>'+E(r.inkoopLow)+' - '+E(r.inkoopHigh)+'</span></div><div class="pt-row"><span>Verkoop B2C</span><span style="color:var(--accent)">'+E(atr)+'</span></div><div class="pt-row"><span>Handelswaarde B2B</span><span>'+E(etr)+'</span></div></div></div>'}
-  let histHtml='';if(m&&m.prices?.length>3){const ps=[...m.prices].sort((a,b)=>a-b),mn=ps[0],mx=ps[ps.length-1],rng=mx-mn||1,bins=14,bW=rng/bins,cts=Array(bins).fill(0);for(const p of ps)cts[Math.min(Math.floor((p-mn)/bW),bins-1)]++;const maxC=Math.max(...cts,1);histHtml='<div class="sec"><div class="sec-head"><h2>Prijsverdeling</h2><span class="sub">'+ps.length+' autos</span></div><div style="display:flex;gap:2px;height:100px;align-items:flex-end;margin-bottom:8px">'+cts.map((c,i)=>{const h=Math.max(c/maxC*100,3);const mid=mn+i*bW+bW/2;const inB=mid>=r.inkoopLow&&mid<=r.inkoopHigh;return'<div style="flex:1;height:'+h+'%;background:'+(inB?'var(--accent)':'var(--surface3)')+';opacity:'+(inB?.85:.45)+';border-radius:3px 3px 0 0"></div>'}).join('')+'</div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)"><span>'+E(mn)+'</span><span style="color:var(--accent)">Bod: '+E(bod)+'</span><span>'+E(mx)+'</span></div></div>'}
-  let aiHtml='';if(r.aiValidation?.available){const ai=r.aiValidation;aiHtml='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:14px"><div style="font-size:13px;color:var(--text);line-height:1.5">'+esc(ai.reasoning||'')+'</div></div>'}
-  const kv=(l,val)=>val?'<div class="kv"><span class="kv-l">'+l+'</span><span class="kv-v">'+esc(String(val))+'</span></div>':'';
-  let finHtml='<div class="sec"><div class="sec-head"><h2>Financieel</h2></div><div class="cols"><div class="col"><div class="col-title">Waarde</div>'+kv('Nieuwprijs',v.catalogPrice?E(v.catalogPrice):'')+kv('BPM origineel',v.bpm?E(v.bpm):'')+kv('Rest BPM',bpmRest)+kv('Bijtelling',v.bijtelling?v.bijtelling+'%':'')+kv('MRB/jaar',v.mrb?E(v.mrb):'')+'</div><div class="col"><div class="col-title">Status</div>'+kv('Eigenaren',v.ownerCount?v.ownerCount+'x':'')+kv('Status',v.plateStatus||'Onbekend')+kv('Gestolen',v.stolenFlag?'JA':'Nee')+kv('Import',v.importFlag?'Ja':'Nee')+'</div><div class="col"><div class="col-title">Registratie</div>'+kv('1e toelating',v.firstAdmission)+kv('NL sinds',v.registrationDateNL)+kv('VIN',v.vin)+'</div></div></div>';
-  let detHtml='<div class="sec"><div class="sec-head"><h2>Voertuiggegevens</h2></div><div class="cols"><div class="col"><div class="col-title">Algemeen</div>'+kv('Merk',v.make)+kv('Model',v.model)+kv('Uitvoering',uitvoering)+kv('Bouwjaar',v.year)+kv('Brandstof',v.fuel)+kv('Kleur',v.color)+kv('Carrosserie',v.body)+'</div><div class="col"><div class="col-title">Motor</div>'+kv('Motor',v.engineLabel)+kv('Vermogen',v.powerHp?v.powerHp+' pk':'')+kv('Cilinders',v.cc?N(v.cc)+' cc':'')+kv('Transmissie',v.transmissionType||'')+'</div><div class="col"><div class="col-title">Afmetingen</div>'+kv('Gewicht',v.weightKg?N(v.weightKg)+' kg':'')+kv('Lengte',v.lengthMm?N(v.lengthMm)+' mm':'')+kv('Trekgewicht',v.towWeight?N(v.towWeight)+' kg':'')+'</div></div></div>';
-  let envHtml='';if(v.co2||v.fuelConsumption||v.emissieKlasse){envHtml='<div class="sec"><div class="sec-head"><h2>Milieu</h2></div><div class="cols"><div class="col">'+kv('CO2',v.co2?v.co2+' g/km':'')+kv('Emissieklasse',v.emissieKlasse||'')+'</div><div class="col">'+kv('Verbruik',v.fuelConsumption?'1:'+Math.round(100/v.fuelConsumption):'')+'</div><div class="col">'+kv('MRB/jaar',v.mrb?E(v.mrb):'')+'</div></div></div>'}
-  let kmH='';if(v.kmHistory?.length){kmH='<div class="sec"><div class="sec-head"><h2>Kilometerhistorie</h2><span class="sub">'+v.kmHistory.length+' reg.</span></div><div class="dg" style="grid-template-columns:1fr">'+v.kmHistory.map((k,i)=>{const prev=i>0?v.kmHistory[i-1].km:0;const diff=prev?k.km-prev:0;return'<div class="dg-row"><span>'+k.date+'</span><span class="mono">'+N(k.km)+' km</span><span class="mono">'+(prev?(diff>=0?'+':'')+N(diff):'')+'</span></div>'}).join('')+'</div></div>'}
-  let apkH='';if(v.apkHistory?.length){apkH='<div class="sec"><div class="sec-head"><h2>APK</h2><span class="sub">'+v.apkHistory.length+'</span></div>'+v.apkHistory.map(a=>{const pass=a.result?.toLowerCase().includes('goed');return'<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px"><span>'+a.date+'</span><span style="padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:'+(pass?'var(--accent-dim)':'var(--red-dim)')+';color:'+(pass?'var(--accent)':'var(--red)')+'">'+esc(a.result)+'</span>'+(a.km?'<span class="mono" style="font-size:12px;color:var(--text3)">'+N(a.km)+' km</span>':'')+'</div>'}).join('')+'</div>'}
-  let actHtml='<div class="act-row"><button class="act-btn sec" onclick="exportPdf()" style="border-color:var(--accent);color:var(--accent)">PDF Export</button>';
-  if(USER.role==='admin'||USER.role==='t4c'){actHtml+='<button class="act-btn highlight" onclick="addToVoorraad()">Zet als Aanbod</button><button class="act-btn highlight" onclick="startVeiling()">Start Veiling</button>'}
-  actHtml+='<button class="act-btn sec" onclick="addToPortfolio()">+ Portfolio</button></div>';
-  document.getElementById('taxResult').innerHTML='<div class="veh-head">'+(v.imageUrl?'<div class="veh-img"><img src="'+v.imageUrl+'" onerror="this.parentElement.style.display=&quot;none&quot;"></div>':'')+'<div><div class="veh-name">'+esc(v.make)+' '+esc(v.model)+'</div><div class="veh-variant">'+esc(uitvoering)+'</div><div class="veh-badges"><span class="badge">'+v.year+'</span><span class="badge">'+N(km)+' km</span><span class="badge">'+(v.fuel||'')+'</span>'+(v.powerHp?'<span class="badge">'+v.powerHp+' pk</span>':'')+(v.ownerCount?'<span class="badge'+(v.ownerCount>4?' warn':'')+'">'+v.ownerCount+'x eigenaar</span>':'')+(v.stolenFlag?'<span class="badge danger">GESTOLEN</span>':'')+'</div></div></div><div class="price-card"><div class="pc-top"><div><div class="pc-label">INKOOP ADVIES</div><div class="pc-bod">'+E(bod)+'</div></div><div style="text-align:right"><div class="pc-label">MARKTSCORE</div><div class="pc-score" style="color:'+scoreClr+'">'+(score||'-')+'</div></div></div><div class="pc-metrics"><div class="pc-metric"><div class="pc-metric-label">ATR</div><div class="pc-metric-val" style="color:var(--accent)">'+(r.atrScore||'-')+'</div></div><div class="pc-metric"><div class="pc-metric-label">ETR</div><div class="pc-metric-val" style="color:var(--accent)">'+(r.etrScore||'-')+'</div></div><div class="pc-metric"><div class="pc-metric-label">Liquiditeit</div><div class="pc-metric-val">'+(r.liquidityScore||'-')+'</div></div><div class="pc-metric"><div class="pc-metric-label">Risico</div><div class="pc-metric-val">'+(r.riskScore||'-')+'</div></div><div class="pc-metric"><div class="pc-metric-label">Betrouwbaar</div><div class="pc-metric-val">'+(r.confidence||'-')+'%</div></div></div></div><div class="profit-grid"><div class="profit-box"><div class="profit-label">Winst B2B</div><div class="profit-val" style="color:'+(etr-bod>0?'var(--accent)':'var(--red)')+'">'+E(Math.max(etr-bod,0))+'</div></div><div class="profit-box hl"><div class="profit-label">Winst B2C</div><div class="profit-val" style="color:var(--accent)">'+E(Math.max(atr-bod,0))+'</div></div><div class="profit-box"><div class="profit-label">Marge</div><div class="profit-val" style="color:'+margeClr+'">'+(r.marginPct||0)+'%</div></div><div class="profit-box"><div class="profit-label">BPM rest</div><div class="profit-val" style="font-size:13px">'+(bpmRest||'-')+'</div></div></div>'+(warns?'<div class="warns">'+warns+'</div>':'')+aiHtml+'<div class="sum-card"><div class="sum-title">'+esc(r.courantLabel||'Analyse')+'</div><div>'+summary+'</div></div><div class="qgrid"><div class="qg"><span class="qg-l">APK tot</span><span class="qg-v">'+(v.apkUntil||'-')+'</span></div><div class="qg"><span class="qg-l">Vermogen</span><span class="qg-v">'+(v.powerHp?v.powerHp+' pk':'-')+'</span></div><div class="qg"><span class="qg-l">Nieuwprijs</span><span class="qg-v">'+(v.catalogPrice?E(v.catalogPrice):'-')+'</span></div><div class="qg"><span class="qg-l">Eigenaren</span><span class="qg-v">'+(v.ownerCount?v.ownerCount+'x':'-')+'</span></div><div class="qg"><span class="qg-l">Gestolen</span><span class="qg-v" style="color:'+(v.stolenFlag?'var(--red)':'var(--accent)')+'">'+(v.stolenFlag?'JA':'Nee')+'</span></div><div class="qg"><span class="qg-l">MRB/jaar</span><span class="qg-v">'+(v.mrb?E(v.mrb):'-')+'</span></div></div>'+mktHtml+histHtml+actHtml+finHtml+detHtml+envHtml+kmH+apkH}
+  // Grid
+  x.strokeStyle = 'rgba(34,214,138,.04)'; x.lineWidth = 0.5;
+  for (let i = 0; i <= w; i += 18) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, h); x.stroke(); }
+  for (let i = 0; i <= h; i += 18) { x.beginPath(); x.moveTo(0, i); x.lineTo(w, i); x.stroke(); }
 
-async function exportPdf(){if(!LAST)return;const{v,r,plate,km}=LAST;try{const res=await fetch(API+'/api/pdf',{method:'POST',headers:authH(),body:JSON.stringify({vehicle:{...v,plate},result:r,market:LAST.m||{},km})});if(!res.ok)throw new Error('PDF mislukt');const blob=await res.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='CarDatax_'+plate+'.pdf';a.click();URL.revokeObjectURL(url);toast('PDF gedownload')}catch(e){toast('PDF: '+e.message,'err')}}
-async function addToVoorraad(){if(!LAST)return;openDeskModal('Vraagprijs','Voer vraagprijs in',LAST.r.verkoopadviees||LAST.r.internetPrijs||'',async(prijs)=>{if(!prijs)return;const{v,r,plate,km}=LAST;try{const res=await fetch(API+'/api/voorraad/add',{method:'POST',headers:authH(),body:JSON.stringify({kenteken:plate,make:v.make,model:v.model,model_variant:v.modelVariant||'',year:v.year,fuel:v.fuel,km:km||0,color:v.color,body:v.body,power_kw:v.powerKw,power_hp:v.powerHp,engine_label:v.engineLabel,vraag_prijs:Number(prijs),apk_until:v.apkUntil||'',vin:v.vin||'',status:'te_koop'})});const d=await res.json();if(d.ok)toast('Aanbod op CarDatax!');else toast(d.error||'Fout','err')}catch{toast('Fout','err')}})}
-async function startVeiling(){if(!LAST)return;openDeskModal('Minimumprijs','Voer minimumprijs in',LAST.r.inkoopLow||'',async(min)=>{if(!min)return;const{v,r,plate,km}=LAST;try{const res=await fetch(API+'/api/veiling',{method:'POST',headers:authH(),body:JSON.stringify({kenteken:plate,merk:v.make,model:v.model,bouwjaar:v.year,km:km||0,brandstof:v.fuel,minimumprijs:Number(min),duur_uren:24})});const d=await res.json();if(d.ok)toast('Veiling gestart!');else toast(d.error||'Fout','err')}catch{toast('Fout','err')}})}
-async function addToPortfolio(){if(!LAST)return;const{v,r,plate}=LAST;const bod=r.t4cBod||Math.round((r.inkoopLow+r.inkoopHigh)/2);try{const res=await fetch(API+'/api/portfolio/add',{method:'POST',headers:authH(),body:JSON.stringify({kenteken:plate,make:v.make,model:v.model,year:v.year,inkoop_prijs:bod,vraag_prijs:r.verkoopadviees,status:'in_stock'})});const d=await res.json();if(d.ok)toast('Portfolio!');else toast(d.error||'Fout','err')}catch{toast('Fout','err')}}
-function toggleTheme(){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('cdx_theme',t)}
-if(localStorage.getItem('cdx_theme'))document.documentElement.dataset.theme=localStorage.getItem('cdx_theme');
-checkAuth();
+  // Corner brackets
+  const m = 10, bl = 30;
+  x.shadowColor = 'rgba(34,214,138,.5)'; x.shadowBlur = 8; x.strokeStyle = '#22d68a'; x.lineWidth = 2.5; x.lineCap = 'round';
+  x.beginPath(); x.moveTo(m, m + bl); x.lineTo(m, m); x.lineTo(m + bl, m); x.stroke();
+  x.beginPath(); x.moveTo(w - m - bl, m); x.lineTo(w - m, m); x.lineTo(w - m, m + bl); x.stroke();
+  x.beginPath(); x.moveTo(m, h - m - bl); x.lineTo(m, h - m); x.lineTo(m + bl, h - m); x.stroke();
+  x.beginPath(); x.moveTo(w - m - bl, h - m); x.lineTo(w - m, h - m); x.lineTo(w - m, h - m - bl); x.stroke();
+  x.shadowBlur = 0;
 
+  // Labels
+  lb.innerHTML = '';
+  const angle = pcPhotos[pcIdx]?.angle || '';
+  const vis = pcAngleZones[angle] || [];
+  const hit = new Set(pcDamages.map(d => d.zone));
+  const cx = w / 2;
+  const pos = {
+    voorbumper:{x:cx,y:h*.82},motorkap:{x:cx,y:h*.55},voorruit:{x:cx,y:h*.35},dak:{x:cx,y:h*.22},
+    achterruit:{x:cx,y:h*.35},kofferbak:{x:cx,y:h*.55},achterbumper:{x:cx,y:h*.82},
+    links_voor:{x:w*.18,y:h*.5},links_achter:{x:w*.18,y:h*.55},rechts_voor:{x:w*.82,y:h*.5},
+    rechts_achter:{x:w*.82,y:h*.55},deur_links:{x:w*.15,y:h*.48},deur_rechts:{x:w*.85,y:h*.48},
+    velg_lv:{x:w*.22,y:h*.78},velg_rv:{x:w*.78,y:h*.78},velg_la:{x:w*.22,y:h*.78},velg_ra:{x:w*.78,y:h*.78}
+  };
+  const zoneNL = {motorkap:'Motorkap',voorruit:'Voorruit',dak:'Dak',achterruit:'Achterruit',kofferbak:'Kofferbak',voorbumper:'Voorbumper',achterbumper:'Achterbumper',links_voor:'Links-voor',links_achter:'Links-achter',rechts_voor:'Rechts-voor',rechts_achter:'Rechts-achter',deur_links:'Linker deur',deur_rechts:'Rechter deur'};
+
+  for (const z of vis) {
+    const p = pos[z]; if (!p) continue;
+    if (hit.has(z)) {
+      const d = pcDamages.find(dm => dm.zone === z); if (!d) continue;
+      x.fillStyle = 'rgba(255,82,104,.12)'; x.beginPath(); x.arc(p.x, p.y, 35, 0, Math.PI * 2); x.fill();
+      x.strokeStyle = 'rgba(255,82,104,.4)'; x.lineWidth = 1.5; x.stroke();
+      const t = document.createElement('div');
+      t.style.cssText = `position:absolute;left:${p.x+30}px;top:${p.y-20}px;z-index:4;background:rgba(60,0,0,.75);border:1px solid var(--red);border-radius:8px;padding:8px 12px;max-width:180px;backdrop-filter:blur(4px);pointer-events:none`;
+      t.innerHTML = `<div style="font-size:9px;color:rgba(255,255,255,.5)">⚠️ ${d.type || 'Schade'}</div><div style="font-size:12px;font-weight:800;color:#fff;margin:2px 0">${zoneNL[z] || z}</div><div style="font-size:10px;color:rgba(255,255,255,.7)">${d.description || ''}</div>${d.cost ? '<div style="font-size:11px;font-weight:700;color:var(--red);margin-top:3px">€' + d.cost.toLocaleString('nl-NL') + '</div>' : ''}`;
+      lb.appendChild(t);
+    } else {
+      const t = document.createElement('div');
+      t.style.cssText = `position:absolute;left:${p.x}px;top:${p.y}px;z-index:4;background:rgba(0,40,20,.6);border:1px solid var(--accent);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:800;color:var(--accent);pointer-events:none`;
+      t.textContent = 'OK';
+      lb.appendChild(t);
+    }
+  }
+}
+
+function init3DViewer(ins, damages) {
+  const container = document.getElementById('viewer-3d');
+  const canvas = document.getElementById('viewer-canvas');
+  if (!container || !canvas) return;
+
+  if (animFrame) cancelAnimationFrame(animFrame);
+  if (renderer3d) renderer3d.dispose();
+
+  const w = container.clientWidth, h = container.clientHeight;
+  camDistance = 7; camAngleY = 0.7; camAngleX = 0.4;
+
+  scene3d = new THREE.Scene();
+  scene3d.background = new THREE.Color(0x080e16);
+  scene3d.fog = new THREE.Fog(0x080e16, 15, 30);
+
+  camera3d = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
+  updateCamera();
+
+  renderer3d = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer3d.setSize(w, h);
+  renderer3d.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  scene3d.add(new THREE.AmbientLight(0x225533, 0.5));
+  const dir = new THREE.DirectionalLight(0x66ffaa, 0.6);
+  dir.position.set(5, 8, 4); scene3d.add(dir);
+  const rim = new THREE.DirectionalLight(0x22d68a, 0.3);
+  rim.position.set(-3, 2, -4); scene3d.add(rim);
+
+  scene3d.add(new THREE.GridHelper(20, 40, 0x0a1a12, 0x060e0a));
+
+  carGroup = new THREE.Group();
+  buildCarModel(carGroup);
+  scene3d.add(carGroup);
+
+  // Add OK labels on clean zones
+  if (damages && damages.length) {
+    const allZones = ['motorkap','kofferbak','dak','voorbumper','achterbumper','links_voor','links_achter','rechts_voor','rechts_achter','deur_links','deur_rechts'];
+    const hit = new Set(damages.map(d => d.zone));
+    for (const z of allZones) {
+      if (!hit.has(z)) { const c = zonePos3D[z]; if (c) addOKSprite(carGroup, c); }
+    }
+    addDamageMarkersFromAI(damages);
+  }
+
+  // Animate
+  const clock = new THREE.Clock();
+  function animate() {
+    animFrame = requestAnimationFrame(animate);
+    // Pulse damage markers
+    const t = clock.getElapsedTime() * 3;
+    carGroup.traverse(c => {
+      if (c.userData.pulse) { const s = .85 + Math.sin(t + c.userData.ph) * .2; c.scale.set(s,s,s); }
+      if (c.userData.ring) c.lookAt(camera3d.position);
+    });
+    renderer3d.render(scene3d, camera3d);
+  }
+  animate();
+
+  // Mouse drag rotate
+  let dragging = false, lastX = 0, lastY = 0;
+  canvas.onmousedown = e => { dragging = true; lastX = e.clientX; lastY = e.clientY; };
+  canvas.onmousemove = e => {
+    if (!dragging) return;
+    camAngleY += (e.clientX - lastX) * 0.008;
+    camAngleX = Math.max(0.1, Math.min(1.4, camAngleX - (e.clientY - lastY) * 0.008));
+    lastX = e.clientX; lastY = e.clientY;
+    updateCamera();
+  };
+  canvas.onmouseup = () => dragging = false;
+  canvas.onmouseleave = () => dragging = false;
+
+  // Scroll zoom
+  canvas.onwheel = e => {
+    e.preventDefault();
+    camDistance = Math.max(3, Math.min(15, camDistance + e.deltaY * 0.01));
+    updateCamera();
+  };
+}
+
+function updateCamera() {
+  if (!camera3d) return;
+  camera3d.position.set(
+    Math.sin(camAngleY) * Math.cos(camAngleX) * camDistance,
+    Math.sin(camAngleX) * camDistance,
+    Math.cos(camAngleY) * Math.cos(camAngleX) * camDistance
+  );
+  camera3d.lookAt(0, 0.5, 0);
+}
+
+const zonePos3D = {
+  motorkap:{x:0,y:.85,z:1.5},voorruit:{x:0,y:1.15,z:.7},dak:{x:0,y:1.3,z:0},achterruit:{x:0,y:1.15,z:-.7},kofferbak:{x:0,y:.85,z:-1.5},voorbumper:{x:0,y:.35,z:1.85},achterbumper:{x:0,y:.35,z:-1.85},links_voor:{x:-.92,y:.6,z:1},links_achter:{x:-.92,y:.6,z:-1},rechts_voor:{x:.92,y:.6,z:1},rechts_achter:{x:.92,y:.6,z:-1},deur_links:{x:-.95,y:.7,z:0},deur_rechts:{x:.95,y:.7,z:0},velg_lv:{x:-.92,y:.3,z:1.15},velg_rv:{x:.92,y:.3,z:1.15},velg_la:{x:-.92,y:.3,z:-1.15},velg_ra:{x:.92,y:.3,z:-1.15}
+};
+
+function buildCarModel(group) {
+  const wm = new THREE.LineBasicMaterial({color:0x22d68a, transparent:true, opacity:.6});
+  const gm = new THREE.MeshBasicMaterial({color:0x22d68a, transparent:true, opacity:.04, side:THREE.DoubleSide});
+  const bm = new THREE.LineBasicMaterial({color:0x33ffaa, transparent:true, opacity:.8});
+
+  // Lower body
+  const lbG = new THREE.BoxGeometry(1.76, .9, 3.9);
+  lbG.translate(0, .45, 0);
+  group.add(new THREE.LineSegments(new THREE.EdgesGeometry(lbG), wm));
+  group.add(new THREE.Mesh(lbG, gm));
+
+  // Cabin
+  const cabShape = new THREE.Shape();
+  cabShape.moveTo(-.68,.88);cabShape.lineTo(-.60,1.42);cabShape.lineTo(-.50,1.48);
+  cabShape.lineTo(.50,1.48);cabShape.lineTo(.60,1.42);cabShape.lineTo(.68,.88);cabShape.closePath();
+  const cabG = new THREE.ExtrudeGeometry(cabShape,{depth:2.1,bevelEnabled:false});
+  cabG.translate(0,0,-1.1);
+  group.add(new THREE.LineSegments(new THREE.EdgesGeometry(cabG), wm));
+  group.add(new THREE.Mesh(cabG, gm));
+
+  // Windshields
+  const ln = (a,b) => group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...a),new THREE.Vector3(...b)]), bm));
+  ln([-.68,.88,.95],[-.60,1.42,.65]);ln([.68,.88,.95],[.60,1.42,.65]);
+  ln([-.60,1.42,.65],[.60,1.42,.65]);ln([-.68,.88,.95],[.68,.88,.95]);
+  ln([-.68,.88,-1.1],[-.60,1.42,-.85]);ln([.68,.88,-1.1],[.60,1.42,-.85]);
+  ln([-.60,1.42,-.85],[.60,1.42,-.85]);
+  ln([-.68,.88,0],[-.58,1.46,0]);ln([.68,.88,0],[.58,1.46,0]);
+
+  // Wheels
+  for(const[wx,wy,wz] of [[-0.9,.32,1.15],[.9,.32,1.15],[-.9,.32,-1.15],[.9,.32,-1.15]]){
+    const tg = new THREE.TorusGeometry(.27,.09,8,16);
+    const tw = new THREE.LineSegments(new THREE.EdgesGeometry(tg),wm);
+    tw.rotation.y=Math.PI/2;tw.position.set(wx,wy,wz);group.add(tw);
+    const hg = new THREE.CircleGeometry(.16,10);
+    const hw = new THREE.LineSegments(new THREE.EdgesGeometry(hg),wm);
+    hw.rotation.y=wx>0?Math.PI/2:-Math.PI/2;hw.position.set(wx+(wx>0?.01:-.01),wy,wz);group.add(hw);
+  }
+
+  // Headlights + taillights
+  for(const sx of[-.5,.5]){const h=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.CircleGeometry(.1,8)),bm);h.position.set(sx,.6,1.96);group.add(h)}
+  for(const sx of[-.5,.5]){const t=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(.18,.07)),bm);t.position.set(sx,.65,-1.96);group.add(t)}
+
+  // Character lines + door lines
+  ln([-.89,.6,1.5],[-.89,.6,-1.5]);ln([.89,.6,1.5],[.89,.6,-1.5]);
+  ln([-.89,.2,.5],[-.89,.88,.5]);ln([.89,.2,.5],[.89,.88,.5]);
+  ln([-.89,.2,-.5],[-.89,.88,-.5]);ln([.89,.2,-.5],[.89,.88,-.5]);
+  ln([-.3,.66,1.95],[-.3,.66,.95]);ln([.3,.66,1.95],[.3,.66,.95]);
+  ln([-.3,.66,-1.1],[-.3,.66,-1.95]);ln([.3,.66,-1.1],[.3,.66,-1.95]);
+
+  // Mirrors
+  for(const sx of[-1,1]){const mg=new THREE.BoxGeometry(.07,.05,.1);const mw=new THREE.LineSegments(new THREE.EdgesGeometry(mg),wm);mw.position.set(sx*.97,.9,.55);group.add(mw)}
+}
+
+function addDamageMarkersFromAI(damages) {
+  if (!carGroup) return;
+  for (const d of damages) {
+    const c = zonePos3D[d.zone];
+    if (!c) continue;
+    const sev = d.severity || d.sev || 'gemiddeld';
+    const col = sev==='ernstig'?0xff2244:sev==='gemiddeld'?0xff8833:0xffcc00;
+
+    const sp = new THREE.Mesh(new THREE.SphereGeometry(.1,12,12), new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.75}));
+    sp.position.set(c.x,c.y,c.z);sp.userData={pulse:true,ph:Math.random()*6};carGroup.add(sp);
+
+    const rn = new THREE.Mesh(new THREE.RingGeometry(.13,.18,20), new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.3,side:THREE.DoubleSide}));
+    rn.position.copy(sp.position);rn.userData={ring:true};carGroup.add(rn);
+
+    // Glow
+    const gl = new THREE.Mesh(new THREE.SphereGeometry(.22,12,12), new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.08}));
+    gl.position.set(c.x,c.y,c.z);carGroup.add(gl);
+  }
+}
+
+function addOKSprite(group, c) {
+  const cv = document.createElement('canvas');cv.width=64;cv.height=32;const x=cv.getContext('2d');
+  x.fillStyle='rgba(34,214,138,.2)';x.beginPath();x.roundRect(0,0,64,32,8);x.fill();
+  x.fillStyle='#22d68a';x.font='bold 16px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('OK',32,17);
+  const t=new THREE.CanvasTexture(cv);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,opacity:.75}));
+  s.position.set(c.x,c.y+.25,c.z);s.scale.set(.4,.2,1);group.add(s);
+}
+
+function addDamageMarkers(gebreken) {
+  if (!carGroup) return;
+  const zonePos = {
+    'voorkant': {x:0,y:.85,z:1.5}, 'achterkant': {x:0,y:.85,z:-1.5},
+    'links_voor': {x:-.92,y:.6,z:1}, 'links_achter': {x:-.92,y:.6,z:-1},
+    'rechts_voor': {x:.92,y:.6,z:1}, 'rechts_achter': {x:.92,y:.6,z:-1},
+    'dak': {x:0,y:1.3,z:0}, 'motorkap': {x:0,y:.85,z:1.5}, 'kofferbak': {x:0,y:.85,z:-1.5}
+  };
+  for (const g of gebreken) {
+    const loc = (g.locatie || '').toLowerCase().replace(/\s+/g, '_');
+    let pos = zonePos[loc];
+    if (!pos) for (const [k, v] of Object.entries(zonePos)) { if (loc.includes(k.split('_')[0])) { pos = v; break; } }
+    if (!pos) pos = {x:Math.random()*2-1, y:1, z:Math.random()*1.4-.7};
+    const color = g.ernst === 'ernstig' ? 0xff5268 : g.ernst === 'matig' ? 0xffb340 : 0x22d68a;
+    const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 12), new THREE.MeshBasicMaterial({color, transparent:true, opacity:.75}));
+    sphere.position.set(pos.x, pos.y, pos.z); sphere.userData={pulse:true,ph:Math.random()*6};
+    carGroup.add(sphere);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.13, 0.18, 20), new THREE.MeshBasicMaterial({color, transparent:true, opacity:0.3, side:THREE.DoubleSide}));
+    ring.position.copy(sphere.position); ring.userData={ring:true};
+    carGroup.add(ring);
+  }
+}
+
+function rotate3D(dir) { camAngleY += dir * 0.5; updateCamera(); }
+function reset3D() { camAngleY = 0.7; camAngleX = 0.4; camDistance = 7; updateCamera(); }
+
+// ═══ UTILS ═══
+function fmtPlate(v) {
+  v = v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  if (v.length >= 6) {
+    // Dutch plate format detection
+    const patterns = [/^([A-Z]{2})(\d{3})([A-Z])$/, /^(\d)([A-Z]{3})(\d{2})$/, /^(\d{2})([A-Z]{3})(\d)$/, /^([A-Z]{2})(\d{2})([A-Z]{2})$/, /^(\d{2})([A-Z]{2})(\d{2})$/, /^([A-Z]{2})(\d{2})(\d{2})$/];
+    for (const p of patterns) {
+      const m = v.match(p);
+      if (m) return m[1] + '-' + m[2] + '-' + m[3];
+    }
+  }
+  return v;
+}
+
+// ═══ BOOT ═══
+initApp();
 </script>
 </body>
 </html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="referrer" content="no-referrer">
+<title>CarDatax Schade Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060a14;--surface:#0c1219;--green:#00e676;--green-dim:#00803a;--green-glow:rgba(0,230,118,.25);--cyan:#00d4ff;--cyan-glow:rgba(0,212,255,.3);--red:#ff2244;--orange:#ff8833;--yellow:#ffcc00;--text:#e8edf5;--text-dim:#5a7a6a;--font:'Exo 2',sans-serif;--radius:14px;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--text);-webkit-user-select:none;user-select:none}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;transition:opacity .4s,transform .4s;opacity:0;pointer-events:none;transform:scale(.97)}.scr.on{opacity:1;pointer-events:auto;transform:scale(1)}
+#S1{background:radial-gradient(ellipse at 50% 30%,#0d1a30,var(--bg) 70%);align-items:center;justify-content:center;gap:24px;padding:40px 24px}
+.logo{width:80px;height:80px;background:linear-gradient(135deg,var(--cyan),var(--green));border-radius:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px var(--cyan-glow)}
+.logo svg{width:44px;height:44px}
+.s-title{font-size:28px;font-weight:800;text-align:center}.s-title span{color:var(--green)}
+.s-sub{color:var(--text-dim);text-align:center;font-size:14px;line-height:1.5;max-width:300px}
+.pw{width:100%;max-width:320px;background:var(--surface);border:1px solid #14291f;border-radius:var(--radius);display:flex;align-items:center;gap:12px;padding:12px 16px}.pw:focus-within{border-color:var(--green)}
+.nl{width:28px;height:22px;background:#003da5;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#ffcc00}
+.pi{flex:1;background:none;border:none;outline:none;font-family:var(--font);font-size:20px;font-weight:700;color:var(--text);letter-spacing:2px;text-transform:uppercase}
+.pi::placeholder{color:var(--text-dim);font-weight:400;font-size:16px}
+.sbtn{width:100%;max-width:320px;padding:16px;background:linear-gradient(135deg,var(--green),#00aa55);border:none;border-radius:var(--radius);cursor:pointer;font-family:var(--font);font-size:16px;font-weight:700;color:#fff}
+.sbtn:active{transform:scale(.97)}
+#S2{background:#000}
+.cv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.co{position:absolute;inset:0;pointer-events:none;z-index:2}
+.fl{position:absolute;inset:0;z-index:25;background:#fff;opacity:0;pointer-events:none;transition:opacity .1s}.fl.on{opacity:.7}
+.ct{position:absolute;top:0;left:0;right:0;z-index:10;padding:calc(12px + var(--safe-top)) 16px 12px;background:linear-gradient(180deg,rgba(0,0,0,.7),transparent);display:flex;justify-content:space-between;align-items:center}
+.ct .sl{font-size:13px;font-weight:600;color:var(--green);letter-spacing:1px}.ct .nm{font-size:18px;font-weight:700}
+.cx{width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;cursor:pointer;pointer-events:auto;z-index:20}
+.cd{position:absolute;top:calc(70px + var(--safe-top));left:50%;transform:translateX(-50%);z-index:10;display:flex;gap:8px}
+.dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--green-dim);transition:all .3s}.dot.d{background:var(--green);border-color:var(--green);box-shadow:0 0 8px var(--green-glow)}.dot.c{border-color:var(--green);animation:dp 1.2s ease-in-out infinite}
+@keyframes dp{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+.cg{position:absolute;bottom:160px;left:50%;transform:translateX(-50%);z-index:10;text-align:center;max-width:280px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);padding:10px 20px;border-radius:20px;border:1px solid rgba(0,230,118,.2);font-size:13px;line-height:1.4}
+.cg .ga{font-size:22px;display:block;margin-bottom:4px}
+.cbb{position:absolute;bottom:0;left:0;right:0;z-index:10;padding:16px 24px calc(20px + var(--safe-bottom));background:linear-gradient(0deg,rgba(0,0,0,.7),transparent);display:flex;align-items:center;justify-content:center}
+.cp{width:72px;height:72px;border-radius:50%;border:3px solid var(--green);background:transparent;cursor:pointer;pointer-events:auto;position:relative}
+.cp::before{content:'';position:absolute;inset:7px;border-radius:50%;background:var(--green);transition:all .15s}
+.cp:active::before{transform:scale(.85)}
+.cp.vl::before{background:var(--cyan);animation:vp .6s ease-in-out infinite}
+@keyframes vp{0%,100%{transform:scale(1)}50%{transform:scale(.9)}}
+.cc{position:absolute;bottom:calc(100px + var(--safe-bottom));right:20px;z-index:10;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);padding:6px 14px;border-radius:16px;border:1px solid #14291f;font-size:13px;font-weight:700;color:var(--green)}
+.toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);z-index:30;padding:16px 28px;border-radius:16px;font-size:15px;font-weight:700;text-align:center;opacity:0;transition:all .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}.toast.ok{background:rgba(0,230,118,.15);border:1px solid var(--green);color:var(--green)}.toast.err{background:rgba(255,34,68,.15);border:1px solid var(--red);color:var(--red)}
+#S3{background:radial-gradient(ellipse at 50% 40%,#0d1a30,var(--bg) 70%);align-items:center;justify-content:center;gap:32px}
+.ar{width:120px;height:120px;position:relative}.ar svg{width:100%;height:100%;animation:spin 2s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ar .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:var(--green)}
+.ast{font-size:16px;font-weight:600;text-align:center}.asu{font-size:13px;color:var(--text-dim);text-align:center}
+.ath{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:320px}
+.atm{width:36px;height:36px;border-radius:6px;object-fit:cover;border:2px solid #14291f;opacity:.6}.atm.ok{border-color:var(--green);opacity:1}
+/* RESULT */
+#S4{background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 0 calc(90px + var(--safe-bottom))}
+.rt{display:flex;align-items:center;justify-content:space-between;padding:calc(12px + var(--safe-top)) 16px 12px;position:sticky;top:0;z-index:20;background:var(--bg)}
+.rback{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;cursor:pointer}
+.rtt{text-align:center;flex:1}.rtt h2{font-size:16px;font-weight:800;color:var(--green);margin:0}.rtt p{font-size:12px;color:var(--text-dim);margin:0}
+.scs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:0 12px 12px}
+.sc{background:var(--surface);border:1px solid #14291f;border-radius:10px;padding:12px 8px;text-align:center}
+.sc .lb{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.sc .vl{font-size:24px;font-weight:800}.vl.g{color:var(--green)}.vl.m{color:var(--orange)}.vl.b{color:var(--red)}
+.cbar{margin:0 12px 12px;padding:14px 16px;background:linear-gradient(135deg,rgba(255,34,68,.08),rgba(255,136,51,.08));border:1px solid rgba(255,34,68,.2);border-radius:10px;display:flex;justify-content:space-between;align-items:center}
+.cbar .cl{font-size:12px;color:var(--text-dim)}.cbar .ca{font-size:22px;font-weight:800;color:var(--red)}
+.sum{margin:0 12px 12px;padding:14px;background:var(--surface);border:1px solid #14291f;border-radius:10px;font-size:13px;line-height:1.6}
+.sum .hd{color:var(--green);font-weight:700;margin-bottom:6px;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+.pv{position:relative;margin:0 12px 12px;border-radius:var(--radius);overflow:hidden;border:1px solid rgba(0,230,118,.2);background:#000}
+.pv img{width:100%;display:block;min-height:220px;object-fit:cover}
+.pv canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pv-nav{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5}
+.pv-d{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer}.pv-d.a{background:var(--green);box-shadow:0 0 8px var(--green-glow)}
+.pv-a,.pv-b{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;cursor:pointer;z-index:5}
+.pv-a{left:8px}.pv-b{right:8px}
+.scanbar{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);padding:6px 16px;border-radius:20px;border:1px solid var(--cyan)}
+.scanbar span:first-child{font-size:12px;font-weight:700;color:var(--cyan);letter-spacing:2px}
+.scanbar span:nth-child(2){font-size:14px;font-weight:800;color:#fff}
+.pv-angle{position:absolute;top:12px;left:12px;z-index:5;font-size:11px;font-weight:700;color:var(--green);background:rgba(0,0,0,.5);padding:4px 10px;border-radius:10px}
+.ok-tag{position:absolute;z-index:4;background:rgba(0,40,20,.6);border:1px solid var(--green);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:800;color:var(--green);text-shadow:0 0 8px var(--green-glow);pointer-events:none}
+.dmg-tag{position:absolute;z-index:4;background:rgba(60,0,0,.75);border:1px solid var(--red);border-radius:8px;padding:8px 12px;max-width:180px;backdrop-filter:blur(4px);pointer-events:none}
+.dmg-tag .dh{font-size:9px;color:rgba(255,255,255,.5)}.dmg-tag .dz{font-size:12px;font-weight:800;color:#fff;margin:2px 0}
+.dmg-tag .dd{font-size:10px;color:rgba(255,255,255,.7)}.dmg-tag .dc{font-size:11px;font-weight:700;color:var(--red);margin-top:3px}
+.sec{font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin:12px 16px 8px}
+.dl{margin:0 12px 12px;display:flex;flex-direction:column;gap:8px}
+.di{background:var(--surface);border:1px solid #14291f;border-radius:10px;padding:12px;display:flex;gap:12px;align-items:flex-start}
+.dbar{width:6px;min-height:36px;border-radius:3px;flex-shrink:0}.dbar.licht{background:var(--yellow)}.dbar.gemiddeld{background:var(--orange)}.dbar.ernstig{background:var(--red)}
+.dinf{flex:1}.dzn{font-weight:700;font-size:13px}.dtp{font-size:11px;color:var(--text-dim);margin:2px 0}.dds{font-size:12px;line-height:1.4}
+.dcs{font-size:15px;font-weight:800;color:var(--red);white-space:nowrap;align-self:center}
+.rbot{position:fixed;bottom:0;left:0;right:0;z-index:50;padding:10px 12px calc(10px + var(--safe-bottom));background:var(--bg);border-top:1px solid #14291f;display:flex;align-items:center;gap:8px}
+.rbi{height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:700;color:#fff;padding:0 16px;gap:6px}
+.rbi.sec2{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);flex:1}
+.rbi.pri{background:linear-gradient(135deg,var(--green),#00aa55);border:none;flex:1}
+</style>
+</head>
+<body>
+<div id="S1" class="scr on">
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+  <div class="s-title">SCHADE <span>SCANNER</span></div>
+  <div class="s-sub">AI-gestuurde schade analyse in 8 foto's. Loop om de auto heen, de AI doet de rest.</div>
+  <div class="pw"><div class="nl">NL</div><input id="plateIn" class="pi" type="text" placeholder="AB-123-C" maxlength="10" autocomplete="off"></div>
+  <button class="sbtn" onclick="startScan()">START SCAN</button>
+</div>
+<div id="S2" class="scr">
+  <video id="vid" class="cv" autoplay playsinline muted></video><canvas id="ovl" class="co"></canvas><div id="flash" class="fl"></div>
+  <div class="ct"><div><div id="cStep" class="sl">STAP 1/8</div><div id="cName" class="nm">Voorkant</div></div><div class="cx" onclick="cancel()">✕</div></div>
+  <div id="cDots" class="cd"></div>
+  <div id="cGuide" class="cg"><span class="ga" id="cArr">⬆️</span><span id="cTxt">Sta recht voor de auto</span></div>
+  <div id="cCnt" class="cc">0 / 8</div>
+  <div class="cbb"><div id="capBtn" class="cp" onclick="capture()"></div></div>
+  <div id="cToast" class="toast"></div>
+</div>
+<div id="S3" class="scr">
+  <div class="ar"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="#1a2a3a" stroke-width="6"/><circle id="arc" cx="60" cy="60" r="52" fill="none" stroke="var(--green)" stroke-width="6" stroke-dasharray="327" stroke-dashoffset="327" stroke-linecap="round" transform="rotate(-90 60 60)"/></svg><div class="pct" id="apct">0%</div></div>
+  <div id="astat" class="ast">Foto's worden geanalyseerd...</div><div id="asub" class="asu">GPT-4o Vision detecteert schade</div>
+  <div id="athumbs" class="ath"></div>
+</div>
+<div id="S4" class="scr">
+  <div class="rt"><div class="rback" onclick="go('S1')">←</div><div class="rtt"><h2>SCHADE RAPPORT</h2><p>Volledige scan voltooid</p></div><div style="background:var(--surface);border:1px solid #14291f;padding:6px 12px;border-radius:20px;font-size:14px;font-weight:800">8/8</div></div>
+  <div class="scs"><div class="sc"><div class="lb">Totaal</div><div class="vl" id="sO">-</div></div><div class="sc"><div class="lb">Lak</div><div class="vl" id="sP">-</div></div><div class="sc"><div class="lb">Carrosserie</div><div class="vl" id="sB">-</div></div></div>
+  <div id="costBar" class="cbar"><div class="cl">Geschatte<br>herstelkosten</div><div class="ca" id="costAmt">€ 0</div></div>
+  <div id="sumBox" class="sum"><div class="hd">AI Samenvatting</div><div id="sumTxt">—</div></div>
+  <div class="sec">SCAN RESULTAAT</div>
+  <div id="pv" class="pv"></div>
+  <div class="sec" id="dmgSec">GEVONDEN SCHADE</div>
+  <div id="dmgList" class="dl"></div>
+  <div style="text-align:center;padding:8px 0;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">ALLE POSITIES GEANALYSEERD</div>
+  <div class="rbot">
+    <div class="rbi sec2" id="saveBtn" onclick="saveReport()">💾 OPSLAAN</div>
+    <div class="rbi pri" id="voorraadBtn" onclick="addToVoorraad()">🚗 NAAR VOORRAAD</div>
+  </div>
+</div>
+<script>
+const STEPS=[{name:'Voorkant',angle:'front',arrow:'⬆️',guide:'Sta recht voor de auto, ca. 2 meter afstand'},{name:'Rechts-voor',angle:'front-right',arrow:'↗️',guide:'Schuin rechts-voor, 45°'},{name:'Rechterzijde',angle:'right',arrow:'➡️',guide:'Recht naast de rechter zijkant'},{name:'Rechts-achter',angle:'rear-right',arrow:'↘️',guide:'Schuin rechts-achter'},{name:'Achterkant',angle:'rear',arrow:'⬇️',guide:'Recht achter de auto'},{name:'Links-achter',angle:'rear-left',arrow:'↙️',guide:'Schuin links-achter'},{name:'Linkerzijde',angle:'left',arrow:'⬅️',guide:'Recht naast de linker zijkant'},{name:'Links-voor',angle:'front-left',arrow:'↖️',guide:'Schuin links-voor'}];
+const ZNL={motorkap:'Motorkap',voorruit:'Voorruit',dak:'Dak',achterruit:'Achterruit',kofferbak:'Kofferbak',voorbumper:'Voorbumper',achterbumper:'Achterbumper',links_voor:'Links-voor',links_achter:'Links-achter',rechts_voor:'Rechts-voor',rechts_achter:'Rechts-achter',deur_links:'Linker deur',deur_rechts:'Rechter deur',velg_lv:'Velg LV',velg_rv:'Velg RV',velg_la:'Velg LA',velg_ra:'Velg RA',interieur:'Interieur',motor:'Motor'};
+const AZ={front:['voorbumper','motorkap','voorruit','links_voor','rechts_voor'],'front-right':['voorbumper','rechts_voor','deur_rechts','voorruit','motorkap'],right:['rechts_voor','rechts_achter','deur_rechts','velg_rv','velg_ra'],'rear-right':['achterbumper','rechts_achter','kofferbak','achterruit'],rear:['achterbumper','kofferbak','achterruit','links_achter','rechts_achter'],'rear-left':['achterbumper','links_achter','kofferbak','achterruit'],left:['links_voor','links_achter','deur_links','velg_lv','velg_la'],'front-left':['voorbumper','links_voor','deur_links','voorruit','motorkap']};
+
+let step=0,photos=[],res=null,plate='',stream=null,t0=0,ci=0;
+function tok(){try{return localStorage.getItem('t4c_token')||sessionStorage.getItem('t4c_token')||''}catch{return''}}
+function go(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on')}
+function startScan(){plate=document.getElementById('plateIn').value.trim().toUpperCase();step=0;photos=[];res=null;t0=Date.now();go('S2');initCam();updUI();startOv()}
+
+async function initCam(){try{if(stream)stream.getTracks().forEach(t=>t.stop());stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}},audio:false});const v=document.getElementById('vid');v.srcObject=stream;await v.play();rsOv()}catch(e){toast('Camera error','err')}}
+function rsOv(){const c=document.getElementById('ovl');c.width=window.innerWidth;c.height=window.innerHeight}
+window.addEventListener('resize',rsOv);
+function updUI(){const s=STEPS[step];document.getElementById('cStep').textContent=`STAP ${step+1}/8`;document.getElementById('cName').textContent=s.name;document.getElementById('cTxt').textContent=s.guide;document.getElementById('cArr').textContent=s.arrow;document.getElementById('cCnt').textContent=`${photos.length}/8`;const d=document.getElementById('cDots');d.innerHTML='';for(let i=0;i<8;i++){const e=document.createElement('div');e.className='dot'+(i<step?' d':i===step?' c':'');d.appendChild(e)}}
+
+let ov=null,by=0;
+function startOv(){if(ov)cancelAnimationFrame(ov);drawOv()}
+function drawOv(){const c=document.getElementById('ovl'),x=c.getContext('2d'),w=c.width,h=c.height;x.clearRect(0,0,w,h);if(!document.getElementById('S2').classList.contains('on')){ov=requestAnimationFrame(drawOv);return}
+const cx=w/2,cy=h/2,bW=Math.min(w*.82,380),bH=bW*.7,bx=cx-bW/2,bY=cy-bH/2;
+x.fillStyle='rgba(0,0,0,.3)';x.fillRect(0,0,w,bY);x.fillRect(0,bY+bH,w,h-bY-bH);x.fillRect(0,bY,bx,bH);x.fillRect(bx+bW,bY,w-bx-bW,bH);
+x.strokeStyle='rgba(0,230,118,.07)';x.lineWidth=.5;for(let i=bx;i<=bx+bW;i+=18){x.beginPath();x.moveTo(i,bY);x.lineTo(i,bY+bH);x.stroke()}for(let i=bY;i<=bY+bH;i+=18){x.beginPath();x.moveTo(bx,i);x.lineTo(bx+bW,i);x.stroke()}
+x.shadowColor='rgba(0,230,118,.6)';x.shadowBlur=10;x.strokeStyle='#00e676';x.lineWidth=3;x.lineCap='round';const bl=28;
+x.beginPath();x.moveTo(bx,bY+bl);x.lineTo(bx,bY);x.lineTo(bx+bl,bY);x.stroke();
+x.beginPath();x.moveTo(bx+bW-bl,bY);x.lineTo(bx+bW,bY);x.lineTo(bx+bW,bY+bl);x.stroke();
+x.beginPath();x.moveTo(bx,bY+bH-bl);x.lineTo(bx,bY+bH);x.lineTo(bx+bl,bY+bH);x.stroke();
+x.beginPath();x.moveTo(bx+bW-bl,bY+bH);x.lineTo(bx+bW,bY+bH);x.lineTo(bx+bW,bY+bH-bl);x.stroke();
+x.shadowBlur=0;by=(by+1.2)%bH;const g=x.createLinearGradient(bx,0,bx+bW,0);g.addColorStop(0,'rgba(0,230,118,0)');g.addColorStop(.5,'rgba(0,230,118,.6)');g.addColorStop(1,'rgba(0,230,118,0)');x.strokeStyle=g;x.lineWidth=2;x.beginPath();x.moveTo(bx,bY+by);x.lineTo(bx+bW,bY+by);x.stroke();
+ov=requestAnimationFrame(drawOv)}
+
+let cap=false;
+async function capture(){if(cap)return;cap=true;document.getElementById('capBtn').classList.add('vl');
+document.getElementById('flash').classList.add('on');setTimeout(()=>document.getElementById('flash').classList.remove('on'),150);
+const v=document.getElementById('vid'),cv=document.createElement('canvas');cv.width=v.videoWidth||1280;cv.height=v.videoHeight||720;cv.getContext('2d').drawImage(v,0,0);const du=cv.toDataURL('image/jpeg',.85),s=STEPS[step];
+let ok=true;try{const r=await fetch('/api/ai/validate-photo',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok()},body:JSON.stringify({image:du,expected_angle:s.angle,step:step+1})});const d=await r.json();if(d.ok)ok=d.valid!==false}catch{}
+document.getElementById('capBtn').classList.remove('vl');if(!ok){toast('❌ Opnieuw','err');cap=false;return}
+photos.push({name:s.name,angle:s.angle,image:du});toast('✓ '+s.name,'ok');step++;
+if(step>=8)setTimeout(()=>{stopCam();go('S3');analyze()},600);else updUI();cap=false}
+function toast(t,c){const e=document.getElementById('cToast');e.textContent=t;e.className='toast '+c+' show';setTimeout(()=>e.classList.remove('show'),1800)}
+function cancel(){stopCam();go('S1')}
+function stopCam(){if(ov){cancelAnimationFrame(ov);ov=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}}
+
+async function analyze(){const arc=document.getElementById('arc'),pct=document.getElementById('apct');
+document.getElementById('athumbs').innerHTML=photos.map(p=>`<img src="${p.image}" class="atm">`).join('');
+let pg=0;const pi=setInterval(()=>{pg=Math.min(pg+.8,90);arc.style.strokeDashoffset=327-(327*pg/100);pct.textContent=Math.round(pg)+'%'},100);
+try{const r=await fetch('/api/analyze-damage',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok()},body:JSON.stringify({images:photos.map(p=>({name:p.name,image:p.image})),plate,kenteken:plate})});
+const d=await r.json();clearInterval(pi);if(!d.ok)throw new Error(d.error||'Mislukt');
+arc.style.strokeDashoffset='0';pct.textContent='100%';document.getElementById('astat').textContent='Analyse compleet!';document.getElementById('asub').textContent=`${(d.damages||[]).length} schade(s) gevonden`;
+document.querySelectorAll('.atm').forEach(t=>t.classList.add('ok'));res=d;
+uploadPhotos();setTimeout(()=>{go('S4');setTimeout(renderResult,100)},1000)
+}catch(e){clearInterval(pi);document.getElementById('astat').textContent='Mislukt';document.getElementById('asub').textContent=e.message;pct.textContent='!';arc.style.stroke='var(--red)';
+setTimeout(()=>{document.getElementById('asub').innerHTML='<span style="color:var(--green);cursor:pointer;text-decoration:underline" onclick="retryA()">Opnieuw</span>'},1500)}}
+function retryA(){document.getElementById('arc').style.stroke='var(--green)';document.getElementById('arc').style.strokeDashoffset='327';analyze()}
+async function uploadPhotos(){try{await fetch('/api/scan-photos/'+plate,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok()},body:JSON.stringify({photos:photos.map(p=>({name:p.name,angle:p.angle,image:p.image}))})})}catch{}}
+
+function renderResult(){if(!res)return;const dmg=res.damages||[];
+setS('sO',res.overall_score);setS('sP',res.paint_score);setS('sB',res.body_score);
+document.getElementById('costAmt').textContent='€ '+(res.total_cost||0).toLocaleString('nl-NL');
+if(!res.total_cost)document.getElementById('costBar').style.display='none';
+document.getElementById('sumTxt').textContent=res.summary||'Geen samenvatting';
+buildPV(dmg);
+if(dmg.length)document.getElementById('dmgList').innerHTML=dmg.map(d=>`<div class="di"><div class="dbar ${d.severity||d.sev||'gemiddeld'}"></div><div class="dinf"><div class="dzn">${ZNL[d.zone]||d.zone}</div><div class="dtp">${d.type||'—'} · ${d.severity||d.sev||'—'}</div><div class="dds">${d.description||''}</div></div><div class="dcs">€${(d.cost||0).toLocaleString('nl-NL')}</div></div>`).join('');
+else{document.getElementById('dmgList').innerHTML='<div style="text-align:center;color:var(--green);padding:20px;font-weight:700">✓ Geen schade!</div>';document.getElementById('dmgSec').style.display='none'}}
+function setS(id,v){const e=document.getElementById(id);const n=Number(v)||0;e.textContent=n+'/10';e.className='vl '+(n>=7?'g':n>=4?'m':'b')}
+
+function buildPV(dmg){
+  const pv=document.getElementById('pv');ci=0;
+  let h=`<img id="pvI" src="${photos[0].image}"><canvas id="pvC"></canvas>`;
+  h+=`<div class="scanbar"><span>SCANNING</span><span>100%</span></div>`;
+  h+=`<div id="pvA" class="pv-angle">${photos[0].name}</div>`;
+  h+=`<div id="pvL"></div>`;
+  if(photos.length>1){h+=`<div class="pv-a" onclick="navP(-1)">‹</div><div class="pv-b" onclick="navP(1)">›</div>`;
+  h+=`<div class="pv-nav" id="pvN">${photos.map((_,i)=>`<div class="pv-d${i===0?' a':''}" onclick="goP(${i})"></div>`).join('')}</div>`}
+  pv.innerHTML=h;setTimeout(()=>drawPO(dmg),50)
+}
+function navP(d){goP(ci+d)}
+function goP(i){if(i<0)i=photos.length-1;if(i>=photos.length)i=0;ci=i;document.getElementById('pvI').src=photos[i].image;document.getElementById('pvA').textContent=photos[i].name;document.querySelectorAll('#pvN .pv-d').forEach((d,j)=>d.classList.toggle('a',j===i));drawPO(res?.damages||[])}
+
+function drawPO(dmg){
+  const img=document.getElementById('pvI'),cv=document.getElementById('pvC'),lb=document.getElementById('pvL');
+  if(!img||!cv)return;const w=img.clientWidth,h=img.clientHeight;
+  cv.width=w*2;cv.height=h*2;cv.style.width=w+'px';cv.style.height=h+'px';
+  const x=cv.getContext('2d');x.scale(2,2);
+  // Grid
+  x.strokeStyle='rgba(0,230,118,.05)';x.lineWidth=.5;
+  for(let i=0;i<=w;i+=16){x.beginPath();x.moveTo(i,0);x.lineTo(i,h);x.stroke()}
+  for(let i=0;i<=h;i+=16){x.beginPath();x.moveTo(0,i);x.lineTo(w,i);x.stroke()}
+  // Corners
+  const m=10,bl=28;x.shadowColor='rgba(0,230,118,.5)';x.shadowBlur=8;x.strokeStyle='#00e676';x.lineWidth=2.5;x.lineCap='round';
+  x.beginPath();x.moveTo(m,m+bl);x.lineTo(m,m);x.lineTo(m+bl,m);x.stroke();
+  x.beginPath();x.moveTo(w-m-bl,m);x.lineTo(w-m,m);x.lineTo(w-m,m+bl);x.stroke();
+  x.beginPath();x.moveTo(m,h-m-bl);x.lineTo(m,h-m);x.lineTo(m+bl,h-m);x.stroke();
+  x.beginPath();x.moveTo(w-m-bl,h-m);x.lineTo(w-m,h-m);x.lineTo(w-m,h-m-bl);x.stroke();
+  x.shadowBlur=0;
+  // Labels
+  lb.innerHTML='';const angle=photos[ci].angle,vis=AZ[angle]||[],hit=new Set(dmg.map(d=>d.zone));
+  const pos=zPos(w,h);
+  for(const z of vis){const p=pos[z];if(!p)continue;
+    if(hit.has(z)){const d=dmg.find(dm=>dm.zone===z);if(!d)continue;
+      x.fillStyle='rgba(255,34,68,.12)';x.beginPath();x.arc(p.x,p.y,35,0,Math.PI*2);x.fill();
+      x.strokeStyle='rgba(255,34,68,.4)';x.lineWidth=1.5;x.stroke();
+      x.strokeStyle='rgba(255,34,68,.5)';x.lineWidth=1;x.beginPath();x.moveTo(p.x,p.y);x.lineTo(p.x+25,p.y-15);x.stroke();
+      const t=document.createElement('div');t.className='dmg-tag';t.style.left=(p.x+28)+'px';t.style.top=(p.y-25)+'px';
+      t.innerHTML=`<div class="dh">⚠️ ${d.type||'Schade'}</div><div class="dz">${ZNL[z]||z}</div><div class="dd">${d.description||''}</div>${d.cost?'<div class="dc">€'+d.cost.toLocaleString('nl-NL')+'</div>':''}`;
+      lb.appendChild(t)
+    }else{const t=document.createElement('div');t.className='ok-tag';t.style.left=p.x+'px';t.style.top=p.y+'px';t.textContent='OK';lb.appendChild(t)}
+  }
+}
+function zPos(w,h){const cx=w/2;return{voorbumper:{x:cx,y:h*.82},motorkap:{x:cx,y:h*.55},voorruit:{x:cx,y:h*.35},dak:{x:cx,y:h*.22},achterruit:{x:cx,y:h*.35},kofferbak:{x:cx,y:h*.55},achterbumper:{x:cx,y:h*.82},links_voor:{x:w*.18,y:h*.5},links_achter:{x:w*.18,y:h*.55},rechts_voor:{x:w*.82,y:h*.5},rechts_achter:{x:w*.82,y:h*.55},deur_links:{x:w*.15,y:h*.48},deur_rechts:{x:w*.85,y:h*.48},velg_lv:{x:w*.22,y:h*.78},velg_rv:{x:w*.78,y:h*.78},velg_la:{x:w*.22,y:h*.78},velg_ra:{x:w*.78,y:h*.78}}}
+
+async function saveReport(){if(!res)return;const b=document.getElementById('saveBtn');b.innerHTML='⏳...';
+try{const r=await fetch('/api/inspecties',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok()},body:JSON.stringify({kenteken:plate,overall_score:res.overall_score,paint_score:res.paint_score,body_score:res.body_score,total_cost:res.total_cost,damages:res.damages,summary:res.summary,photos:photos.map(p=>({name:p.name,angle:p.angle})),gpt_raw:res,frames_captured:photos.length,scan_duration:Math.round((Date.now()-t0)/1000)})});
+const d=await r.json();if(d.success)b.innerHTML='✓ OPGESLAGEN';else throw new Error(d.error)}catch(e){b.innerHTML='❌';setTimeout(()=>b.innerHTML='💾 OPSLAAN',2500)}}
+async function addToVoorraad(){const b=document.getElementById('voorraadBtn');b.innerHTML='⏳...';
+try{const r=await fetch('/api/voorraad/from-scan',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok()},body:JSON.stringify({kenteken:plate})});
+const d=await r.json();if(d.ok)b.innerHTML='✓ IN VOORRAAD';else throw new Error(d.error)}catch(e){b.innerHTML='❌';setTimeout(()=>b.innerHTML='🚗 NAAR VOORRAAD',2500)}}
+
+document.getElementById('plateIn').addEventListener('input',function(){this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,'')});
+const up=new URLSearchParams(window.location.search).get('kenteken');if(up)document.getElementById('plateIn').value=up.toUpperCase();
+window.addEventListener('message',e=>{if(e.data?.type==='start-scan'&&e.data.kenteken){document.getElementById('plateIn').value=e.data.kenteken.toUpperCase();startScan()}});
+</script>
+</body>
+</html>

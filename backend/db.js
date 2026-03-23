@@ -364,6 +364,8 @@ async function initDB() {
 
   // ── VEILING BIEDINGEN ARCHIEF (bewaar bids na herstart) ──
   db.run(`
+    
+    CREATE TABLE IF NOT EXISTS dealer_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, make TEXT, model TEXT, year INTEGER, our_bod REAL, sold_price REAL, feedback TEXT, created_at TEXT);
     CREATE TABLE IF NOT EXISTS veiling_biedingen_archief (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       veiling_id INTEGER, ronde INTEGER,
@@ -373,14 +375,238 @@ async function initDB() {
     )
   `)
 
+  // ── FACTUREN (invoices for completed auctions) ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS facturen (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      factuur_nr TEXT NOT NULL UNIQUE,
+      veiling_id INTEGER,
+      verkoop_id INTEGER,
+      koper_id INTEGER,
+      koper_naam TEXT, koper_email TEXT, koper_telefoon TEXT,
+      koper_adres TEXT, koper_postcode TEXT, koper_plaats TEXT,
+      koper_bedrijf TEXT, koper_kvk TEXT, koper_btw_nr TEXT,
+      kenteken TEXT, auto_merk TEXT, auto_model TEXT, auto_bouwjaar INTEGER,
+      auto_km INTEGER, auto_brandstof TEXT, auto_vin TEXT,
+      bod_bedrag REAL DEFAULT 0,
+      transport_keuze TEXT,
+      transport_kosten REAL DEFAULT 0,
+      veilingkosten REAL DEFAULT 0,
+      subtotaal REAL DEFAULT 0,
+      btw_percentage REAL DEFAULT 0,
+      btw_bedrag REAL DEFAULT 0,
+      totaal REAL DEFAULT 0,
+      marge_regeling INTEGER DEFAULT 1,
+      betaal_status TEXT DEFAULT 'open',
+      betaal_methode TEXT,
+      betaal_referentie TEXT,
+      betaald_op TEXT,
+      notities TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    )
+  `)
+  db.run("CREATE INDEX IF NOT EXISTS idx_facturen_veiling ON facturen(veiling_id)")
+  db.run("CREATE INDEX IF NOT EXISTS idx_facturen_koper ON facturen(koper_id)")
+  db.run("CREATE INDEX IF NOT EXISTS idx_facturen_nr ON facturen(factuur_nr)")
+
+  // ── MARKET LISTINGS (individual listing tracking for history/sold detection) ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS market_listings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      hash TEXT NOT NULL,
+      make TEXT NOT NULL, model TEXT NOT NULL, year INTEGER NOT NULL,
+      title TEXT, price REAL, km INTEGER,
+      transmission TEXT DEFAULT '',
+      source TEXT, url TEXT,
+      status TEXT DEFAULT 'active',
+      sold_estimate REAL,
+      first_seen TEXT DEFAULT (datetime('now')),
+      last_seen TEXT DEFAULT (datetime('now')),
+      UNIQUE(hash)
+    )
+  `)
+  db.run("CREATE INDEX IF NOT EXISTS idx_ml_mmys ON market_listings(make, model, year, status)")
+  db.run("CREATE INDEX IF NOT EXISTS idx_ml_hash ON market_listings(hash)")
+
+  // ── PRICE TRENDS (monthly aggregated price data per model) ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS price_trends (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      make TEXT NOT NULL, model TEXT NOT NULL, year INTEGER NOT NULL,
+      month TEXT NOT NULL,
+      avg_price REAL, median_price REAL,
+      min_price REAL, max_price REAL,
+      listing_count INTEGER DEFAULT 0,
+      sold_count INTEGER DEFAULT 0,
+      source TEXT DEFAULT 'crawl',
+      created_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(make, model, year, month)
+    )
+  `)
+  db.run("CREATE INDEX IF NOT EXISTS idx_pt_mmy ON price_trends(make, model, year)")
+
+  // ── LEADS (CRM) ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS leads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      klant_naam TEXT, klant_tel TEXT, klant_email TEXT,
+      interesse TEXT, bron TEXT,
+      status TEXT DEFAULT 'nieuw',
+      notities TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    )
+  `)
+
+  // ── INKOOP PIPELINE ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS inkoop_pipeline (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      kenteken TEXT, make TEXT, model TEXT, year INTEGER,
+      km INTEGER, fuel TEXT, color TEXT,
+      bron TEXT, contact_naam TEXT, contact_tel TEXT, contact_email TEXT,
+      geschatte_waarde REAL, ons_bod REAL,
+      status TEXT DEFAULT 'nieuw',
+      notities TEXT, user_id INTEGER,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    )
+  `)
+
+  // ── KOSTEN ITEMS (per auto) ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS kosten_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      voorraad_id INTEGER NOT NULL,
+      categorie TEXT DEFAULT 'overig',
+      omschrijving TEXT,
+      bedrag REAL DEFAULT 0,
+      datum TEXT DEFAULT (date('now')),
+      leverancier TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `)
+
+  // ── NOTIFICATIES ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS notificaties (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      type TEXT DEFAULT 'info',
+      title TEXT,
+      message TEXT,
+      data TEXT,
+      read INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `)
+
+  // ── ACCURACY LOG ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS accuracy_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      taxatie_id INTEGER,
+      our_price REAL, gpt_price REAL, actual_price REAL,
+      our_error_pct REAL, gpt_error_pct REAL,
+      winner TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `)
+
+  // ── ARBITRAGE DEALS ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS arbitrage_deals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      listing_id INTEGER,
+      make TEXT, model TEXT, year INTEGER, km INTEGER,
+      listing_price REAL, market_median REAL,
+      discount_pct REAL, discount_eur REAL,
+      source TEXT, url TEXT, dealer TEXT,
+      status TEXT DEFAULT 'nieuw',
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `)
+
+  // ── DEALER PROFILES ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS dealer_profiles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dealer_name TEXT UNIQUE,
+      total_listings INTEGER DEFAULT 0,
+      avg_price REAL, price_vs_market_pct REAL,
+      sell_speed TEXT, models TEXT, source TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    )
+  `)
+
+  // ── PRICE ALERTS ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS price_alerts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      make TEXT, model TEXT,
+      year_min INTEGER, year_max INTEGER,
+      price_max REAL, km_max INTEGER,
+      fuel TEXT, transmission TEXT,
+      active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `)
+
+  // ── PRICE HISTORY (individual listing price changes) ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS price_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      listing_hash TEXT,
+      make TEXT, model TEXT, year INTEGER,
+      price REAL, previous_price REAL,
+      source TEXT,
+      recorded_at TEXT DEFAULT (datetime('now'))
+    )
+  `)
+
+  // ── SEARCH HISTORY ──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS search_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      kenteken TEXT UNIQUE,
+      make TEXT, model TEXT, year INTEGER,
+      searched_at TEXT DEFAULT (datetime('now')),
+      search_count INTEGER DEFAULT 1,
+      user_id INTEGER
+    )
+  `)
+
   // ── Alter users table for multi-user (add columns if missing) ──
   try { db.run("ALTER TABLE users ADD COLUMN email TEXT") } catch {}
   try { db.run("ALTER TABLE users ADD COLUMN phone TEXT") } catch {}
   try { db.run("ALTER TABLE users ADD COLUMN active INTEGER DEFAULT 1") } catch {}
   try { db.run("ALTER TABLE users ADD COLUMN company TEXT DEFAULT ''") } catch {}
 
-  try { db.run(`CREATE TABLE IF NOT EXISTS crawl_queue (id INTEGER PRIMARY KEY AUTOINCREMENT, make TEXT NOT NULL, model TEXT NOT NULL, year INTEGER NOT NULL, transmission TEXT DEFAULT '', last_crawled_at INTEGER DEFAULT 0, created_at INTEGER DEFAULT (strftime('%s','now')), UNIQUE(make,model,year,transmission))`) } catch(e) {}
+  // ── Alter inspecties table for AI scanner fields ──
+  try { db.run("ALTER TABLE inspecties ADD COLUMN user_id INTEGER") } catch {}
+  try { db.run("ALTER TABLE inspecties ADD COLUMN overall_score REAL") } catch {}
+  try { db.run("ALTER TABLE inspecties ADD COLUMN paint_score REAL") } catch {}
+  try { db.run("ALTER TABLE inspecties ADD COLUMN body_score REAL") } catch {}
+  try { db.run("ALTER TABLE inspecties ADD COLUMN total_cost REAL DEFAULT 0") } catch {}
+  try { db.run("ALTER TABLE inspecties ADD COLUMN damages TEXT") } catch {}
+  try { db.run("ALTER TABLE inspecties ADD COLUMN summary TEXT") } catch {}
+  try { db.run("ALTER TABLE inspecties ADD COLUMN photos TEXT") } catch {}
+  try { db.run("ALTER TABLE inspecties ADD COLUMN gpt_raw TEXT") } catch {}
+  try { db.run("ALTER TABLE inspecties ADD COLUMN frames_captured INTEGER DEFAULT 0") } catch {}
+  try { db.run("ALTER TABLE inspecties ADD COLUMN scan_duration REAL DEFAULT 0") } catch {}
+
   console.log("[DB] Schema verified")
+
+    // ── Auto-migrate voorraad columns ──
+    const voorraad_migration = [["inkoop_prijs","REAL"],["reconditie_kosten","REAL DEFAULT 0"],["apk_kosten","REAL DEFAULT 0"],["transport_kosten","REAL DEFAULT 0"],["overige_kosten","REAL DEFAULT 0"],["kosten_notities","TEXT"],["totale_kostprijs","REAL"],["verkoop_prijs","REAL"],["winst","REAL"],["winst_pct","REAL"],["btw_type","TEXT"],["inkoop_datum","TEXT"],["verkoop_datum","TEXT"],["stadagen","INTEGER"],["inkoper","TEXT"],["bron","TEXT"],["taxatie_id","INTEGER"]]
+    for (const [c,t] of voorraad_migration) { try { run("ALTER TABLE voorraad ADD COLUMN "+c+" "+t) } catch(e) {} }
+    const taxatie_migration = [["sold_price","REAL"],["sold_date","TEXT"],["days_to_sell","INTEGER"],["dealer_feedback","TEXT"],["gpt_opinion","TEXT"],["gpt_price","REAL"],["gpt_confidence","REAL"],["slider_courant","REAL"],["slider_risico","REAL"],["slider_staat","REAL"],["final_bod","REAL"],["trend_direction","TEXT"],["trend_pct","REAL"],["market_velocity","TEXT"],["market_confidence","TEXT"]]
+    for (const [c,t] of taxatie_migration) { try { run("ALTER TABLE taxaties ADD COLUMN "+c+" "+t) } catch(e) {} }
+    const ml_migration = [["days_on_market","INTEGER"],["price_changes","INTEGER DEFAULT 0"],["last_price","REAL"],["first_price","REAL"],["dealer","TEXT DEFAULT ''"]]
+    for (const [c,t] of ml_migration) { try { run("ALTER TABLE market_listings ADD COLUMN "+c+" "+t) } catch(e) {} }
 
   // ── MIGRATE from JSON files ──
   migrateFromJSON()
@@ -544,13 +770,19 @@ const stmts = {
       power_kw,power_hp,engine_label,transmission,catalog_price,bpm,bpm_rest,
       market_avg,market_median,market_count,p25,p50,p75,
       verkoopadviees,handelswaarde,inkoop_low,inkoop_high,internet_prijs,
-      reconditie_kosten,import_flag,export_flag,apk_until,vin,user_id,notes,status)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      reconditie_kosten,import_flag,export_flag,apk_until,vin,user_id,notes,status,
+      slider_courant,slider_risico,slider_staat,final_bod,
+      gpt_opinion,gpt_price,gpt_confidence,
+      trend_direction,trend_pct,market_velocity,market_confidence)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [d.kenteken,d.make,d.model,d.model_variant,d.year,d.fuel,d.km,d.color,d.body,
        d.power_kw,d.power_hp,d.engine_label,d.transmission,d.catalog_price,d.bpm,d.bpm_rest,
        d.market_avg,d.market_median,d.market_count,d.p25,d.p50,d.p75,
        d.verkoopadviees,d.handelswaarde,d.inkoop_low,d.inkoop_high,d.internet_prijs,
-       d.reconditie_kosten,d.import_flag?1:0,d.export_flag?1:0,d.apk_until,d.vin,d.user_id,d.notes,d.status])
+       d.reconditie_kosten,d.import_flag?1:0,d.export_flag?1:0,d.apk_until,d.vin,d.user_id,d.notes,d.status,
+       d.slider_courant||null,d.slider_risico||null,d.slider_staat||null,d.final_bod||null,
+       d.gpt_opinion||null,d.gpt_price||null,d.gpt_confidence||null,
+       d.trend_direction||null,d.trend_pct||null,d.market_velocity||null,d.market_confidence||null])
   },
   getTaxaties: { all: (limit) => queryAll("SELECT * FROM taxaties ORDER BY created_at DESC LIMIT ?", [limit]) },
   getTaxatieByKenteken: { get: (k) => queryOne("SELECT * FROM taxaties WHERE kenteken = ? ORDER BY created_at DESC LIMIT 1", [k]) },
@@ -564,6 +796,42 @@ const stmts = {
         [mk,ml,yr,avg,med,lo,hi,p10,p25,p75,p90,cnt,src])
   },
   getMarketHistory: { all: (mk,ml,yr) => queryAll("SELECT * FROM market_snapshots WHERE make=? AND model=? AND year=? ORDER BY created_at DESC LIMIT 30", [mk,ml,yr]) },
+
+  // Market Listings (individual listing tracking)
+  upsertListing: {
+    run: (hash, mk, ml, yr, title, price, km, trans, source, url, dealer) => {
+      const existing = queryOne("SELECT id FROM market_listings WHERE hash=?", [hash])
+      if (existing) {
+        run("UPDATE market_listings SET price=?, km=?, url=CASE WHEN ? LIKE '%/aanbod/%' THEN ? ELSE url END, dealer=CASE WHEN ?!='' THEN ? ELSE dealer END, last_seen=datetime('now'), status='active' WHERE hash=?", [price, km, url, url, dealer||'', dealer||'', hash])
+        return 'updated'
+      } else {
+        run("INSERT INTO market_listings (hash,make,model,year,title,price,km,transmission,source,url,dealer) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+          [hash, mk, ml, yr, title, price, km, trans, source, url, dealer||''])
+        return 'new'
+      }
+    }
+  },
+  getListingHistory: { all: (mk,ml,yr) => queryAll("SELECT * FROM market_listings WHERE make=? AND model=? AND year=? AND status='active' ORDER BY last_seen DESC", [mk,ml,yr]) },
+  getSoldListings: { all: (mk,ml,yr) => queryAll("SELECT * FROM market_listings WHERE make=? AND model=? AND year=? AND status='sold' ORDER BY last_seen DESC", [mk,ml,yr]) },
+  markSoldListings: {
+    run: (mk, ml, yr, activeHashes) => {
+      if (!activeHashes || !activeHashes.length) return 0
+      const placeholders = activeHashes.map(() => '?').join(',')
+      const before = queryOne("SELECT COUNT(*) as c FROM market_listings WHERE make=? AND model=? AND year=? AND status='active' AND hash NOT IN (" + placeholders + ")", [mk, ml, yr, ...activeHashes])
+      run("UPDATE market_listings SET status='sold', sold_estimate=price WHERE make=? AND model=? AND year=? AND status='active' AND hash NOT IN (" + placeholders + ")", [mk, ml, yr, ...activeHashes])
+      return before?.c || 0
+    }
+  },
+  getMarketStats: { get: () => queryOne("SELECT (SELECT COUNT(*) FROM market_listings) as total_listings, (SELECT COUNT(*) FROM market_listings WHERE status='active') as active_listings, (SELECT COUNT(*) FROM market_listings WHERE status='sold') as sold_listings, (SELECT COUNT(*) FROM crawl_queue) as queue_size, (SELECT COUNT(*) FROM price_trends) as trend_count") },
+
+  // Crawl Queue
+  addToCrawlQueue: { run: (mk,ml,yr,trans) => { try { run("INSERT OR IGNORE INTO crawl_queue (make,model,year,transmission) VALUES (?,?,?,?)", [mk,ml,yr,trans]) } catch {} } },
+  getCrawlQueue: { all: (limit) => queryAll("SELECT * FROM crawl_queue ORDER BY last_crawled_at ASC LIMIT ?", [limit]) },
+  updateCrawlTime: { run: (mk,ml,yr,trans) => run("UPDATE crawl_queue SET last_crawled_at=? WHERE make=? AND model=? AND year=?", [Math.floor(Date.now()/1000), mk, ml, yr]) },
+
+  // Price Trends
+  savePriceTrend: { run: (mk,ml,yr,month,avg,med,min,max,cnt,sold,src) => run("INSERT OR REPLACE INTO price_trends (make,model,year,month,avg_price,median_price,min_price,max_price,listing_count,sold_count,source,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,datetime('now'))", [mk,ml,yr,month,avg,med,min,max,cnt,sold,src]) },
+  getPriceTrends: { all: (mk,ml,yr) => queryAll("SELECT * FROM price_trends WHERE make=? AND model=? AND year=? ORDER BY month DESC LIMIT 24", [mk,ml,yr]) },
 
   // Deals
   saveDeal: {
@@ -706,12 +974,20 @@ const stmts = {
   // Veiling biedingen archief
   archiveBids: { run: (veilingId, ronde) => run("INSERT INTO veiling_biedingen_archief (veiling_id, ronde, user_id, username, bedrag, original_created_at) SELECT veiling_id, ?, user_id, username, bedrag, created_at FROM veiling_biedingen WHERE veiling_id=?", [ronde, veilingId]) },
   
+  // Facturen
+  addFactuur: { run: (d) => run("INSERT INTO facturen (factuur_nr,veiling_id,verkoop_id,koper_id,koper_naam,koper_email,koper_telefoon,koper_adres,koper_postcode,koper_plaats,koper_bedrijf,koper_kvk,koper_btw_nr,kenteken,auto_merk,auto_model,auto_bouwjaar,auto_km,auto_brandstof,auto_vin,bod_bedrag,transport_keuze,transport_kosten,veilingkosten,subtotaal,btw_percentage,btw_bedrag,totaal,marge_regeling,notities) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    [d.factuur_nr,d.veiling_id,d.verkoop_id,d.koper_id,d.koper_naam,d.koper_email,d.koper_telefoon,d.koper_adres,d.koper_postcode,d.koper_plaats,d.koper_bedrijf,d.koper_kvk,d.koper_btw_nr,d.kenteken,d.auto_merk,d.auto_model,d.auto_bouwjaar,d.auto_km,d.auto_brandstof,d.auto_vin,d.bod_bedrag,d.transport_keuze,d.transport_kosten,d.veilingkosten,d.subtotaal,d.btw_percentage,d.btw_bedrag,d.totaal,d.marge_regeling?1:0,d.notities]) },
+  getFactuur: { get: (id) => queryOne("SELECT * FROM facturen WHERE id=?", [id]) },
+  getFactuurByNr: { get: (nr) => queryOne("SELECT * FROM facturen WHERE factuur_nr=?", [nr]) },
+  getFactuurByVeiling: { get: (veilingId) => queryOne("SELECT * FROM facturen WHERE veiling_id=?", [veilingId]) },
+  getUserFacturen: { all: (userId) => queryAll("SELECT * FROM facturen WHERE koper_id=? ORDER BY created_at DESC", [userId]) },
+  getAllFacturen: { all: (limit) => queryAll("SELECT * FROM facturen ORDER BY created_at DESC LIMIT ?", [limit||200]) },
+  updateFactuur: { run: (id, d) => { const sets=[]; const vals=[]; for(const[k,v] of Object.entries(d)){sets.push(k+"=?");vals.push(v)} vals.push(id); run("UPDATE facturen SET "+sets.join(",")+",updated_at=datetime('now') WHERE id=?", vals) }},
+  countFacturen: { get: () => queryOne("SELECT COUNT(*) as total, SUM(CASE WHEN betaal_status='betaald' THEN 1 ELSE 0 END) as betaald, SUM(CASE WHEN betaal_status='open' THEN 1 ELSE 0 END) as open, SUM(totaal) as omzet, SUM(CASE WHEN betaal_status='betaald' THEN totaal ELSE 0 END) as ontvangen FROM facturen") },
+  nextFactuurNr: { get: () => { const last = queryOne("SELECT factuur_nr FROM facturen ORDER BY id DESC LIMIT 1"); const yr = new Date().getFullYear(); if(!last?.factuur_nr) return "T4C-"+yr+"-0001"; const parts = last.factuur_nr.split("-"); const num = parseInt(parts[2]||0)+1; return "T4C-"+yr+"-"+String(num).padStart(4,"0") }},
+
   // Taxatie delete
   deleteTaxatie: { run: (id) => run("DELETE FROM taxaties WHERE id=?", [id]) },
-  getCrawlQueue: { all: (limit) => queryAll("SELECT * FROM crawl_queue ORDER BY last_crawled_at ASC LIMIT ?", [limit||8]) },
-  addToCrawlQueue: { run: (make, model, year, trans) => run("INSERT OR IGNORE INTO crawl_queue (make,model,year,transmission) VALUES (?,?,?,?)", [make,model,year,trans||'']) },
-  updateCrawlTime: { run: (make, model, year, trans) => run("UPDATE crawl_queue SET last_crawled_at=? WHERE make=? AND model=? AND year=? AND transmission=?", [Math.floor(Date.now()/1000),make,model,year,trans||'']) },
-  savePriceTrend: { run: (mk,ml,yr,month,avg,median,p0,p1,cnt,sold,src) => run("INSERT OR REPLACE INTO market_snapshots (make,model,year,month,avg_price,median_price,price_low,price_high,sample_size,sold_count,source) VALUES (?,?,?,?,?,?,?,?,?,?,?)", [mk,ml,yr,month,avg,median,p0,p1,cnt,sold,src]) },
   dbSize: () => fs.existsSync(DB_PATH) ? Math.round(fs.statSync(DB_PATH).size / 1024) : 0,
 }
 
