@@ -239,11 +239,16 @@ function render(){
   const hw=r.handelswaarde||Math.round(vp*.88)||0;
   const bodRaw=r.t4cBod||r.handelswaarde||((r.inkoopLow&&r.inkoopHigh)?Math.round((r.inkoopLow+r.inkoopHigh)/2):0);
 
-  // ═══ SCORE MAPPING (backend → 1-10 display) ═══
-  const courantScore=v.courantScore||r.etr||r.etrScore||Math.round((r.liquidityScore+(r.marketVelocity||50))/20)||5;
-  const vergelijkScore=r.itr||r.itrScore||Math.min(10,Math.round((r.confidence||50)/10))||5;
-  const techniekScore=v.engineRiskProfile==='Laag'?8:v.engineRiskProfile==='Hoog'?3:v.engineRiskProfile==='Gemiddeld'?5:6;
-  const margeScore=r.apr||r.aprScore||Math.round((courantScore*0.4+vergelijkScore*0.2+(10-r.riskScore/10)*0.2))||5;
+  // ═══ SCORE MAPPING (from backend scoring module) ═══
+  const _sc=r.scores||{};
+  const courantScore=_sc.courant?.score||5;
+  const vergelijkScore=_sc.vergelijk?.score||5;
+  const techniekScore=_sc.techniek?.score||5;
+  const margeScore=_sc.marge?.score||5;
+  const qualityScore=_sc.quality?.score||5;
+  const totalScore=_sc.total?.total||5;
+  const totalVerdict=_sc.total?.verdict||'';
+  const totalGrade=_sc.total?.grade||'';
 
   // ═══ INITIAL SLIDER VALUES (auto-prefill) ═══
   const initCourant=Math.min(10,Math.max(1,Math.round(courantScore)));
@@ -259,9 +264,9 @@ function render(){
 
   // Marge Score (klant formule): (ETR×0.4) + (ATR×0.2) - (Risico×0.2) - (KostenDruk×0.2)
   const kostenDruk=Math.min(10,Math.max(1,Math.round(initRisico*0.5+(10-initStaat)*0.5)));
-  const margeScoreCalc=Math.min(10,Math.max(1,Math.round(
-    (courantScore*0.4)+(vergelijkScore*0.2)-((initRisico/10)*10*0.2)-(kostenDruk*0.2)
-  )));
+  const margeScoreCalc=margeScore;
+
+
 
   // Auto-detect LCV
   const isLCV=['transporter','caddy','crafter','sprinter','transit','vivaro','trafic','expert','jumpy','boxer','ducato','daily','master','movano','berlingo','partner','kangoo','combo','nv200','proace','hiace','vito'].some(m=>(v.model||'').toLowerCase().includes(m));
