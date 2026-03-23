@@ -2,7 +2,7 @@
 const fs = require("fs")
 const path = require("path")
 
-const VERSION = "10.14.0"
+const VERSION = "10.16.0"
 
 const _serverStats = {
   startTime: Date.now(),

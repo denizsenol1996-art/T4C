@@ -314,7 +314,7 @@ router.get("/api/vehicle/enriched", async (req, res) => {
     const km = parseInt(req.query.km) || 0
     if (!plate || plate.length < 5) return res.status(400).json({ error: "Ongeldig kenteken" })
     const ck = "vehicle_" + plate
-    const cached = getCached(ck, 14400000) // 4h cache
+    const cached = getCached(ck)
     if (cached) return res.json(cached)
 
     const B = "https://opendata.rdw.nl/resource"
@@ -456,103 +456,89 @@ router.get("/api/vehicle/enriched", async (req, res) => {
     }
     bpmRestPct = bpmNieuw > 0 ? Math.round(bpmRest / bpmNieuw * 100) : 0
 
-            // ═══ VIN + RDW TYPE CODES (nodig voor parallel block) ═══
-      const vin = s(d.voertuig_identificatienummer) || s((oviA[0]||{}).voertuig_identificatienummer) || ""
-      const rdwType = s(d.type), rdwVariant = s(d.variant), rdwUitvoering = s(d.uitvoering)
-
-      let vinData = { transmission: null, transmissionDetail: null, motorCode: null, generation: null, trimLevel: null, drivetrain: null }
-
-// ═══ PARALLEL ENRICHMENT (Finnik + AS24 + ANWB + VIN) ═══
-      // All 4 sources run simultaneously. Expected: ~5s instead of ~15-20s
-      const _enrichStart = Date.now()
-      const _plate = req.query.plate || req.query.kenteken || ''
-
-      const [_finnikR, _as24R, _anwbR, _vinR, _marketR] = await Promise.allSettled([
-
-        // ── 1. FINNIK ──
-        (async () => {
-          if (!_plate) return null
-          try {
-            const data = await fetchFinnikData(_plate)
-            if (data) {
-              console.log('[FINNIK] Found:', data.catalogPrice ? 'Nieuwprijs ' + data.catalogPrice : 'no price')
-              return data
-            }
-          } catch(e) { console.log('[FINNIK] Skip:', e.message) }
-          return null
-        })(),
-
-        // ── 2. AUTOSCOUT24 WAARDEBEPALING ──
-        (async () => {
-          try {
-            const mkL = s(d.merk).toLowerCase(), mlL = s(d.handelsbenaming).toLowerCase()
-            const fuelCode = fuelLabel.toLowerCase().includes('benzine') ? 'B' : fuelLabel.toLowerCase().includes('diesel') ? 'D' : fuelLabel.toLowerCase().includes('elek') ? 'E' : 'B'
-            const bodyCode = s(d.inrichting).toLowerCase().includes('sedan') ? 'sedan' : s(d.inrichting).toLowerCase().includes('hatchback') ? 'hatchback' : 'suv'
-            const asUrl = `https://www.autoscout24.nl/auto-waardebepaling/result/?make=${encodeURIComponent(mkL)}&model=${encodeURIComponent(mlL)}&firstRegistration=${year}&fuelType=${fuelCode}&bodyType=${bodyCode}&hp=${powerHp||0}&mileage=${km||50000}`
-            const asResp = await axios.get(asUrl, { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/html' } })
-            const asHtml = asResp.data || ''
-            const asMatch = asHtml.match(/(?:waarde|value|prijs)[^€]*€\s*([\d.,]+)/i) || asHtml.match(/€\s*([\d]{1,3}(?:[.]\d{3})*(?:,\d{2})?)/g)
-            if (asMatch) {
-              const prices = (Array.isArray(asMatch) ? asMatch : [asMatch[0]]).map(m => {
-                const p = parseInt(String(m).replace(/[^0-9]/g, ''), 10)
-                return p > 500 && p < 200000 ? p : 0
-              }).filter(p => p > 0)
-              if (prices.length) {
-                const result = { low: Math.min(...prices), high: Math.max(...prices), source: 'autoscout24_waardebepaling' }
-                console.log('[AS24-WAARDE] Found:', result)
-                return result
-              }
-            }
-          } catch(e) { console.log('[AS24-WAARDE] Skip:', e.message) }
-          return null
-        })(),
-
-        // ── 3. ANWB KOERSLIJST ──
-        (async () => {
-          try {
-            const cleanP = (_plate || '').replace(/[\s-]/g, '').toUpperCase()
-            if (!cleanP) return null
-            const anwbResp = await axios.get(`https://www.anwb.nl/auto/koerslijst/${cleanP}`, {
-              timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/html' }
-            })
-            const anwbHtml = anwbResp.data || ''
-            const extractAnwb = (label) => {
-              const re = new RegExp(label + '[\\s\\S]*?€\\s*([\\d.,]+)', 'i')
-              const m = anwbHtml.match(re)
-              if (m) { const v = m[1].replace(/\./g, '').replace(',', '.'); const num = parseFloat(v); if (num > 0) return Math.round(num) }
-              return null
-            }
-            const inruil = extractAnwb('Inruilwaarde')
-            const verkoop = extractAnwb('(?:Verkoop|Particulier).*waarde')
-            const nieuw = extractAnwb('Nieuwprijs')
-            if (inruil || verkoop) {
-              const result = { inruilwaarde: inruil, verkoopwaarde: verkoop, nieuwprijs: nieuw, source: 'anwb_koerslijst' }
-              console.log('[ANWB] Found:', result)
-              return result
-            }
-          } catch(e) { console.log('[ANWB] Skip:', e.message) }
-          return null
-        })(),
-
-        // ── 4. VIN DECODE (GPT) ──
-        (async () => {
-          const hasMakeModel = s(d.merk) && s(d.handelsbenaming)
-          const rdwType = s(d.type), rdwVariant = s(d.variant), rdwUitvoering = s(d.uitvoering)
-          const hasTypeCodes = rdwType || rdwVariant || rdwUitvoering
-          if (!(hasMakeModel && (hasTypeCodes || vin))) return null
-
-          const vinCk = "vin3_" + (vin || _plate) + "_" + (km||0)
-          const vinCached = getCached(vinCk, 86400000)
-          if (vinCached) {
-            console.log('[VIN] Cached:', vin, vinCached.transmission)
-            return vinCached
+    // Finnik data enrichment (nieuwprijs, waarde-indicatie, bijtelling, wegenbelasting)
+    let finnikData = null
+    let finnikSource = false
+    try {
+      const plate = req.query.plate || req.query.kenteken || ''
+      if (plate) {
+        finnikData = await fetchFinnikData(plate)
+        if (finnikData) {
+          finnikSource = true
+          if (!catalogPrice && finnikData.catalogPrice) {
+            catalogPrice = finnikData.catalogPrice
+            console.log('[FINNIK] Nieuwprijs aangevuld:', catalogPrice)
           }
+        }
+      }
+    } catch(fe) { console.log('[FINNIK] Skip:', fe.message) }
 
-          try {
-            const vinKey = getApiKey("OPENAI_API_KEY")
-            if (!vinKey || vinKey === "sk-...") { console.log('[VIN] No API key'); return null }
+    // ═══ AUTOSCOUT24 WAARDEBEPALING (gratis ML-based tool) ═══
+    let as24Waarde = null
+    try {
+      const mkL = s(d.merk).toLowerCase(), mlL = s(d.handelsbenaming).toLowerCase()
+      const asUrl = `https://www.autoscout24.nl/auto-waardebepaling/result/?make=${encodeURIComponent(mkL)}&model=${encodeURIComponent(mlL)}&firstRegistration=${year}&fuelType=${fuelLabel.toLowerCase().includes('benzine')?'B':fuelLabel.toLowerCase().includes('diesel')?'D':fuelLabel.toLowerCase().includes('elek')?'E':'B'}&bodyType=${s(d.inrichting).toLowerCase().includes('sedan')?'sedan':s(d.inrichting).toLowerCase().includes('hatchback')?'hatchback':'suv'}&hp=${powerHp||0}&mileage=${km||50000}`
+      const asResp = await axios.get(asUrl, { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/html' } })
+      const asHtml = asResp.data || ''
+      // Try to extract price from page
+      const asMatch = asHtml.match(/(?:waarde|value|prijs)[^€]*€\s*([\d.,]+)/i) || asHtml.match(/€\s*([\d]{1,3}(?:[.]\d{3})*(?:,\d{2})?)/g)
+      if (asMatch) {
+        const prices = (Array.isArray(asMatch) ? asMatch : [asMatch[0]]).map(m => {
+          const p = parseInt(String(m).replace(/[^0-9]/g, ''), 10)
+          return p > 500 && p < 200000 ? p : 0
+        }).filter(p => p > 0)
+        if (prices.length) {
+          as24Waarde = { low: Math.min(...prices), high: Math.max(...prices), source: 'autoscout24_waardebepaling' }
+          console.log('[AS24-WAARDE] Found:', as24Waarde)
+        }
+      }
+    } catch(e) { console.log('[AS24-WAARDE] Skip:', e.message) }
 
-            console.log(`[VIN] Starting decode: ${s(d.merk)} ${s(d.handelsbenaming)} | Type:${rdwType} Var:${rdwVariant} Uitv:${rdwUitvoering} | VIN:${vin||'n/a'}`)
+    // ═══ ANWB KOERSLIJST (gratis, conservatief maar betrouwbaar) ═══
+    let anwbWaarde = null
+    try {
+      const cleanP = plate.replace(/[\s-]/g, '').toUpperCase()
+      const anwbResp = await axios.get(`https://www.anwb.nl/auto/koerslijst/${cleanP}`, {
+        timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/html' }
+      })
+      const anwbHtml = anwbResp.data || ''
+      // Extract values: "Inruilwaarde", "Verkoopwaarde", "Nieuwprijs"
+      const extractAnwb = (label) => {
+        const re = new RegExp(label + '[\\s\\S]*?€\\s*([\\d.,]+)', 'i')
+        const m = anwbHtml.match(re)
+        if (m) { const v = m[1].replace(/\\./g, '').replace(',', '.'); const num = parseFloat(v); if (num > 0) return Math.round(num) }
+        return null
+      }
+      const inruil = extractAnwb('Inruilwaarde')
+      const verkoop = extractAnwb('(?:Verkoop|Particulier).*waarde')
+      const nieuw = extractAnwb('Nieuwprijs')
+      if (inruil || verkoop) {
+        anwbWaarde = { inruilwaarde: inruil, verkoopwaarde: verkoop, nieuwprijs: nieuw, source: 'anwb_koerslijst' }
+        console.log('[ANWB] Found:', anwbWaarde)
+        if (!catalogPrice && nieuw && nieuw > 1000) { catalogPrice = nieuw; console.log('[ANWB] Nieuwprijs aangevuld:', nieuw) }
+      }
+    } catch(e) { console.log('[ANWB] Skip:', e.message) }
+
+    // ═══ VIN DECODE — AI-based COMPLETE vehicle intelligence ═══
+    const vin = s(d.voertuig_identificatienummer) || s((oviA[0]||{}).voertuig_identificatienummer) || ""
+    const rdwType = s(d.type), rdwVariant = s(d.variant), rdwUitvoering = s(d.uitvoering)
+    let vinData = { transmission: null, transmissionDetail: null, motorCode: null, generation: null, trimLevel: null, drivetrain: null }
+    
+    // Trigger: need at least make+model OR type/variant codes
+    const hasMakeModel = s(d.merk) && s(d.handelsbenaming)
+    const hasTypeCodes = rdwType || rdwVariant || rdwUitvoering
+    
+    if (hasMakeModel && (hasTypeCodes || vin)) {
+      const vinCk = "vin3_" + (vin || plate) + "_" + (km||0)
+      const vinCached = getCached(vinCk, 86400000) // 24h cache
+      if (vinCached) {
+        vinData = vinCached
+        console.log('[VIN] Cached:', vin, vinData.transmission)
+      } else {
+        try {
+          const vinKey = getApiKey("OPENAI_API_KEY")
+          if (vinKey && vinKey !== "sk-...") {
+            console.log(`[VIN] Starting decode: ${s(d.merk)} ${s(d.handelsbenaming)} | Type:${rdwType} Var:${rdwVariant} Uitv:${rdwUitvoering} | VIN:${vin||'n/a'} | Key:${vinKey.slice(0,8)}...`)
             const vinResp = await axios.post("https://api.openai.com/v1/chat/completions", {
               model: "gpt-5.4", temperature: 0, max_completion_tokens: 1500,
               messages: [{
@@ -564,46 +550,66 @@ REGELS:
 - Motorcode: kies de ENIGE juiste code voor dit bouwjaar (bijv BMW 320i 2013 = N20B20, NIET B48)
 - Opties: ALLEEN wat STANDAARD is bij deze uitvoering/trim. NIET gokken op extra opties
 - Als je iets niet zeker weet: laat het veld LEEG (null/[])
-- likelyOptions moet LEEG blijven
+- GEEN Harman Kardon, panoramadak, camera etc toekennen tenzij standaard bij trim
+- Interior kleur is NIET af te leiden uit RDW data — laat leeg
+- likelyOptions moet LEEG blijven — we kunnen opties niet verifiëren
 
 Antwoord ALLEEN in JSON:
 {
-  "specificModel": "exacte commerciële modelnaam",
-  "marketSearchName": "zoekterm voor marktplaatsen",
-  "transmission": "Automaat of Handgeschakeld",
+  "specificModel": "het EXACTE commerciële modelnaam (bijv '320i', 'Golf R-Line', 'A180', 'Yaris Cross', 'C5 Aircross'). Dit is hoe de auto op Marktplaats/AutoScout24 wordt aangeboden. NIET de RDW handelsbenaming.",
+  "marketSearchName": "zoekterm voor marktplaatsen (bijv '320i' of 'golf 1.4 tsi' of 'a180'). Kort en specifiek.",
+  "transmission": "Automaat" of "Handgeschakeld",
   "transmissionDetail": "bijv ZF 8-traps",
-  "motorCode": "ENKELE correcte code",
+  "motorCode": "ENKELE correcte code voor dit bouwjaar",
   "generation": "bijv F30",
-  "trimLevel": "bijv M-Sport",
+  "trimLevel": "bijv Luxury Line / M-Sport / SE",
   "drivetrain": "FWD/RWD/AWD",
-  "gearCount": 8, "cylinders": 4, "turbo": true,
-  "timingType": "Ketting of Distributieriem",
-  "timingReplace": "beschrijving",
-  "standardEquipment": ["max 8 items"],
-  "likelyOptions": [], "optionPackage": null,
-  "interior": null, "interiorColor": null,
-  "audioSystem": null, "naviType": null, "roofType": null,
-  "wheelSize": null, "camera": null, "driverAssist": [],
-  "towbar": null, "heatedSeats": null, "heatedSteeringWheel": null,
-  "headlightType": null, "parkingSensors": null,
-  "knownIssues": ["max 5"],
-  "maintenanceAdvice": "max 2 zinnen",
+  "gearCount": 8,
+  "cylinders": 4,
+  "turbo": true,
+  "timingType": "Ketting" of "Distributieriem",
+  "timingReplace": "bijv Niet nodig (ketting levenslang)",
+
+  "standardEquipment": ["ALLEEN items die ZEKER standaard zijn bij deze trim, max 8"],
+  "likelyOptions": [],
+  "optionPackage": null,
+  "interior": null,
+  "interiorColor": null,
+  "audioSystem": null,
+  "naviType": null,
+  "roofType": null,
+  "wheelSize": "standaard voor deze trim of null",
+  "camera": null,
+  "driverAssist": [],
+  "towbar": null,
+  "heatedSeats": null,
+  "heatedSteeringWheel": null,
+  "headlightType": "standaard bij trim of null",
+  "parkingSensors": "standaard bij trim of null",
+
+  "knownIssues": ["ECHTE bekende problemen voor dit model+motor, max 5"],
+  "maintenanceAdvice": "specifiek voor deze motor en km-stand, max 2 zinnen",
   "engineRiskProfile": "Laag/Gemiddeld/Hoog",
-  "engineRiskDetail": "1 zin",
+  "engineRiskDetail": "1 zin waarom",
   "expectedMaintenanceCost": 1200,
+
   "optionPriceImpact": [{"option":"Automaat","impact":1000}],
-  "courantScore": 7, "courantExplain": "1 zin",
-  "targetAudience": "doelgroep", "salesChannelAdvice": "kanaal",
-  "sellingPoints": ["max 4"], "dealBreakers": ["max 3"]
+  "courantScore": 7,
+  "courantExplain": "1 zin",
+  "targetAudience": "doelgroep",
+  "salesChannelAdvice": "kanaal",
+  "sellingPoints": ["max 4 punten gebaseerd op FEITEN"],
+  "dealBreakers": ["max 3"]
 }`
               }, {
                 role: "user",
                 content: `${vin?'VIN: '+vin+'\n':''}Merk: ${s(d.merk)}\nModel: ${s(d.handelsbenaming)}\nType: ${rdwType||'?'}\nVariant: ${rdwVariant||'?'}\nUitvoering: ${rdwUitvoering||'?'}\nTypegoedkeuring: ${typegoedkeuringNr||'?'}\nBouwjaar: ${year}\nBrandstof: ${fuelLabel}\nVermogen: ${powerHp}pk\nCC: ${cc||'?'}\nGewicht: ${n(d.massa_rijklaar)||'?'}kg\nCarrosserie: ${s(d.inrichting)}\nKleur: ${s(d.eerste_kleur)}\nKM-stand: ${km||'onbekend'}\nAantal eigenaren: ${ownerCount||'?'}\nAPK tot: ${fmD(d.vervaldatum_apk)||'?'}\n1e toelating: ${fmD(d.datum_eerste_toelating)||'?'}\nNL toelating: ${fmD(d.datum_eerste_tenaamstelling_in_nederland)||'?'}`
               }]
             }, { headers: { "Authorization": "Bearer " + vinKey, "Content-Type": "application/json" }, timeout: 15000 })
-
+            
             let vinTxt = String(vinResp.data?.choices?.[0]?.message?.content || '{}')
             vinTxt = vinTxt.replace(/```json/g, '').replace(/```/g, '').trim()
+            // Robust JSON recovery: fix common truncation issues
             if (!vinTxt.endsWith('}')) {
               const openBrackets = (vinTxt.match(/\[/g)||[]).length - (vinTxt.match(/\]/g)||[]).length
               const openBraces = (vinTxt.match(/\{/g)||[]).length - (vinTxt.match(/\}/g)||[]).length
@@ -613,60 +619,24 @@ Antwoord ALLEEN in JSON:
               console.log('[VIN] Repaired truncated JSON')
             }
             const parsed = JSON.parse(vinTxt)
-            setCache(vinCk, parsed)
-            console.log(`[VIN] ✓ Decode: ${vin} → ${parsed.specificModel||'?'} | ${parsed.transmission} | ${parsed.motorCode}`)
-            return parsed
-          } catch(ve) {
-            console.error('[VIN] ✗ Decode failed:', ve.message)
-            return null
+            vinData = { ...vinData, ...parsed }
+            setCache(vinCk, vinData)
+            console.log(`[VIN] ✓ Full decode: ${vin} → ${vinData.specificModel||'?'} | ${vinData.transmission} | ${vinData.motorCode} | ${vinData.generation} | ${vinData.trimLevel} | ${(vinData.standardEquipment||[]).length} std + ${(vinData.likelyOptions||[]).length} opts | risk: ${vinData.engineRiskProfile} | courant: ${vinData.courantScore}`)
+          } else {
+            console.log('[VIN] ✗ No OpenAI API key configured')
           }
-        })(),
-
-        // ── 5. MARKET DATA (eigen crawler DB) ──
-        (async () => {
-          try {
-            const mk = s(d.merk), ml = s(d.handelsbenaming)
-            if (!mk || !ml) return null
-            const _mr = await axios.get("http://localhost:3000/api/market?make="+encodeURIComponent(mk)+"&model="+encodeURIComponent(ml)+"&year="+year+"&km="+(km||0), {timeout:15000})
-            const _md = _mr.data || {}
-            if (_md.count) {
-              console.log("[MARKT]", mk, ml, year, "->", _md.count, "listings, mediaan:", _md.median)
-              return _md
-            }
-            return {}
-          } catch(e) { console.log("[MARKT] Skip:", e.message); return {} }
-        })(),
-      ])
-
-      // ── Extract parallel results ──
-      let finnikData = _finnikR.status === 'fulfilled' ? _finnikR.value : null
-      let finnikSource = !!finnikData
-      if (finnikData && !catalogPrice && finnikData.catalogPrice) {
-        catalogPrice = finnikData.catalogPrice
-        console.log('[FINNIK] Nieuwprijs aangevuld:', catalogPrice)
+        } catch(ve) {
+          console.error('[VIN] ✗ Decode failed:', ve.message)
+        }
       }
-
-      let as24Waarde = _as24R.status === 'fulfilled' ? _as24R.value : null
-      let anwbWaarde = _anwbR.status === 'fulfilled' ? _anwbR.value : null
-      if (!catalogPrice && anwbWaarde && anwbWaarde.nieuwprijs && anwbWaarde.nieuwprijs > 1000) {
-        catalogPrice = anwbWaarde.nieuwprijs
-        console.log('[ANWB] Nieuwprijs aangevuld:', catalogPrice)
-      }
-
-      const _vinParsed = _vinR.status === 'fulfilled' ? _vinR.value : null
-      if (_vinParsed) vinData = { ...vinData, ..._vinParsed }
-
-      // Market data extraction
-      const _marketData = (_marketR.status === 'fulfilled' && _marketR.value) ? _marketR.value : {}
-
-      console.log(`[PARALLEL] Enrichment done in ${Date.now() - _enrichStart}ms — Finnik:${_finnikR.status} AS24:${_as24R.status} ANWB:${_anwbR.status} VIN:${_vinR.status} Market:${_marketR.status}`)
+    }
 
     const isAuto = vinData.transmission?.toLowerCase()?.includes('automaat') || vinData.transmission?.toLowerCase()?.includes('automatic') || false
     const transmissionType = vinData.transmission || null
     const transmissionDetail = vinData.transmissionDetail || null
 
     const result = {
-      make:s(d.merk), model:s(d.handelsbenaming).replace(new RegExp("^" + s(d.merk) + "\\s+", "i"), ""), subModel: vinData.specificModel || vinData.marketSearchName || s(d.handelsbenaming),
+      make:s(d.merk), model:s(d.handelsbenaming), subModel: vinData.specificModel || vinData.marketSearchName || s(d.handelsbenaming),
       marketSearchName: vinData.marketSearchName || null, specificModel: vinData.specificModel || null,
       modelVariant:[d.type,d.variant,d.uitvoering].filter(x=>x&&String(x).trim()).map(x=>String(x).trim()).join(" ")||"",
       year, fuel:fuelLabel, km:km||parseInt(d.tellerstandoordeel_afgelezen_waarde)||0,
@@ -750,9 +720,13 @@ Antwoord ALLEEN in JSON:
     // GPT PRICE WITH MARKET DATA
     if (result.make && result.year) {
       try {
-          // Market data already fetched in parallel block
-          const _md = _marketData || {}
+        let _md = {}
+        try {
+          const _mr = await axios.get("http://localhost:3000/api/market?make="+encodeURIComponent(result.make)+"&model="+encodeURIComponent(result.model)+"&year="+result.year+"&km="+(result.km||0), {timeout:30000})
+          _md = _mr.data || {}
           if (_md.count) { result.marktCount=_md.count; result.marktAvg=_md.avg; result.marktMedian=_md.median; result.marktP25=_md.p25; result.marktP75=_md.p75 }
+          console.log("[MARKT]", result.make, result.model, result.year, "->", _md.count, "listings, mediaan:", _md.median)
+        } catch(e) { console.log("[MARKT] Error:", e.message) }
         const _ak = getApiKey("OPENAI_API_KEY")
         if (_ak && _ak !== "sk-...") {
           const _mi = _md.count ? "Marktdata ("+_md.count+" listings): mediaan EUR "+_md.median+", gem EUR "+_md.avg+", P25 EUR "+_md.p25+", P75 EUR "+_md.p75+". Let op: dit is ALLE varianten van dit model inclusief goedkope basisversies. Corrigeer voor de SPECIFIEKE uitvoering." : "Geen marktdata. Gebruik je eigen expertise."
