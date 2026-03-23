@@ -1,10 +1,26 @@
 node_modules/
 backend/backups-pre-dedup/
 backend/data/
+backend/.env
+backend/database.db
+backend/server-stripped.js
+backend/seed-voorraad.js
+backend/marktplaats-import.js
+backend/max_completion_tokens
+backend/*.pre-*
 backup_*/
+backups/
+data/
 photos/
+logs/
 *.bak*
 *.pre-*
 *.clean
 *.broken
 *.htmlclear
+*.db
+*.db.backup*
+et staging
+dashboard.js
+package.json
+package-lock.json
