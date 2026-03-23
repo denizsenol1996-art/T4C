@@ -16,8 +16,16 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
     // If plate is provided, enrich with full vehicle data first
     if (d.plate) {
       try {
-        const enrichResp = await axios.get("http://localhost:3000/api/vehicle/enriched?plate=" + encodeURIComponent(d.plate) + "&km=" + (d.km || 0), {timeout: 30000})
-        const e = enrichResp.data || {}
+        // Direct cache lookup — no HTTP roundtrip (same process, shared cache)
+        const _ck = "vehicle_" + d.plate.replace(/[\s-]/g, "").toUpperCase()
+        let e = getCached(_ck, 14400000)
+        if (!e) {
+          // Cache miss — call enrichment via HTTP (fills cache for next time)
+          const enrichResp = await axios.get("http://localhost:3000/api/vehicle/enriched?plate=" + encodeURIComponent(d.plate) + "&km=" + (d.km || 0), {timeout: 30000})
+          e = enrichResp.data || {}
+        } else {
+          console.log("[DEALER-PRICE] Cache hit for", d.plate)
+        }
         // Merge enriched data into request, keeping any explicit overrides
         d = {
           ...d,
@@ -663,6 +671,29 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
     const finalMarginPct = finalVerkoop > 0 ? Math.round(finalMargin / finalVerkoop * 100) : 0
 
     const priceSource = (aiValidation && aiValidation.available && !aiValidation.sanityFailed) ? 'ai' : 'formula'
+
+    // ═══ AUTO-SAVE TAXATIE (dataset opbouwen) ═══
+    try {
+      stmts.saveTaxatie.run({
+        kenteken: d.plate || "", make: d.make || "", model: d.model || "",
+        model_variant: d.subModel || d.trimLevel || "",
+        year, fuel: d.fuel || "", km,
+        color: d.color || "", body: d.body || "",
+        power_kw: d.powerKw || null, power_hp: d.power || null,
+        engine_label: d.engineLabel || "", transmission: d.transmissionType || "",
+        catalog_price: d.catalogPrice || null, bpm: d.bpm || null, bpm_rest: d.bpmRest || null,
+        market_avg: mAvg || null, market_median: mMedian || null, market_count: mCount || 0,
+        p25: p25 || null, p50: mMedian || null, p75: p75 || null,
+        verkoopadviees: finalVerkoop, handelswaarde: finalHandel,
+        inkoop_low: finalInkoopLow, inkoop_high: finalInkoopHigh,
+        internet_prijs: finalInternet,
+        reconditie_kosten: 0,
+        import_flag: d.importFlag ? 1 : 0, export_flag: 0,
+        apk_until: d.apkUntil || "", vin: d.vin || "",
+        user_id: null, notes: "", status: "auto"
+      })
+      console.log("[TAXATIE-SAVE]", d.make, d.model, year, "-> saved")
+    } catch(saveErr) { console.log("[TAXATIE-SAVE] Error:", saveErr.message) }
 
     res.json({
       verkoopadviees: finalVerkoop, handelswaarde: finalHandel,
