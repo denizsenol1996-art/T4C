@@ -67,6 +67,8 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
           anwbWaarde: d.anwbWaarde || e.anwbWaarde,
           finnikData: d.finnikData || e.finnikData,
           marktCount: d.marktCount || e.marktCount || 0,
+          enrichedVerkoop: e.verkoopadviees || null,
+          enrichedHandel: e.handelswaarde || null,
         }
         console.log("[DEALER-PRICE] Enriched from plate:", d.plate, "->", d.make, d.model, d.subModel, d.year)
       } catch(eErr) { console.log("[DEALER-PRICE] Enrich failed:", eErr.message) }
@@ -472,7 +474,8 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
         const as24Ref = d.as24Waarde ? `\nAutoScout24 ML-waardebepaling: EUR ${d.as24Waarde.low}${d.as24Waarde.high !== d.as24Waarde.low ? ' - ' + d.as24Waarde.high : ''}` : ''
         const anwbRef = d.anwbWaarde ? `\nANWB Koerslijst: ${d.anwbWaarde.inruilwaarde ? 'Inruil EUR ' + d.anwbWaarde.inruilwaarde : ''}${d.anwbWaarde.verkoopwaarde ? ' | Verkoop EUR ' + d.anwbWaarde.verkoopwaarde : ''}` : ''
         const externalRefs = finWaarde + as24Ref + anwbRef
-        const fmlRef = `Formule-referentie (NIET definitief): Retail EUR ${verkoopadviees}, Handel EUR ${handelswaarde}, Inkoop EUR ${inkoopLow}-${inkoopHigh}`
+        const enrichedRef = d.enrichedVerkoop ? `GPT-5.4 eerste inschatting (vehicle endpoint): Retail EUR ${d.enrichedVerkoop}, Handel EUR ${d.enrichedHandel || '?'} — gebruik dit als ANKERPUNT` : ''
+          const fmlRef = `Formule-referentie (NIET definitief): Retail EUR ${verkoopadviees}, Handel EUR ${handelswaarde}, Inkoop EUR ${inkoopLow}-${inkoopHigh}`
 
         // ── Price history from our database ──
         let priceHistoryDesc = ''
@@ -598,12 +601,13 @@ ${kmModelText}
 MARKTSTATISTIEKEN:
 ${mktStats}
 
+${enrichedRef}
 ${fmlRef}
 
 ${priceHistoryDesc}
 Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
 
-        console.log('[AI-FIRST] Calling GPT-4o for', d.make, d.model, year, km + 'km')
+        console.log('[AI-FIRST] Calling GPT-5.4 for', d.make, d.model, year, km + 'km')
         const aiResp = await axios.post("https://api.openai.com/v1/chat/completions", {
           model: "gpt-5.4", temperature: 0.15, max_completion_tokens: 400,
           messages: [{role: "system", content: sysPrompt}, {role: "user", content: usrPrompt}]
