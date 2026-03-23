@@ -9,7 +9,7 @@ const { med, validate, buildSearchUrls } = require("../lib/scrapers")
 const { getApiKey, hasApiKey } = require("../lib/ai")
 const { authMiddleware, staffOnly } = require("../lib/auth")
 const { writeLog } = require("../lib/state")
-
+const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore } = require("../lib/scoring")
 router.post("/api/dealer/price", express.json(), async (req, res) => {
   try {
     let d = req.body
@@ -54,6 +54,19 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
           courantScore: d.courantScore || e.courantScore,
           co2: d.co2 || e.co2,
           powerKw: d.powerKw || e.powerKw || e.power,
+          firstAdmission: d.firstAdmission || e.firstAdmission,
+          firstAdmissionNL: d.firstAdmissionNL || e.firstAdmissionNL,
+          registrationDate: d.registrationDate || e.registrationDate,
+          wamInsured: d.wamInsured !== undefined ? d.wamInsured : e.wamInsured,
+          defects: d.defects || e.defects || [],
+          recalls: d.recalls || e.recalls || [],
+          apkHistory: d.apkHistory || e.apkHistory || [],
+          kmAnalysis: d.kmAnalysis || e.kmAnalysis || null,
+          euroClass: d.euroClass || e.euroClass,
+          as24Waarde: d.as24Waarde || e.as24Waarde,
+          anwbWaarde: d.anwbWaarde || e.anwbWaarde,
+          finnikData: d.finnikData || e.finnikData,
+          marktCount: d.marktCount || e.marktCount || 0,
         }
         console.log("[DEALER-PRICE] Enriched from plate:", d.plate, "->", d.make, d.model, d.subModel, d.year)
       } catch(eErr) { console.log("[DEALER-PRICE] Enrich failed:", eErr.message) }
@@ -695,6 +708,16 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       console.log("[TAXATIE-SAVE]", d.make, d.model, year, "-> saved")
     } catch(saveErr) { console.log("[TAXATIE-SAVE] Error:", saveErr.message) }
 
+
+    // ═══ NIEUWE SCORING MODULE ═══
+    const _qualityScore = calculateQualityScore(d, { marginPct: finalMarginPct, liquidityScore, marketVelocity, riskScore, confidence: conf, marketUsed: mCount > 0, marktCount: mCount })
+    const _techniekScore = calculateTechniekScore(d)
+    const _courantScore = calculateCourantScore(d, { liquidityScore, marketVelocity, confidence: conf, marketUsed: mCount > 0, marktCount: mCount })
+    const _margeScore = calculateMargeScore(d, { marginPct: finalMarginPct, liquidityScore, riskScore })
+    const _vergelijkScore = calculateVergelijkScore(d, { confidence: conf, marktCount: mCount })
+    const _totalScore = calculateTotalScore(_qualityScore, _techniekScore, _courantScore, _margeScore, _vergelijkScore)
+
+
     res.json({
       verkoopadviees: finalVerkoop, handelswaarde: finalHandel,
       inkoopLow: finalInkoopLow, inkoopHigh: finalInkoopHigh,
@@ -714,7 +737,16 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       aiReasoning: aiValidation?.reasoning || null,
       aiTransmissieImpact: aiValidation?.transmissieImpact || null,
       aiConfidence: aiValidation?.confidence || null,
-      aiValidation
+      aiValidation,
+      // Nieuwe scoring module
+      scores: {
+        quality: _qualityScore,
+        techniek: _techniekScore,
+        courant: _courantScore,
+        marge: _margeScore,
+        vergelijk: _vergelijkScore,
+        total: _totalScore
+      }
     })
   } catch (e) {
     console.error("[API] dealer/price error:", e.message)
