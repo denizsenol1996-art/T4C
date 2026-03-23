@@ -3,7 +3,7 @@
 
 const POPULAR_COLORS = ['ZWART', 'WIT', 'GRIJS', 'ZILVER', 'BLAUW', 'ANTRACIET']
 const UNPOPULAR_COLORS = ['GEEL', 'ORANJE', 'PAARS', 'ROZE', 'LICHTGROEN']
-const POPULAR_BRANDS = ['VOLKSWAGEN','BMW','MERCEDES','MERCEDES-BENZ','AUDI','TOYOTA','KIA','HYUNDAI','SKODA','PEUGEOT','RENAULT','FORD','OPEL','VOLVO','MAZDA','TESLA']
+const POPULAR_BRANDS = ['VOLKSWAGEN','BMW','MERCEDES','MERCEDES-BENZ','AUDI','TOYOTA','KIA','HYUNDAI','SKODA','PEUGEOT','RENAULT','FORD','OPEL','VOLVO','MAZDA','TESLA','SUZUKI','NISSAN','HONDA','SEAT','DACIA','MINI','FIAT','CITROEN','MITSUBISHI']
 
 function calculateQualityScore(v, r) {
   // v = vehicle data (from /api/vehicle/enriched)
@@ -108,10 +108,11 @@ function calculateQualityScore(v, r) {
     }
   }
 
-  // WAM niet verzekerd = stilstaand
-  if (v.wamInsured === false) {
-    score -= 1.0
-    details.push({ factor: 'Niet WAM verzekerd (stilstaand)', impact: -1.0, type: 'neg' })
+  // WAM niet verzekerd — alleen negatief als NIET import en NIET dealer voorraad
+  // Dealer voorraad is vaak niet WAM verzekerd, dat is normaal
+  if (v.wamInsured === false && !v.importFlag) {
+    score -= 0.5
+    details.push({ factor: 'Niet WAM verzekerd', impact: -0.5, type: 'neg' })
   }
 
   // Import
@@ -121,9 +122,13 @@ function calculateQualityScore(v, r) {
   }
 
   // Geen onderhoudshistorie (weinig APK data voor leeftijd)
-  if (age > 4 && apkHistory.length <= 1) {
+  // Import auto's hebben geen NL APK historie — niet dubbel straffen
+  if (age > 4 && apkHistory.length <= 1 && !v.importFlag) {
     score -= 1.0
     details.push({ factor: 'Geen onderhoudshistorie (te weinig APK data)', impact: -1.0, type: 'neg' })
+  } else if (age > 4 && apkHistory.length <= 1 && v.importFlag) {
+    score -= 0.3
+    details.push({ factor: 'Import — geen NL onderhoudshistorie', impact: -0.3, type: 'neg' })
   }
 
   // Clamp
