@@ -452,6 +452,13 @@ function render(){
         ${m&&m.count>0?`<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:8px">Vergelijkbare modellen ${E(m.p25||m.low)} – ${E(m.p75||m.high)}</div>`:''}
       </div>
 
+        <!-- DEALER ADVIES -->
+        ${(_sc.advice&&_sc.advice.action)?`<div style="margin:12px 0;padding:12px 14px;border-radius:10px;background:var(--bg3);border-left:4px solid ${_sc.advice.action==='DIRECT KOPEN'||_sc.advice.action==='KOPEN'?'var(--green)':_sc.advice.action==='BIEDEN'?'#4a9eff':_sc.advice.action==='VOORZICHTIG'?'var(--orange)':'var(--red)'}">
+          <div style="font-weight:700;font-size:15px;margin-bottom:6px;color:${_sc.advice.action==='DIRECT KOPEN'||_sc.advice.action==='KOPEN'?'var(--green)':_sc.advice.action==='BIEDEN'?'#4a9eff':_sc.advice.action==='VOORZICHTIG'?'var(--orange)':'var(--red)'}">${_sc.advice.action} — ${_sc.total?.verdict||''}</div>
+          ${_sc.advice.lines.map(l=>l.startsWith('+ ')?'<div style="font-size:12px;color:var(--green);margin:3px 0">&#9654; '+l.slice(2)+'</div>':l.startsWith('! ')?'<div style="font-size:12px;color:var(--orange);margin:3px 0">&#9888; '+l.slice(2)+'</div>':'<div style="font-size:12px;color:var(--text2);margin:3px 0">'+l+'</div>').join('')}
+        </div>`:''}
+
+
       <!-- ═══ 3. SLIDERS — Aanpassing ═══ -->
       <div class="slider-section">
         <div class="slider-section-title" onclick="toggleSection('slider-collapse')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">${IC.tool} Handmatige aanpassing <span style="font-size:11px">▼</span></div><div id="slider-collapse" style="display:none">
