@@ -393,7 +393,7 @@ function render(){
       <div id="confidence-badge" style="display:none"></div>
       <div id="accuracy-badge"></div>
 
-      <!-- ═══ 1. PRICE CARD — Sales first ═══ -->
+      <div class="tx-col-right"><!-- ═══ 1. PRICE CARD — Sales first ═══ -->
       <div class="price-card-v2">
         <div class="price-main">
           <div>
@@ -459,7 +459,8 @@ function render(){
         </div>`:''}
 
 
-      <!-- ═══ 3. SLIDERS — Aanpassing ═══ -->
+      </div><!-- /tx-col-right -->
+        <div class="tx-col-left"><!-- ═══ 3. SLIDERS — Aanpassing ═══ -->
       <div class="slider-section">
         <div class="slider-section-title" onclick="toggleSection('slider-collapse')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">${IC.tool} Handmatige aanpassing <span style="font-size:11px">▼</span></div><div id="slider-collapse" style="display:none">
 
@@ -735,7 +736,8 @@ function render(){
         <button class="ract" style="flex:1" onclick="exportPdf()">PDF</button>
       </div>
 
-      <!-- ═══ POST-TAXATIE: Wat wil je doen? ═══ -->
+      </div><!-- /tx-col-left -->
+        <!-- ═══ POST-TAXATIE: Wat wil je doen? ═══ -->
       <div style="margin:16px 0 8px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Wat wil je met deze auto?</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
         <button onclick="showVoorraadModal()" style="padding:14px 8px;background:var(--green);color:#000;border:none;border-radius:12px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">+ Voorraad</button>

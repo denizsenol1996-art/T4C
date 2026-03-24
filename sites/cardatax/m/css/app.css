@@ -502,3 +502,87 @@ input[type=range].t4c-slider::-moz-range-thumb{width:24px;height:24px;border-rad
 .capture-dot.done{border-color:var(--green);background:rgba(0,255,156,.1);color:var(--green)}
 .capture-dot.current{border-color:var(--green);box-shadow:0 0 8px rgba(0,255,156,.3)}
 
+
+/* ═══ DESKTOP LAYOUT (>900px) ═══ */
+@media (min-width: 900px) {
+  /* Hide mobile bottom nav */
+  .nav-bottom, .mobile-nav, [class*="bottom-nav"] { display: none !important; }
+  
+  /* Grid layout voor resultaat */
+  .tx-result {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    grid-template-rows: auto auto 1fr;
+    gap: 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 24px !important;
+  }
+  
+  /* Header over volle breedte */
+  .tx-result > div:first-child { grid-column: 1 / -1; }
+  
+  /* Foto viewer over volle breedte */
+  .tx-result .turntable-wrap,
+  .tx-result [id*="turntable"] { grid-column: 1 / -1; max-height: 300px; overflow: hidden; }
+  
+  /* Linker kolom: advies + scores + bod */
+  .tx-col-left {
+    grid-column: 1;
+    grid-row: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* Rechter kolom: prijzen + specs + markt */
+  .tx-col-right {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* Invoerscherm centreren */
+  #tc {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+  
+  /* Grotere typografie desktop */
+  .r-kenteken { font-size: 28px !important; }
+  .r-car { font-size: 18px !important; }
+  .price-main-val { font-size: 32px !important; }
+  
+  /* Minder glow op desktop */
+  .price-card, [style*="glow"], [style*="shadow"] {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  /* Score bars breder */
+  .score-bar-wrap { height: 8px !important; }
+  
+  /* Slider section altijd open op desktop */
+  #slider-collapse { display: block !important; }
+}
+
+/* ═══ DESKTOP PRO STYLING ═══ */
+@media (min-width: 900px) {
+  body {
+    background: #0a0e14 !important;
+  }
+  
+  /* Subtielere borders */
+  .tx-result > div, .tx-col-left > div, .tx-col-right > div {
+    border-radius: 10px !important;
+  }
+  
+  /* Price cards in een rij */
+  .price-sub {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+  }
+}
