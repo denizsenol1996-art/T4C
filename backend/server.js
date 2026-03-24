@@ -207,8 +207,8 @@ app.get("/app/*", (req, res) => {
     let backgroundCrawl = null
     try { backgroundCrawl = require("./routes/market").backgroundCrawl } catch(e) {}
     if (backgroundCrawl) {
-      setInterval(() => { try { backgroundCrawl() } catch(e) { console.error("[CRAWLER] Timer error:", e.message) } }, 4 * 60 * 60 * 1000)
-      setTimeout(() => { try { backgroundCrawl() } catch(e) { console.error("[CRAWLER] First run error:", e.message) } }, 60000)
+      setInterval(() => { backgroundCrawl().catch(e => console.error('[CRAWLER] Timer error:', e.message)) }, 4 * 60 * 60 * 1000)
+      setTimeout(() => { console.log('[CRAWLER] First run starting...'); backgroundCrawl().then(() => console.log('[CRAWLER] First run done')).catch(e => console.error('[CRAWLER] First run error:', e.message)) }, 60000)
     } else {
       console.log("[CRAWLER] backgroundCrawl not available from market module")
     }
