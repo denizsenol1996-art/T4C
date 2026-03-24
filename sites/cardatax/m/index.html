@@ -531,88 +531,20 @@ input[type=range].t4c-slider::-moz-range-thumb{width:24px;height:24px;border-rad
 .capture-dot.current{border-color:var(--green);box-shadow:0 0 8px rgba(0,255,156,.3)}
 
 
-/* ═══ RESPONSIVE DESKTOP/MOBILE ═══ */
+/* Mobile only */
 .mobile-only { display: block; }
 .desktop-only { display: none; }
-.home-grid { display: flex; flex-direction: column; gap: 12px; }
-
-@media (min-width: 768px) {
-  .mobile-only { display: none !important; }
-  .desktop-only { display: block !important; }
-  .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .home-grid .full-width { grid-column: span 2; }
-  #pg-home > div:last-child { max-width: 900px; margin: 0 auto; }
-}
-
-
-
-
-
-
-
-}
-
-
-/* ═══ DESKTOP LAYOUT ═══ */
-@media (min-width: 900px) {
-  .bnav { display: none !important; }
-  body { padding-bottom: 0 !important; }
-}
-@media (min-width: 1000px) {
-  #rc > div {
-    display: grid !important;
-    grid-template-columns: 420px 1fr !important;
-    gap: 20px !important;
-    max-width: 1200px !important;
-    margin: 0 auto !important;
-    padding: 20px 32px !important;
-  }
-  #rc > div > *:not(.tx-col-right):not(.tx-col-left) {
-    grid-column: 1 / -1 !important;
-  }
-  .tx-col-right {
-    grid-column: 1 !important;
-    grid-row: span 20 !important;
-  }
-  .tx-col-left {
-    grid-column: 2 !important;
-    grid-row: span 20 !important;
-  }
-  .turntable-wrap { max-height: 350px !important; overflow: hidden !important; }
-  .r-kenteken { font-size: 28px !important; }
-  .r-car { font-size: 18px !important; }
-  .price-main-val { font-size: 32px !important; }
-  #slider-collapse { display: block !important; }
-}
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
-<style>
-@media(min-width:768px){
-  body{background:#060912}
-  .app-shell{max-width:960px;margin:0 auto;min-height:100vh;position:relative;box-shadow:0 0 60px rgba(0,0,0,.5)}
-  .bnav{max-width:960px;left:50%;transform:translateX(-50%)}
-  .turntable-wrap{max-height:280px!important;overflow:hidden}
-  .turntable{max-height:280px!important}
-  .turntable-slide{max-height:260px!important}
-  .turntable-slide img{max-height:260px!important;object-fit:contain!important}
-  [onclick*="go('scan')"]{display:none!important}
-  [onclick*="scanner"]{display:none!important}
-  [onclick*="walkaround"]{display:none!important}
-  .scan-btn,.camera-btn{display:none!important}
-  button[onclick*="go('walkaround')"]{display:none!important}
-  #home-scanner{display:none!important}
-  .bnav-item[onclick*="scanner"]{display:none!important}
+<script>
+// Desktop redirect: /m/ is mobiel-only, desktop gaat naar /app/
+if (window.innerWidth >= 1024 && !navigator.userAgent.match(/Mobile|Android|iPhone|iPad/i)) {
+  window.location.href = '/app/';
 }
-@media(min-width:1200px){
-  body::before{content:'';position:fixed;top:0;left:0;width:calc(50% - 500px);height:100%;background:#060912;z-index:0}
-  body::after{content:'';position:fixed;top:0;right:0;width:calc(50% - 500px);height:100%;background:#060912;z-index:0}
-  .app-shell{max-width:960px;z-index:1;position:relative}
-  .bnav{max-width:960px}
-}
-</style>
+</script>
 </head>
 <body><div class="app-shell">
 <div class="toast-container" id="toastContainer"></div>
