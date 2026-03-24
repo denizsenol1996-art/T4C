@@ -514,7 +514,23 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
           const normP75 = normPrices.length >= 4 ? normPrices[Math.floor(normPrices.length*0.75)] : normPrices[normPrices.length-1] || 0
           console.log('[LISTINGS]', rawListings.length, 'raw →', filteredListings.length, 'filtered →', 'normMediaan:', normMedian, '| kmPerEuro:', kmPerEuro)
 
-          const listings = normalizedListings
+          // Title filter: verwijder listings die niet bij het model passen
+          const _mk = (d.make||'').toLowerCase()
+          const _ml = (d.model||'').toLowerCase()
+          const _mlWords = _ml.split(' ').filter(w => w.length >= 2)
+          const cleanListings = normalizedListings.filter(l => {
+            const t = (l.title||'').toLowerCase()
+            if (!t) return true  // geen title = vertrouw het
+            // Title moet merk + alle model-woorden bevatten
+            if (_mlWords.length > 0 && !_mlWords.every(w => t.includes(w))) {
+              return false  // bijv "A 180" past niet bij model "E 350"
+            }
+            return true
+          })
+          if (cleanListings.length < normalizedListings.length) {
+            console.log('[TITLE-FILTER]', d.make, d.model, ':', normalizedListings.length, '->', cleanListings.length, 'listings na title check')
+          }
+          const listings = cleanListings
         const listingsTable = listings.length > 0
           ? listings.map((l, i) => {
               const parts = [`${i+1}. ${l.title || '?'}`, `EUR ${l.price}`]
@@ -729,22 +745,43 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
           const _dbCount = _dbPrices.length
           // Vraagprijs -> verkoopprijs correctie (dealers verkopen gem. 7% onder vraagprijs)
           const _dataVerkoop = _dbMedian > 0 ? Math.round(_dbMedian * 0.93 / 50) * 50 : 0
+          // Filter: verwijder listings waarvan de title niet bij het model past
+          const _modelCheck = (d.model||'').toLowerCase().replace(/\s+/g, ' ').trim()
+          if (_modelCheck.length >= 2) {
+            const _before = _dbPrices.length
+            const _validListings = _clampListings.filter(l => {
+              const t = (l.title||'').toLowerCase()
+              if (!t) return true  // geen title = vertrouw model veld
+              // Check of title het model bevat (bijv "e 350" in "Mercedes-Benz E 350 CGI")
+              const modelWords = _modelCheck.split(' ').filter(w => w.length >= 2)
+              return modelWords.every(w => t.includes(w))
+            })
+            if (_validListings.length < _dbPrices.length && _validListings.length > 0) {
+              const _vPrices = _validListings.map(l=>l.price).sort((a,b)=>a-b)
+              _dbPrices.length = 0
+              _vPrices.forEach(p => _dbPrices.push(p))
+              const newMedian = _dbPrices[Math.floor(_dbPrices.length/2)]
+              console.log('[DATA-FILTER]', d.make, d.model, ':', _before, '->', _dbPrices.length, 'listings na title check, mediaan was', _dbMedian, 'nu', newMedian)
+            }
+          }
+          const _filteredMedian = _dbPrices.length > 0 ? _dbPrices[Math.floor(_dbPrices.length/2)] : _dbMedian
+          const _filteredVerkoop = _filteredMedian > 0 ? Math.round(_filteredMedian * 0.93 / 50) * 50 : _dataVerkoop
+          const _filteredCount = _dbPrices.length
+
           // Gewogen blend
           let _blendedVerkoop = aiVerkoop
-          if (_dataVerkoop > 0 && _dbCount >= 1) {
-            const _dataWeight = _dbCount >= 15 ? 0.80 : _dbCount >= 8 ? 0.65 : _dbCount >= 5 ? 0.50 : _dbCount >= 3 ? 0.30 : 0.15
-            _blendedVerkoop = Math.round((_dataVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
-            console.log('[PRICING-BLEND]', d.make, d.model, ':', _dbCount, 'listings, mediaan', _dbMedian, '-> verkoopprijs', _dataVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
+          if (_filteredVerkoop > 0 && _filteredCount >= 1) {
+            const _dataWeight = _filteredCount >= 50 ? 0.30 : 0.0  // GPT primary — data pas bij 50+ schone listings
+            _blendedVerkoop = Math.round((_filteredVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
+            console.log('[PRICING-BLEND]', d.make, d.model, ':', _filteredCount, 'listings (van', _dbCount, 'raw), mediaan', _filteredMedian, '-> VP', _filteredVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
           } else {
             console.log('[PRICING-GPT]', d.make, d.model, ': geen data, 100% GPT:', aiVerkoop)
           }
-          // KM correctie op blended prijs
+          // GPT houdt al rekening met km — geen extra km correctie
+          finalVerkoop = _blendedVerkoop
           const _kmC = kmCorrection(km)
-          const _kmAdj = Math.round(_blendedVerkoop * _kmC.factor / 50) * 50
-          if (Math.abs(_kmC.factor - 1.0) > 0.01) {
-            console.log('[KM-CORRECT]', d.make, d.model, km+'km:', 'factor', _kmC.factor, '('+_kmC.label+')', _blendedVerkoop, '->', _kmAdj, _kmC.export ? 'EXPORT' : '')
-          }
-          finalVerkoop = _kmAdj
+          if (_kmC.export) { d.exportFlag = true }
+          console.log('[PRICING-FINAL]', d.make, d.model, km+'km:', 'VP', finalVerkoop, _kmC.export ? '⚠ EXPORT' : '')
           finalHandel = Math.round(finalVerkoop * hwRatio / 50) * 50
           finalBod = finalHandel
           finalInkoopLow = Math.round(finalHandel * 0.85 / 50) * 50

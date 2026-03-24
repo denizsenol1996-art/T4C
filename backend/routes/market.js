@@ -535,7 +535,7 @@ async function backgroundCrawl() {
 
   try {
     // Get items to crawl (stale or never crawled)
-    const queue = stmts.getCrawlQueue.all(50) // 50 per run — Z440 kan het aan
+    const queue = stmts.getCrawlQueue.all(100) // 100 per run — continu crawlen — Z440 kan het aan
     if (!queue.length) { _crawlRunning = false; return }
 
     console.log(`\n[CRAWLER] Starting background crawl: ${queue.length} models`)
