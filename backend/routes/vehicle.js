@@ -636,7 +636,7 @@ Antwoord ALLEEN in JSON:
     const transmissionDetail = vinData.transmissionDetail || null
 
     const result = {
-      make:s(d.merk), model:s(d.handelsbenaming), subModel: vinData.specificModel || vinData.marketSearchName || s(d.handelsbenaming),
+      make:s(d.merk), model:s(d.handelsbenaming).replace(new RegExp("^" + s(d.merk) + "\\s+", "i"), ""), subModel: vinData.specificModel || vinData.marketSearchName || s(d.handelsbenaming),
       marketSearchName: vinData.marketSearchName || null, specificModel: vinData.specificModel || null,
       modelVariant:[d.type,d.variant,d.uitvoering].filter(x=>x&&String(x).trim()).map(x=>String(x).trim()).join(" ")||"",
       year, fuel:fuelLabel, km:km||parseInt(d.tellerstandoordeel_afgelezen_waarde)||0,
