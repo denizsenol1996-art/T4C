@@ -302,7 +302,7 @@ function calculateVergelijkScore(v, r) {
 // ═══ TOTAALSCORE — de "porno de la creme" detector ═══
 function calculateTotalScore(quality, techniek, courant, marge, vergelijk) {
   const total = Math.round((quality.score * 0.30 + techniek.score * 0.20 + courant.score * 0.20 + marge.score * 0.20 + vergelijk.score * 0.10) * 10) / 10
-  let verdict = 'Niet aantrekkelijk'
+  let verdict = 'Extra voorzichtig beoordelen'
   if (total >= 8.5) verdict = 'Topexemplaar — vol inzetten'
   else if (total >= 7.5) verdict = 'Zeer interessant — stevig bieden'
   else if (total >= 6.0) verdict = 'Interessant — marktconform bieden'
@@ -323,11 +323,11 @@ function generateDealerAdvice(scores, v, r) {
   const marge = scores.marge || {}
 
   // Hoofdadvies
-  let action = 'AFWIJZEN'
+  let action = 'EXTRA VOORZICHTIG'
   if (total >= 8.5) action = 'DIRECT KOPEN'
   else if (total >= 7.0) action = 'KOPEN'
   else if (total >= 6.0) action = 'BIEDEN'
-  else if (total >= 5.0) action = 'VOORZICHTIG'
+  else if (total >= 4.5) action = 'VOORZICHTIG'
 
   const lines = []
 
