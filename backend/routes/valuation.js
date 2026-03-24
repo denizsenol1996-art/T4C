@@ -8,6 +8,7 @@ const { getSeasonFactor, getDepreciation, getMarketPressure, normalizeKm, genera
 const { med, validate, buildSearchUrls } = require("../lib/scrapers")
 const { getApiKey, hasApiKey } = require("../lib/ai")
 const { authMiddleware, staffOnly } = require("../lib/auth")
+const { getTwinListings } = require("../lib/twins")
 const { writeLog } = require("../lib/state")
 const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
 router.post("/api/dealer/price", express.json(), async (req, res) => {
@@ -81,6 +82,19 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
         const mk = (d.make||'').toLowerCase(); let ml = (d.model||'').toLowerCase(); if (ml.startsWith(mk + ' ')) ml = ml.slice(mk.length + 1)
         if (mk && ml) {
           const dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 30', [mk, ml.split(" ")[0] + "%", (d.year||2015)-2, (d.year||2015)+2])
+          // Twin car listings (zelfde platform, ander badge)
+          const twinListings = getTwinListings(queryAll, mk, ml.split(" ")[0], d.year||2015)
+          const twinCount = twinListings.length
+          if (twinCount > 0) {
+            const twinPriced = twinListings.filter(l => l.price > 0).map(l => ({
+              title: l.title || (l.twin_source + ' ' + (l.year||'')),
+              price: l.price, km: l.km, source: (l.source||'') + ' (twin: ' + l.twin_source + ')',
+              sellerType: l.dealer, first_seen: l.first_seen, days_on_market: l.days_on_market, isTwin: true
+            }))
+            dbListings.push(...twinPriced)
+            dbListings.sort((a,b) => a.price - b.price)
+            console.log('[TWINS]', mk, ml.split(" ")[0], ':', twinCount, 'twin listings toegevoegd van', [...new Set(twinListings.map(l=>l.twin_source))].join(', '))
+          }
           if (dbListings.length > 0) {
             d.marketListings = dbListings
             console.log('[DEALER-PRICE] Loaded', dbListings.length, 'listings from DB')
@@ -679,12 +693,40 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
         const saneCeiling = 500000  // GPT-5.4 is primary, trust it
 
         if (aiVerkoop >= saneFloor && aiVerkoop <= saneCeiling && aiVerkoop >= 500) {
-          finalVerkoop = aiVerkoop
-          finalHandel = aiHandel > 0 ? aiHandel : Math.round(aiVerkoop * hwRatio / 50) * 50
-          finalInkoopLow = aiInkLow > 0 ? aiInkLow : Math.round(finalHandel * 0.85 / 50) * 50
-          finalInkoopHigh = aiInkHigh > 0 ? aiInkHigh : Math.round(finalHandel * 0.95 / 50) * 50
-          finalBod = finalHandel  // BOD = handelswaarde
-          finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
+          // Confidence-based GPT begrenzing: hoe meer data, hoe minder GPT mag afwijken
+          // Confidence-based GPT begrenzing: bereken mediaan direct uit DB listings
+          const _clampListings = queryAll('SELECT price FROM market_listings WHERE UPPER(make)=? AND UPPER(model) LIKE ? AND year BETWEEN ? AND ? AND status=\'active\' AND price > 0', [d.make.toUpperCase(), d.model.toUpperCase().split(' ')[0]+'%', (year||2015)-2, (year||2015)+2])
+          const _dbPrices = _clampListings.map(l=>l.price).sort((a,b)=>a-b)
+          const _dbMedian = _dbPrices.length > 0 ? _dbPrices[Math.floor(_dbPrices.length/2)] : 0
+          const _dbCount = _dbPrices.length
+          const _maxDev = _dbCount >= 15 ? 0.05 : _dbCount >= 5 ? 0.10 : _dbCount >= 3 ? 0.20 : 1.0
+          if (_dbMedian > 0 && _dbCount >= 3) {
+            const _minAI = Math.round(_dbMedian * (1 - _maxDev))
+            const _maxAI = Math.round(_dbMedian * (1 + _maxDev))
+            if (aiVerkoop < _minAI || aiVerkoop > _maxAI) {
+              const _clamped = Math.min(_maxAI, Math.max(_minAI, aiVerkoop))
+              console.log('[AI-CLAMP]', d.make, d.model, ': GPT gaf €' + aiVerkoop, 'maar', _dbCount, 'listings zeggen mediaan €' + _dbMedian, '±' + Math.round(_maxDev*100) + '% → geclampt naar €' + _clamped)
+              finalVerkoop = _clamped
+              finalHandel = Math.round(_clamped * hwRatio / 50) * 50
+              finalBod = finalHandel
+              finalInkoopLow = Math.round(finalHandel * 0.85 / 50) * 50
+              finalInkoopHigh = Math.round(finalHandel * 0.95 / 50) * 50
+              finalInternet = Math.round(_clamped * 1.06 / 50) * 50
+              conf += 25
+              var _clampWasApplied = true
+              console.log('[AI-CLAMP] Final: VP €' + finalVerkoop + ', HW €' + finalHandel + ', Bod €' + finalBod)
+            }
+          } else {
+            console.log('[AI-FREE]', d.make, d.model, ': slechts', _dbCount, 'listings, GPT €' + aiVerkoop, 'onbegrensd')
+          }
+          if (!_clampWasApplied) {
+            finalVerkoop = aiVerkoop
+            finalHandel = aiHandel > 0 ? aiHandel : Math.round(aiVerkoop * hwRatio / 50) * 50
+            finalInkoopLow = aiInkLow > 0 ? aiInkLow : Math.round(finalHandel * 0.85 / 50) * 50
+            finalInkoopHigh = aiInkHigh > 0 ? aiInkHigh : Math.round(finalHandel * 0.95 / 50) * 50
+            finalBod = finalHandel  // BOD = handelswaarde
+            finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
+          }
           conf += 25  // High confidence when AI provides prices
           console.log(`[AI-FIRST] Applied: Retail EUR ${finalVerkoop}, Handel EUR ${finalHandel}, Inkoop EUR ${finalInkoopLow}-${finalInkoopHigh}`)
         } else {
