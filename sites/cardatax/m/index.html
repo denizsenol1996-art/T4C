@@ -549,29 +549,42 @@ input[type=range].t4c-slider::-moz-range-thumb{width:24px;height:24px;border-rad
 
 
 
+
+}
+
+
 /* ═══ DESKTOP LAYOUT ═══ */
 @media (min-width: 900px) {
-  #rc > div > div {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-  .tx-col-right,
-  .tx-col-left {
-    display: block;
-  }
+  .bnav { display: none !important; }
+  body { padding-bottom: 0 !important; }
 }
 @media (min-width: 1000px) {
   #rc > div {
+    display: grid !important;
+    grid-template-columns: 420px 1fr !important;
+    gap: 20px !important;
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+    padding: 20px 32px !important;
+  }
+  #rc > div > *:not(.tx-col-right):not(.tx-col-left) {
+    grid-column: 1 / -1 !important;
   }
   .tx-col-right {
+    grid-column: 1 !important;
+    grid-row: span 20 !important;
   }
   .tx-col-left {
+    grid-column: 2 !important;
+    grid-row: span 20 !important;
   }
-  .turntable-wrap { max-height: 350px; overflow: hidden; }
+  .turntable-wrap { max-height: 350px !important; overflow: hidden !important; }
+  .r-kenteken { font-size: 28px !important; }
+  .r-car { font-size: 18px !important; }
+  .price-main-val { font-size: 32px !important; }
+  #slider-collapse { display: block !important; }
 }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
