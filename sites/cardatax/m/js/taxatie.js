@@ -1406,8 +1406,8 @@ function buildTurntable(images){
   const loading=document.getElementById('turntable-loading');
   if(!track) return;
 
-  const labels={'1-front':'Voorkant','2-front-right':'Rechts-voor','3-right':'Rechterzijde','4-rear':'Achterkant','5-left':'Linkerzijde',front:'Voorkant',left:'Linkerzijde',rear:'Achterkant',right:'Rechterzijde','front-right':'Rechts-voor'};
-  const order=['1-front','2-front-right','3-right','4-rear','5-left'];
+  const labels={'1-front':'Voorkant','2-right':'Rechterzijde','3-rear':'Achterkant','4-left':'Linkerzijde',front:'Voorkant',left:'Linkerzijde',rear:'Achterkant',right:'Rechterzijde'};
+  const order=['1-front','2-right','3-rear','4-left'];
   const sorted=order.map(a=>images.find(i=>i.angle===a)).filter(Boolean);
   const imgs=sorted.length>=3?sorted:images.filter(i=>i.url);
   if(!imgs.length) return;
