@@ -719,40 +719,31 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
         const saneCeiling = 500000  // GPT-5.4 is primary, trust it
 
         if (aiVerkoop >= saneFloor && aiVerkoop <= saneCeiling && aiVerkoop >= 500) {
-          // Confidence-based GPT begrenzing: hoe meer data, hoe minder GPT mag afwijken
-          // Confidence-based GPT begrenzing: bereken mediaan direct uit DB listings
+          // ═══ GEWOGEN DATA+GPT PRICING ═══
+          // Data = vraagprijzen uit DB (x0.93 = geschatte verkoopprijs)
+          // GPT = AI schatting op basis van kennis + context
+          // Gewogen blend: meer data = meer vertrouwen op data
           const _clampListings = queryAll('SELECT price FROM market_listings WHERE UPPER(make)=? AND UPPER(model) LIKE ? AND year BETWEEN ? AND ? AND status=\'active\' AND price > 0', [d.make.toUpperCase(), d.model.toUpperCase().split(' ')[0]+'%', (year||2015)-2, (year||2015)+2])
           const _dbPrices = _clampListings.map(l=>l.price).sort((a,b)=>a-b)
           const _dbMedian = _dbPrices.length > 0 ? _dbPrices[Math.floor(_dbPrices.length/2)] : 0
           const _dbCount = _dbPrices.length
-          const _maxDev = _dbCount >= 15 ? 0.05 : _dbCount >= 5 ? 0.10 : _dbCount >= 3 ? 0.20 : 1.0
-          if (_dbMedian > 0 && _dbCount >= 3) {
-            const _minAI = Math.round(_dbMedian * (1 - _maxDev))
-            const _maxAI = Math.round(_dbMedian * (1 + _maxDev))
-            if (aiVerkoop < _minAI || aiVerkoop > _maxAI) {
-              const _clamped = Math.min(_maxAI, Math.max(_minAI, aiVerkoop))
-              console.log('[AI-CLAMP]', d.make, d.model, ': GPT gaf €' + aiVerkoop, 'maar', _dbCount, 'listings zeggen mediaan €' + _dbMedian, '±' + Math.round(_maxDev*100) + '% → geclampt naar €' + _clamped)
-              finalVerkoop = _clamped
-              finalHandel = Math.round(_clamped * hwRatio / 50) * 50
-              finalBod = finalHandel
-              finalInkoopLow = Math.round(finalHandel * 0.85 / 50) * 50
-              finalInkoopHigh = Math.round(finalHandel * 0.95 / 50) * 50
-              finalInternet = Math.round(_clamped * 1.06 / 50) * 50
-              conf += 25
-              var _clampWasApplied = true
-              console.log('[AI-CLAMP] Final: VP €' + finalVerkoop + ', HW €' + finalHandel + ', Bod €' + finalBod)
-            }
+          // Vraagprijs -> verkoopprijs correctie (dealers verkopen gem. 7% onder vraagprijs)
+          const _dataVerkoop = _dbMedian > 0 ? Math.round(_dbMedian * 0.93 / 50) * 50 : 0
+          // Gewogen blend
+          let _blendedVerkoop = aiVerkoop
+          if (_dataVerkoop > 0 && _dbCount >= 1) {
+            const _dataWeight = _dbCount >= 15 ? 0.80 : _dbCount >= 8 ? 0.65 : _dbCount >= 5 ? 0.50 : _dbCount >= 3 ? 0.30 : 0.15
+            _blendedVerkoop = Math.round((_dataVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
+            console.log('[PRICING-BLEND]', d.make, d.model, ':', _dbCount, 'listings, mediaan', _dbMedian, '-> verkoopprijs', _dataVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
           } else {
-            console.log('[AI-FREE]', d.make, d.model, ': slechts', _dbCount, 'listings, GPT €' + aiVerkoop, 'onbegrensd')
+            console.log('[PRICING-GPT]', d.make, d.model, ': geen data, 100% GPT:', aiVerkoop)
           }
-          if (!_clampWasApplied) {
-            finalVerkoop = aiVerkoop
-            finalHandel = aiHandel > 0 ? aiHandel : Math.round(aiVerkoop * hwRatio / 50) * 50
-            finalInkoopLow = aiInkLow > 0 ? aiInkLow : Math.round(finalHandel * 0.85 / 50) * 50
-            finalInkoopHigh = aiInkHigh > 0 ? aiInkHigh : Math.round(finalHandel * 0.95 / 50) * 50
-            finalBod = finalHandel  // BOD = handelswaarde
-            finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
-          }
+          finalVerkoop = _blendedVerkoop
+          finalHandel = Math.round(finalVerkoop * hwRatio / 50) * 50
+          finalBod = finalHandel
+          finalInkoopLow = Math.round(finalHandel * 0.85 / 50) * 50
+          finalInkoopHigh = Math.round(finalHandel * 0.95 / 50) * 50
+          finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
           conf += 25  // High confidence when AI provides prices
           console.log(`[AI-FIRST] Applied: Retail EUR ${finalVerkoop}, Handel EUR ${finalHandel}, Inkoop EUR ${finalInkoopLow}-${finalInkoopHigh}`)
         } else {
