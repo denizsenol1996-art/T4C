@@ -198,8 +198,8 @@ router.post("/api/generate-car-images", express.json(), async (req, res) => {
     const prompts = [
       { angle: "1-front",          prompt: `Photorealistic studio photograph of a ${carDesc}. Straight-on front view, camera at bumper height, showing the full front face symmetrically. Dutch yellow license plate reading "${plateText}" on the front bumper. Car is placed ${studioBg}` },
       { angle: "2-front-right",  prompt: `Photorealistic studio photograph of a ${carDesc}. Classic right front 3/4 view from passenger side, camera 30 degrees to the right, showing front grille and entire right flank. Hero dealership angle. Car is placed ${studioBg}` },
-      { angle: "3-right",           prompt: `Photorealistic studio photograph of a ${carDesc}. Straight-on rear view, camera at bumper height, showing full rear symmetrically. Dutch yellow license plate reading "${plateText}" on rear bumper. Red tail lights prominent. Car is placed ${studioBg}` },
-      { angle: "4-rear",        prompt: `Photorealistic studio photograph of a ${carDesc}. Straight-on rear view, camera at bumper height, showing full rear symmetrically. Dutch yellow license plate reading "${plateText}" on rear bumper. Red tail lights prominent. Car is placed ${studioBg}` },
+      { angle: "3-right",       prompt: `Photorealistic studio photograph of a ${carDesc}. Full right side profile view, perfectly level, showing the entire passenger side of the car from wheel to wheel. Car is placed ${studioBg}` },
+      { angle: "4-rear",        prompt: `Photorealistic studio photograph of a ${carDesc}. Rear 3/4 view from behind-left, showing the full rear and left side. Dutch yellow license plate reading "${plateText}" on rear bumper. Car is placed ${studioBg}` },
       { angle: "5-left",          prompt: `Photorealistic studio photograph of a ${carDesc}. Left rear 3/4 view from driver side, camera 30 degrees to the left-rear, showing rear and entire left flank. Car is placed ${studioBg}` }
     ]
 
