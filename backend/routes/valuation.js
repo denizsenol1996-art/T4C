@@ -74,6 +74,20 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
       } catch(eErr) { console.log("[DEALER-PRICE] Enrich failed:", eErr.message) }
     }
     const year = d.year || 2015
+
+    // Haal individuele listings op als ze niet in d zitten
+    if (!(d.marketListings && d.marketListings.length)) {
+      try {
+        const mk = (d.make||'').toLowerCase(); let ml = (d.model||'').toLowerCase(); if (ml.startsWith(mk + ' ')) ml = ml.slice(mk.length + 1)
+        if (mk && ml) {
+          const dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 30', [mk, ml.split(" ")[0] + "%", (d.year||2015)-2, (d.year||2015)+2])
+          if (dbListings.length > 0) {
+            d.marketListings = dbListings
+            console.log('[DEALER-PRICE] Loaded', dbListings.length, 'listings from DB')
+          }
+        }
+      } catch(e) { console.log('[DEALER-PRICE] DB listings error:', e.message) }
+    }
     const km = d.km || 100000
     const now = new Date().getFullYear()
     const age = now - year
@@ -435,7 +449,32 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
         const dealBreak = dbArr.length > 0 ? 'Dealbreakers: ' + dbArr.join('; ') : ''
 
         // ── Build listings table — the core data for AI ──
-        const listings = Array.isArray(d.marketListings) ? d.marketListings : []
+
+          // ── FILTER + KM-NORMALISATIE ──
+          const rawListings = Array.isArray(d.marketListings) ? d.marketListings : []
+          const targetKm = km || 100000
+          const kmPerEuro = Math.max(50, Math.min(500, Math.round(targetKm < 50000 ? 200 : targetKm < 100000 ? 150 : targetKm < 150000 ? 120 : 80)))
+          // Filter: alleen listings met km binnen ±60% van target (of zonder km)
+          const filteredListings = rawListings.filter(l => {
+            if (!l.km || l.km <= 0) return true // geen km = behouden
+            const ratio = l.km / targetKm
+            return ratio >= 0.4 && ratio <= 2.0 // 40% - 200% van target
+          })
+          // KM-normalisatie: corrigeer prijs naar target km
+          const normalizedListings = filteredListings.map(l => {
+            if (!l.km || l.km <= 0 || !l.price) return l
+            const kmDiff = l.km - targetKm
+            const correction = Math.round((kmDiff / 10000) * kmPerEuro)
+            return { ...l, normalizedPrice: Math.max(200, l.price + correction), kmCorrection: correction }
+          }).sort((a,b) => (a.normalizedPrice||a.price) - (b.normalizedPrice||b.price))
+          // Bereken genormaliseerde mediaan
+          const normPrices = normalizedListings.map(l => l.normalizedPrice || l.price).filter(p => p > 0).sort((a,b) => a-b)
+          const normMedian = normPrices.length > 0 ? normPrices[Math.floor(normPrices.length/2)] : 0
+          const normP25 = normPrices.length >= 4 ? normPrices[Math.floor(normPrices.length*0.25)] : normPrices[0] || 0
+          const normP75 = normPrices.length >= 4 ? normPrices[Math.floor(normPrices.length*0.75)] : normPrices[normPrices.length-1] || 0
+          console.log('[LISTINGS]', rawListings.length, 'raw →', filteredListings.length, 'filtered →', 'normMediaan:', normMedian, '| kmPerEuro:', kmPerEuro)
+
+          const listings = normalizedListings
         const listingsTable = listings.length > 0
           ? listings.map((l, i) => {
               const parts = [`${i+1}. ${l.title || '?'}`, `EUR ${l.price}`]
@@ -467,8 +506,17 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
 
         // ── Build market stats summary ──
         const mktStats = mCount > 0
-          ? `${mCount} vergelijkbare auto's gevonden:\n- Mediaan: EUR ${mMedian||'?'}\n- P25 (goedkoop): EUR ${p25||'?'}\n- P75 (duur): EUR ${p75||'?'}\n- Laagste: EUR ${d.marketPrices?.[0]||'?'}\n- Hoogste: EUR ${d.marketPrices?.[d.marketPrices.length-1]||'?'}`
-          : 'Geen marktdata beschikbaar — alleen formule-referentie'
+          ? `${mCount} vergelijkbare gevonden (ruwe data):
+- Ruwe mediaan: EUR ${mMedian||"?"}
+
+GEFILTERD + KM-GENORMALISEERD:
+- ${filteredListings.length} listings binnen km-range
+- Genormaliseerde mediaan: EUR ${normMedian||"?"} (gecorrigeerd naar ${km} km)
+- Genorm P25: EUR ${normP25||"?"}
+- Genorm P75: EUR ${normP75||"?"}
+- KM-correctie: EUR ${kmPerEuro} per 10.000 km
+GEBRUIK DE GENORMALISEERDE MEDIAAN ALS BASIS.`
+          : "Geen marktdata beschikbaar"
 
         const finWaarde = d.finnikWaardeLow && d.finnikWaardeHigh ? `\nFinnik (onafhankelijke) waarde: EUR ${d.finnikWaardeLow} - ${d.finnikWaardeHigh}` : ''
         const as24Ref = d.as24Waarde ? `\nAutoScout24 ML-waardebepaling: EUR ${d.as24Waarde.low}${d.as24Waarde.high !== d.as24Waarde.low ? ' - ' + d.as24Waarde.high : ''}` : ''
