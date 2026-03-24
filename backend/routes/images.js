@@ -196,11 +196,10 @@ router.post("/api/generate-car-images", express.json(), async (req, res) => {
     const plateText = plate || "XX-999-X"
     const studioBg = "on a round dark showroom turntable platform. Clean neutral grey studio background with soft even lighting and subtle reflections on a polished dark floor. Professional car dealership photography, ultra sharp focus, 8K quality. Small subtle watermark text EXAMPLE IMAGE in bottom left corner."
     const prompts = [
-      { angle: "1-front",       prompt: `Photorealistic studio photograph of a ${carDesc}. Front 3/4 view showing the full car. Dutch yellow license plate reading "${plateText}" on the front bumper. Car is placed ${studioBg}` },
-      { angle: "2-front-right", prompt: `Photorealistic studio photograph of a ${carDesc}. Front 3/4 right view, turned roughly 45 degrees to the right, showing front and right side. Dutch yellow license plate on the front. Car is placed ${studioBg}` },
-      { angle: "3-right",       prompt: `Photorealistic studio photograph of a ${carDesc}. Full right side profile view, perfectly level, showing the entire passenger side of the car. Car is placed ${studioBg}` },
-      { angle: "4-rear",        prompt: `Photorealistic studio photograph of a ${carDesc}. Rear 3/4 view showing the full car from behind. Dutch yellow license plate reading "${plateText}" on the rear bumper. Car is placed ${studioBg}` },
-      { angle: "5-left",        prompt: `Photorealistic studio photograph of a ${carDesc}. Full left side profile view, perfectly level, showing the entire driver side of the car. Car is placed ${studioBg}` }
+      { angle: "1-front",          prompt: `Photorealistic studio photograph of a ${carDesc}. Straight-on front view, camera at bumper height, showing the full front face symmetrically. Dutch yellow license plate reading "${plateText}" on the front bumper. Car is placed ${studioBg}` },
+      { angle: "2-right-quarter",  prompt: `Photorealistic studio photograph of a ${carDesc}. Classic right front 3/4 view from passenger side, camera 30 degrees to the right, showing front grille and entire right flank. Hero dealership angle. Car is placed ${studioBg}` },
+      { angle: "3-rear",           prompt: `Photorealistic studio photograph of a ${carDesc}. Straight-on rear view, camera at bumper height, showing full rear symmetrically. Dutch yellow license plate reading "${plateText}" on rear bumper. Red tail lights prominent. Car is placed ${studioBg}` },
+      { angle: "4-left-quarter",   prompt: `Photorealistic studio photograph of a ${carDesc}. Left rear 3/4 view from driver side, camera 30 degrees to the left-rear, showing rear and entire left flank. Car is placed ${studioBg}` }
     ]
 
     console.log(`[DALL-E] Generating 4 images for ${make} ${model} (${plateClean})...`)
