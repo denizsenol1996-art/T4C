@@ -617,8 +617,11 @@ GEBRUIK DE GENORMALISEERDE MEDIAAN ALS BASIS.`
         // ── The AI-first prompt ──
         const sysPrompt = `Je bent een senior autotaxateur bij een Nederlands handelsbedrijf. Je bepaalt ZELF de prijzen.
 
+BELANGRIJK: ZOEK OP INTERNET naar actuele prijzen voor dit EXACTE model+motorvariant op Marktplaats.nl en AutoScout24.nl.
+De meegeleverde marktdata bevat ALLE varianten door elkaar — jouw websearch voor de SPECIFIEKE uitvoering is essentieel.
+
 JOUW TAAK:
-Bepaal voor dit specifieke voertuig de accurate marktprijzen op basis van ALLE meegeleverde data.
+Bepaal voor dit specifieke voertuig de accurate marktprijzen op basis van je websearch + ALLE meegeleverde data.
 
 PRIJSDEFINITIES:
 - verkoopadviees (B2C retail): prijs waarvoor een dealer deze auto aan particulier verkoopt
@@ -711,14 +714,23 @@ ${fmlRef}
 ${priceHistoryDesc}
 Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
 
-        console.log('[AI-FIRST] Calling GPT-5.4 for', d.make, d.model, year, km + 'km')
-        const aiResp = await axios.post("https://api.openai.com/v1/chat/completions", {
-          model: "gpt-5.4", temperature: 0.15, max_completion_tokens: 400,
-          messages: [{role: "system", content: sysPrompt}, {role: "user", content: usrPrompt}]
-        }, {headers: {"Authorization": "Bearer " + apiKey, "Content-Type": "application/json"}, timeout: 18000})
+        console.log('[AI-FIRST] Calling GPT-5.4 + web search for', d.make, d.model, year, km + 'km')
+        const aiResp = await axios.post("https://api.openai.com/v1/responses", {
+          model: "gpt-5.4",
+          temperature: 0.15,
+          max_output_tokens: 500,
+          tools: [{ type: "web_search_preview" }],
+          input: sysPrompt + "\n\n" + usrPrompt
+        }, {headers: {"Authorization": "Bearer " + apiKey, "Content-Type": "application/json"}, timeout: 45000})
 
-        var rawTxt = String(aiResp.data.choices[0].message.content || '{}')
+        // Parse Responses API output (different format than Chat Completions)
+        const _outBlocks = aiResp.data.output || []
+        const _textBlock = _outBlocks.find(b => b.type === 'message')
+        var rawTxt = (_textBlock && _textBlock.content ? (_textBlock.content.find(c => c.type === 'output_text') || _textBlock.content[0] || {}).text : null) || '{}'
         rawTxt = rawTxt.replace(/```json/g, '').replace(/```/g, '').trim()
+        // Extract JSON from possible surrounding text
+        const _jsonMatch = rawTxt.match(/\{[\s\S]*\}/)
+        if (_jsonMatch) rawTxt = _jsonMatch[0]
         const aiResult = JSON.parse(rawTxt)
         aiResult.available = true
         aiValidation = aiResult
