@@ -4,7 +4,7 @@ const express = require("express")
 const axios = require("axios")
 const { stmts, queryAll, queryOne, run } = require("../db")
 const { getCached, setCache, maxPrice, MIN_PRICE, fmtE, safeFetch } = require("../lib/helpers")
-const { getSeasonFactor, getDepreciation, getMarketPressure, normalizeKm, generateInsights, recordTaxatie, learn, getLearned } = require("../lib/pricing")
+const { getSeasonFactor, getDepreciation, getMarketPressure, normalizeKm, generateInsights, recordTaxatie, learn, getLearned, kmCorrection } = require("../lib/pricing")
 const { med, validate, buildSearchUrls } = require("../lib/scrapers")
 const { getApiKey, hasApiKey } = require("../lib/ai")
 const { authMiddleware, staffOnly } = require("../lib/auth")
@@ -738,12 +738,19 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
           } else {
             console.log('[PRICING-GPT]', d.make, d.model, ': geen data, 100% GPT:', aiVerkoop)
           }
-          finalVerkoop = _blendedVerkoop
+          // KM correctie op blended prijs
+          const _kmC = kmCorrection(km)
+          const _kmAdj = Math.round(_blendedVerkoop * _kmC.factor / 50) * 50
+          if (Math.abs(_kmC.factor - 1.0) > 0.01) {
+            console.log('[KM-CORRECT]', d.make, d.model, km+'km:', 'factor', _kmC.factor, '('+_kmC.label+')', _blendedVerkoop, '->', _kmAdj, _kmC.export ? 'EXPORT' : '')
+          }
+          finalVerkoop = _kmAdj
           finalHandel = Math.round(finalVerkoop * hwRatio / 50) * 50
           finalBod = finalHandel
           finalInkoopLow = Math.round(finalHandel * 0.85 / 50) * 50
           finalInkoopHigh = Math.round(finalHandel * 0.95 / 50) * 50
           finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
+          if (_kmC.export) { d.exportFlag = true }
           conf += 25  // High confidence when AI provides prices
           console.log(`[AI-FIRST] Applied: Retail EUR ${finalVerkoop}, Handel EUR ${finalHandel}, Inkoop EUR ${finalInkoopLow}-${finalInkoopHigh}`)
         } else {

@@ -275,4 +275,29 @@ function generateInsights(data) {
 function fmtE(n) { return "\u20AC " + new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 0 }).format(n) }
 
 
-module.exports = { recordTaxatie, learn, getLearned, getSeasonFactor, loadHist, getDepreciation, getMarketPressure, normalizeKm, generateInsights }
+
+// ═══ KM CORRECTIE — dealer breakpoints ═══
+// Referentie = 100.000 km (factor 1.0)
+function kmCorrection(km) {
+  if (!km || km <= 0) return { factor: 1.0, label: 'onbekend', export: false }
+  const points = [
+    [10000, 1.15, 'bijna nieuw'], [30000, 1.10, 'jong gebruikt'],
+    [60000, 1.05, 'sweet spot'], [100000, 1.00, 'standaard'],
+    [120000, 0.97, 'prima occasion'], [150000, 0.92, 'hoger km'],
+    [180000, 0.85, 'garantie lastig'], [225000, 0.75, 'minder interessant'],
+    [300000, 0.60, 'export/budget'], [999999, 0.50, 'export']
+  ]
+  let prevKm = 0, prevFactor = 1.20
+  for (const [maxKm, factor, label] of points) {
+    if (km <= maxKm) {
+      const range = maxKm - prevKm
+      const pos = (km - prevKm) / range
+      const interpolated = prevFactor + (factor - prevFactor) * pos
+      return { factor: Math.round(interpolated * 1000) / 1000, label, export: km >= 300000 }
+    }
+    prevKm = maxKm; prevFactor = factor
+  }
+  return { factor: 0.50, label: 'export', export: true }
+}
+
+module.exports = { kmCorrection, recordTaxatie, learn, getLearned, getSeasonFactor, loadHist, getDepreciation, getMarketPressure, normalizeKm, generateInsights }
