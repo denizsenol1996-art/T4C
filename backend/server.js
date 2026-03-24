@@ -6,7 +6,7 @@ const express = require("express")
 const cors = require("cors")
 const fs = require("fs")
 const path = require("path")
-const { initDB, stmts, getJwtSecret, verifyUser, getStats, backup, DATA_DIR, queryAll, queryOne, run } = require("./db")
+const { initDB, stmts, getJwtSecret, verifyUser, getStats, backup, DATA_DIR, queryAll, queryOne, run, forceSave } = require("./db")
 
 // ── Shared modules (EXISTING — do NOT duplicate) ──
 const { VERSION, _serverStats, writeLog, LOG_DIR } = require("./lib/state")
@@ -191,7 +191,7 @@ app.get("/app/*", (req, res) => {
     auth.setSecret(JWT_SECRET)
 
     // Mount DV webhook (MUST be BEFORE 404 catch-all)
-    try { const { setupDVWebhookRoutes } = require("./dv-webhook"); setupDVWebhookRoutes(app, { run, queryAll, queryOne, scheduleSave: () => {} }); console.log("[DV] Webhook mounted OK") } catch(e) { console.log("[DV] Not loaded:", e.message) }
+    try { const { setupDVWebhookRoutes } = require("./dv-webhook"); setupDVWebhookRoutes(app, { run, queryAll, queryOne, scheduleSave: forceSave }); console.log("[DV] Webhook mounted OK") } catch(e) { console.log("[DV] Not loaded:", e.message) }
 
     // 404 catch-all for API (MUST be AFTER all route mounts)
     app.all("/api/*", (req, res) => { res.status(404).json({ ok: false, error: "Endpoint niet gevonden" }) })
