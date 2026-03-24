@@ -760,6 +760,13 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       console.log("[TAXATIE-SAVE]", d.make, d.model, year, "-> saved")
     } catch(saveErr) { console.log("[TAXATIE-SAVE] Error:", saveErr.message) }
 
+    // Auto-queue model voor crawler (hogere prioriteit)
+    try {
+      const mk = (d.make||'').toLowerCase(), ml = (d.model||'').toLowerCase().replace(new RegExp('^' + mk + '\s+'), '')
+      if (mk && ml) run('INSERT OR IGNORE INTO crawl_queue(make,model,year) VALUES(?,?,?)', [mk, ml, year])
+    } catch(eq) {}
+
+
 
     // ═══ NIEUWE SCORING MODULE ═══
     const _qualityScore = calculateQualityScore(d, { marginPct: finalMarginPct, liquidityScore, marketVelocity, riskScore, confidence: conf, marketUsed: mCount > 0, marktCount: mCount })
