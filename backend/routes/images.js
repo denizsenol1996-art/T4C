@@ -175,7 +175,7 @@ router.post("/api/generate-car-images", express.json(), async (req, res) => {
     const cacheDir = path.join(GENERATED_DIR, plateClean)
 
     // Check cache — if all 5 exist, return immediately
-    const angles = ["1-front", "2-front-right", "3-right", "4-rear", "5-left"]
+    const angles = ["1-front", "2-right-quarter", "3-rear", "4-left-quarter"]
     const cached = angles.every(a => fs.existsSync(path.join(cacheDir, a + ".png")))
     if (cached) {
       console.log(`[DALL-E] Cache hit for ${plateClean}`)
@@ -254,7 +254,7 @@ router.get("/api/car-images/:plate", (req, res) => {
   const plateClean = (req.params.plate || "").replace(/[^A-Z0-9]/gi, "").toUpperCase()
   if (!plateClean) return res.json({ ok: false })
   const cacheDir = path.join(GENERATED_DIR, plateClean)
-  const angles = ["1-front", "2-front-right", "3-right", "4-rear", "5-left"]
+  const angles = ["1-front", "2-right-quarter", "3-rear", "4-left-quarter"]
   const images = angles.map(a => {
     const exists = fs.existsSync(path.join(cacheDir, a + ".png"))
     return { angle: a, url: exists ? `/photos/generated/${plateClean}/${a}.png` : "" }
