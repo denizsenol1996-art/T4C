@@ -175,7 +175,7 @@ router.post("/api/generate-car-images", express.json(), async (req, res) => {
     const cacheDir = path.join(GENERATED_DIR, plateClean)
 
     // Check cache — if all 5 exist, return immediately
-    const angles = ["1-front", "2-right-quarter", "3-rear", "4-left-quarter"]
+    const angles = ["1-front", "2-front-right", "3-right", "4-rear", "5-left"]
     const cached = angles.every(a => fs.existsSync(path.join(cacheDir, a + ".png")))
     if (cached) {
       console.log(`[DALL-E] Cache hit for ${plateClean}`)
@@ -197,9 +197,10 @@ router.post("/api/generate-car-images", express.json(), async (req, res) => {
     const studioBg = "on a round dark showroom turntable platform. Clean neutral grey studio background with soft even lighting and subtle reflections on a polished dark floor. Professional car dealership photography, ultra sharp focus, 8K quality. Small subtle watermark text EXAMPLE IMAGE in bottom left corner."
     const prompts = [
       { angle: "1-front",          prompt: `Photorealistic studio photograph of a ${carDesc}. Straight-on front view, camera at bumper height, showing the full front face symmetrically. Dutch yellow license plate reading "${plateText}" on the front bumper. Car is placed ${studioBg}` },
-      { angle: "2-right-quarter",  prompt: `Photorealistic studio photograph of a ${carDesc}. Classic right front 3/4 view from passenger side, camera 30 degrees to the right, showing front grille and entire right flank. Hero dealership angle. Car is placed ${studioBg}` },
-      { angle: "3-rear",           prompt: `Photorealistic studio photograph of a ${carDesc}. Straight-on rear view, camera at bumper height, showing full rear symmetrically. Dutch yellow license plate reading "${plateText}" on rear bumper. Red tail lights prominent. Car is placed ${studioBg}` },
-      { angle: "4-left-quarter",   prompt: `Photorealistic studio photograph of a ${carDesc}. Left rear 3/4 view from driver side, camera 30 degrees to the left-rear, showing rear and entire left flank. Car is placed ${studioBg}` }
+      { angle: "2-front-right",  prompt: `Photorealistic studio photograph of a ${carDesc}. Classic right front 3/4 view from passenger side, camera 30 degrees to the right, showing front grille and entire right flank. Hero dealership angle. Car is placed ${studioBg}` },
+      { angle: "3-right",           prompt: `Photorealistic studio photograph of a ${carDesc}. Straight-on rear view, camera at bumper height, showing full rear symmetrically. Dutch yellow license plate reading "${plateText}" on rear bumper. Red tail lights prominent. Car is placed ${studioBg}` },
+      { angle: "4-rear",        prompt: `Photorealistic studio photograph of a ${carDesc}. Straight-on rear view, camera at bumper height, showing full rear symmetrically. Dutch yellow license plate reading "${plateText}" on rear bumper. Red tail lights prominent. Car is placed ${studioBg}` },
+      { angle: "5-left",          prompt: `Photorealistic studio photograph of a ${carDesc}. Left rear 3/4 view from driver side, camera 30 degrees to the left-rear, showing rear and entire left flank. Car is placed ${studioBg}` }
     ]
 
     console.log(`[DALL-E] Generating 4 images for ${make} ${model} (${plateClean})...`)
@@ -253,7 +254,7 @@ router.get("/api/car-images/:plate", (req, res) => {
   const plateClean = (req.params.plate || "").replace(/[^A-Z0-9]/gi, "").toUpperCase()
   if (!plateClean) return res.json({ ok: false })
   const cacheDir = path.join(GENERATED_DIR, plateClean)
-  const angles = ["1-front", "2-right-quarter", "3-rear", "4-left-quarter"]
+  const angles = ["1-front", "2-front-right", "3-right", "4-rear", "5-left"]
   const images = angles.map(a => {
     const exists = fs.existsSync(path.join(cacheDir, a + ".png"))
     return { angle: a, url: exists ? `/photos/generated/${plateClean}/${a}.png` : "" }
