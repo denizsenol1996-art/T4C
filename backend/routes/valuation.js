@@ -528,8 +528,8 @@ GEBRUIK DE GENORMALISEERDE MEDIAAN ALS BASIS.`
         // ── Price history from our database ──
         let priceHistoryDesc = ''
         try {
-          const trends = stmts.getPriceTrends.all((d.make||'').toLowerCase(), (d.model||'').toLowerCase(), year)
-          const soldData = stmts.getSoldListings.all((d.make||'').toLowerCase(), (d.model||'').toLowerCase(), year)
+          const trends = stmts.getPriceTrends.all((d.make||'').toLowerCase(), ((d.model||'').toLowerCase().startsWith((d.make||'').toLowerCase()+' ') ? (d.model||'').toLowerCase().slice((d.make||'').length+1) : (d.model||'').toLowerCase()), year)
+          const soldData = stmts.getSoldListings.all((d.make||'').toLowerCase(), ((d.model||'').toLowerCase().startsWith((d.make||'').toLowerCase()+' ') ? (d.model||'').toLowerCase().slice((d.make||'').length+1) : (d.model||'').toLowerCase()), year)
           const soldPrices = soldData.map(s => s.sold_estimate).filter(p => p > 0).sort((a, b) => a - b)
 
           const parts = []

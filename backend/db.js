@@ -818,7 +818,7 @@ const stmts = {
       if (!activeHashes || !activeHashes.length) return 0
       const placeholders = activeHashes.map(() => '?').join(',')
       const before = queryOne("SELECT COUNT(*) as c FROM market_listings WHERE make=? AND model=? AND year=? AND status='active' AND hash NOT IN (" + placeholders + ")", [mk, ml, yr, ...activeHashes])
-      run("UPDATE market_listings SET status='sold', sold_estimate=price WHERE make=? AND model=? AND year=? AND status='active' AND hash NOT IN (" + placeholders + ")", [mk, ml, yr, ...activeHashes])
+      run("UPDATE market_listings SET status='sold', sold_estimate=ROUND(price*0.92) WHERE make=? AND model=? AND year=? AND status='active' AND hash NOT IN (" + placeholders + ")", [mk, ml, yr, ...activeHashes])
       return before?.c || 0
     }
   },
