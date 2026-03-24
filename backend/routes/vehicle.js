@@ -473,51 +473,11 @@ router.get("/api/vehicle/enriched", async (req, res) => {
       }
     } catch(fe) { console.log('[FINNIK] Skip:', fe.message) }
 
-    // ═══ AUTOSCOUT24 WAARDEBEPALING (gratis ML-based tool) ═══
-    let as24Waarde = null
-    try {
-      const mkL = s(d.merk).toLowerCase(), mlL = s(d.handelsbenaming).toLowerCase()
-      const asUrl = `https://www.autoscout24.nl/auto-waardebepaling/result/?make=${encodeURIComponent(mkL)}&model=${encodeURIComponent(mlL)}&firstRegistration=${year}&fuelType=${fuelLabel.toLowerCase().includes('benzine')?'B':fuelLabel.toLowerCase().includes('diesel')?'D':fuelLabel.toLowerCase().includes('elek')?'E':'B'}&bodyType=${s(d.inrichting).toLowerCase().includes('sedan')?'sedan':s(d.inrichting).toLowerCase().includes('hatchback')?'hatchback':'suv'}&hp=${powerHp||0}&mileage=${km||50000}`
-      const asResp = await axios.get(asUrl, { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/html' } })
-      const asHtml = asResp.data || ''
-      // Try to extract price from page
-      const asMatch = asHtml.match(/(?:waarde|value|prijs)[^€]*€\s*([\d.,]+)/i) || asHtml.match(/€\s*([\d]{1,3}(?:[.]\d{3})*(?:,\d{2})?)/g)
-      if (asMatch) {
-        const prices = (Array.isArray(asMatch) ? asMatch : [asMatch[0]]).map(m => {
-          const p = parseInt(String(m).replace(/[^0-9]/g, ''), 10)
-          return p > 500 && p < 200000 ? p : 0
-        }).filter(p => p > 0)
-        if (prices.length) {
-          as24Waarde = { low: Math.min(...prices), high: Math.max(...prices), source: 'autoscout24_waardebepaling' }
-          console.log('[AS24-WAARDE] Found:', as24Waarde)
-        }
-      }
-    } catch(e) { console.log('[AS24-WAARDE] Skip:', e.message) }
+    // AS24 waardebepaling verwijderd (traag, vaak 404)
 
-    // ═══ ANWB KOERSLIJST (gratis, conservatief maar betrouwbaar) ═══
-    let anwbWaarde = null
-    try {
-      const cleanP = plate.replace(/[\s-]/g, '').toUpperCase()
-      const anwbResp = await axios.get(`https://www.anwb.nl/auto/koerslijst/${cleanP}`, {
-        timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/html' }
-      })
-      const anwbHtml = anwbResp.data || ''
-      // Extract values: "Inruilwaarde", "Verkoopwaarde", "Nieuwprijs"
-      const extractAnwb = (label) => {
-        const re = new RegExp(label + '[\\s\\S]*?€\\s*([\\d.,]+)', 'i')
-        const m = anwbHtml.match(re)
-        if (m) { const v = m[1].replace(/\\./g, '').replace(',', '.'); const num = parseFloat(v); if (num > 0) return Math.round(num) }
-        return null
-      }
-      const inruil = extractAnwb('Inruilwaarde')
-      const verkoop = extractAnwb('(?:Verkoop|Particulier).*waarde')
-      const nieuw = extractAnwb('Nieuwprijs')
-      if (inruil || verkoop) {
-        anwbWaarde = { inruilwaarde: inruil, verkoopwaarde: verkoop, nieuwprijs: nieuw, source: 'anwb_koerslijst' }
-        console.log('[ANWB] Found:', anwbWaarde)
-        if (!catalogPrice && nieuw && nieuw > 1000) { catalogPrice = nieuw; console.log('[ANWB] Nieuwprijs aangevuld:', nieuw) }
-      }
-    } catch(e) { console.log('[ANWB] Skip:', e.message) }
+
+    // ANWB koerslijst verwijderd (traag, vaak timeout)
+
 
     // ═══ VIN DECODE — AI-based COMPLETE vehicle intelligence ═══
     const vin = s(d.voertuig_identificatienummer) || s((oviA[0]||{}).voertuig_identificatienummer) || ""
@@ -692,10 +652,10 @@ Antwoord ALLEEN in JSON:
       // History data
       apkHistory, kmHistory:kmDed, kmAnalysis, recalls, defects, installedObjects,
       inspectionCount:meldA.length||undefined,
-      equipmentLevel:"", source:{rdw:true,finnik:finnikSource,as24:!!as24Waarde,anwb:!!anwbWaarde},
+      equipmentLevel:"", source:{rdw:true,finnik:finnikSource,as24:false,anwb:false},
       finnikData: finnikData || null,
-      as24Waarde: as24Waarde || null,
-      anwbWaarde: anwbWaarde || null,
+      as24Waarde: null,
+      anwbWaarde: null,
       // Ownership
       ownerCount, ownerHistory: ownerHistory.slice(0,10), lastOwnerType, isExDealer,
       // Milieu
@@ -717,43 +677,8 @@ Antwoord ALLEEN in JSON:
       typeVariant: s(d.type), typeVersion: s(d.variant), typeUitvoering: s(d.uitvoering)
     }
     
-    // GPT PRICE WITH MARKET DATA
-    if (result.make && result.year) {
-      try {
-        let _md = {}
-        try {
-          const _mr = await axios.get("http://localhost:3000/api/market?make="+encodeURIComponent(result.make)+"&model="+encodeURIComponent(result.model)+"&year="+result.year+"&km="+(result.km||0), {timeout:30000})
-          _md = _mr.data || {}
-          if (_md.count) { result.marktCount=_md.count; result.marktAvg=_md.avg; result.marktMedian=_md.median; result.marktP25=_md.p25; result.marktP75=_md.p75 }
-          console.log("[MARKT]", result.make, result.model, result.year, "->", _md.count, "listings, mediaan:", _md.median)
-        } catch(e) { console.log("[MARKT] Error:", e.message) }
-        const _ak = getApiKey("OPENAI_API_KEY")
-        if (_ak && _ak !== "sk-...") {
-          const _mi = _md.count ? "Marktdata ("+_md.count+" listings): mediaan EUR "+_md.median+", gem EUR "+_md.avg+", P25 EUR "+_md.p25+", P75 EUR "+_md.p75+". Let op: dit is ALLE varianten van dit model inclusief goedkope basisversies. Corrigeer voor de SPECIFIEKE uitvoering." : "Geen marktdata. Gebruik je eigen expertise."
-          const _pr = await axios.post("https://api.openai.com/v1/chat/completions", {
-            model: "gpt-5.4", temperature: 0.1, max_completion_tokens: 500,
-            messages: [{role:"system",content:"Je bent een expert Nederlandse auto-taxateur met diepe kennis van de Nederlandse occasion markt. Gebruik marktdata als referentie maar corrigeer FORS voor: specifieke uitvoering (hybrid/GTI/R-line etc is MEER waard), transmissie (automaat=meer), staat, opties. Een hybride is 30-50% meer waard dan een benzine basisversie. JIJ bepaalt de juiste prijs, marktdata is slechts input. Antwoord ALLEEN in JSON."},{role:"user",content:"Taxeer: "+result.make+" "+result.model+" "+(result.specificModel||result.variant||"")+" "+(result.engineLabel||"")+" "+result.year+", "+(result.km||"onbekend")+" km, brandstof: "+(result.fuel||"?")+ ", transmissie: "+(result.transmission||"?")+". "+_mi+" JSON: {verkoop_particulier:number,handelswaarde:number,inkoop_laag:number,inkoop_hoog:number,vertrouwen:string,toelichting:string}"}]
-          }, {headers:{"Authorization":"Bearer "+_ak,"Content-Type":"application/json"},timeout:15000})
-          const _tx = (_pr.data.choices[0].message.content||"").replace(/```json|```/g,"").trim()
-          const _jm = _tx.match(/\{[\s\S]*\}/)
-          if (_jm) {
-            const gp = JSON.parse(_jm[0])
-            result.gptPrijs = gp
-            result.verkoopadviees = gp.verkoop_particulier
-            result.handelswaarde = gp.handelswaarde
-            result.inkoopLow = gp.inkoop_laag
-            result.inkoopHigh = gp.inkoop_hoog
-            result.prijsBron = "CarDatax AI (GPT-5.4)"
-            result.prijsVertrouwen = gp.vertrouwen || "gemiddeld"
-            result.t4cBod = gp.handelswaarde || gp.inkoop_hoog
-            result.internetPrijs = gp.verkoop_particulier
-            if (!result.inkoopLow || result.inkoopLow < gp.inkoop_laag) result.inkoopLow = gp.inkoop_laag
-            if (!result.inkoopHigh || result.inkoopHigh < gp.inkoop_hoog) result.inkoopHigh = gp.inkoop_hoog
-            console.log("[GPT-PRIJS]", result.make, result.model, result.year, "-> verkoop:", gp.verkoop_particulier, "handel:", gp.handelswaarde)
-          }
-        }
-      } catch(e) { console.error("[GPT-PRIJS] Error:", e.message) }
-    }
+    // GPT pricing + market call verwijderd (frontend doet dit al via /api/dealer/price)
+
     
     setCache(ck, result); res.json(result)
   } catch(e){ console.error("[API] vehicle/enriched error:",e.message); res.status(500).json({error:"RDW ophalen mislukt: "+e.message}) }

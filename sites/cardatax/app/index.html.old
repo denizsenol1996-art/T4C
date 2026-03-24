@@ -577,14 +577,6 @@ function renderResult(){
     <div class="result-grid">
       <div class="bied-panel">
 
-        <!-- BOD CARD -->
-        <div class="bod-card">
-          <div class="bod-label">Berekend bod</div>
-          <div class="bod-val" id="live-bod">${E(calc.bod)}</div>
-          <div class="bod-breakdown" id="live-breakdown">VP ${E(vp)} - marge ${calc.margePctUsed}% - RK €${calc.rkTotal} - risico €${calc.risicoCor}</div>
-          <button class="bod-btn" onclick="copyBod()">Kopieer bod</button>
-        </div>
-
         <!-- TURNTABLE -->
         <div class="turntable" id="turntable">
           <div class="turntable-track" id="tt-track"><div style="width:100%;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;opacity:.2"><svg viewBox="0 0 80 40" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.5" width="80" height="40"><rect x="5" y="15" width="70" height="20" rx="4"/><circle cx="20" cy="35" r="5"/><circle cx="60" cy="35" r="5"/><path d="M15 15 L25 5 L55 5 L65 15"/></svg></div></div>
@@ -593,6 +585,14 @@ function renderResult(){
         </div>
         <div class="turntable-dots" id="tt-dots"></div>
         <div class="turntable-loading" id="tt-loading"><div class="mini-spin"></div><span>AI genereert foto's...</span></div>
+
+        <!-- BOD CARD -->
+        <div class="bod-card">
+          <div class="bod-label">Berekend bod</div>
+          <div class="bod-val" id="live-bod">${E(calc.bod)}</div>
+          <div class="bod-breakdown" id="live-breakdown">VP ${E(vp)} - marge ${calc.margePctUsed}% - RK €${calc.rkTotal} - risico €${calc.risicoCor}</div>
+          <button class="bod-btn" onclick="copyBod()">Kopieer bod</button>
+        </div>
 
         ${adv.action?`<div class="advies-block ${advClass}"><div class="advies-action" style="color:${advColor}">${adv.action} — ${_sc.total?.verdict||''}</div>${(adv.lines||[]).map(l=>l.startsWith('+ ')?'<div class="advies-line plus">▸ '+l.slice(2)+'</div>':l.startsWith('! ')?'<div class="advies-line warn">⚠ '+l.slice(2)+'</div>':'<div class="advies-line">'+l+'</div>').join('')}</div>`:''}
 
@@ -640,28 +640,15 @@ function renderResult(){
         <!-- VOERTUIGGEGEVENS -->
         <div class="rcard">
           <div class="rcard-head">Voertuiggegevens</div>
-          <div class="rcard-body">
+          <div class="rcard-body" style="display:grid;grid-template-columns:1fr 1fr;gap:0">
             <div class="drow"><span class="dl">1e toelating</span><span class="dv">${v.firstAdmission||v.year||'—'}</span></div>
-            <div class="drow"><span class="dl">Km-stand</span><span class="dv">${N(km||v.km)} km ${v.napOk!==false?'<span class="badge g">✓ NAP</span>':'<span class="badge r">✗ NAP</span>'}</span></div>
-            <div class="drow"><span class="dl">Brandstof</span><span class="dv">${v.fuel||'—'}</span></div>
-            <div class="drow"><span class="dl">Transmissie</span><span class="dv">${v.transmissionType||'—'}${v.transmissionDetail?' ('+v.transmissionDetail+')':''}</span></div>
+            <div class="drow" style="border-left:1px solid var(--border);padding-left:14px"><span class="dl">Import</span><span class="dv ${v.importFlag?'r':'g'}">${v.importFlag?'❌ Ja':'✓ Nee'}</span></div>
+            <div class="drow"><span class="dl">Km-stand</span><span class="dv">${N(km||v.km)} km ${v.napOk!==false?'<span class="badge g">NAP</span>':'<span class="badge r">NAP</span>'}</span></div>
+            <div class="drow" style="border-left:1px solid var(--border);padding-left:14px"><span class="dl">Gestolen</span><span class="dv ${v.stolenFlag?'r':'g'}">${v.stolenFlag?'❌ JA':'✓ Nee'}</span></div>
+            <div class="drow"><span class="dl">Motor & bak</span><span class="dv">${v.fuel||'—'} · ${v.transmissionType||'—'}</span></div>
+            <div class="drow" style="border-left:1px solid var(--border);padding-left:14px"><span class="dl">Motorcode</span><span class="dv" style="font-family:var(--mono);font-size:12px">${v.motorCode||'—'}</span></div>
             ${v.powerHp?'<div class="drow"><span class="dl">Vermogen</span><span class="dv">'+v.powerHp+' pk'+(v.powerKw?' / '+v.powerKw+' kW':'')+'</span></div>':''}
-            ${v.motorCode?'<div class="drow"><span class="dl">Motorcode</span><span class="dv" style="font-family:var(--mono)">'+v.motorCode+'</span></div>':''}
-            ${v.timingType?'<div class="drow"><span class="dl">Distributie</span><span class="dv '+(v.timingType.toLowerCase().includes('ketting')?'g':'o')+'">'+v.timingType+(v.timingType.toLowerCase().includes('ketting')?' ✓':' ⚠')+'</span></div>':''}
-            <div class="drow"><span class="dl">APK tot</span><span class="dv ${v.apkUntil&&new Date(v.apkUntil.split('-').reverse().join('-'))>new Date()?'g':'o'}">${v.apkUntil||'—'}</span></div>
-            ${v.ownerCount?'<div class="drow"><span class="dl">Eigenaren</span><span class="dv '+(v.ownerCount<=2?'g':v.ownerCount<=4?'o':'r')+'">'+v.ownerCount+'x</span></div>':''}
-            <div class="drow"><span class="dl">Import</span><span class="dv ${v.importFlag?'r':'g'}">${v.importFlag?'❌ Ja':'✓ Nee'}</span></div>
-            <div class="drow"><span class="dl">Gestolen</span><span class="dv ${v.stolenFlag?'r':'g'}">${v.stolenFlag?'❌ JA':'✓ Nee'}</span></div>
-          </div>
-        </div>
-
-        <!-- RISICO-ANALYSE -->
-        <div class="rcard">
-          <div class="rcard-head">Risico-analyse</div>
-          <div class="rcard-body">
-            ${v.engineRiskProfile?'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 14px;border-radius:8px;background:'+(v.engineRiskProfile==='Laag'?'rgba(0,230,138,.06)':v.engineRiskProfile==='Hoog'?'rgba(239,68,68,.06)':'rgba(245,166,35,.06)')+'"><div style="font-size:22px">'+(v.engineRiskProfile==='Laag'?'✅':v.engineRiskProfile==='Hoog'?'🔴':'🟡')+'</div><div><div style="font-weight:700;font-size:14px;color:'+(v.engineRiskProfile==='Laag'?'var(--green)':v.engineRiskProfile==='Hoog'?'var(--red)':'var(--orange)')+'">Motorrisico: '+v.engineRiskProfile+'</div>'+(v.engineRiskDetail?'<div style="font-size:12px;color:var(--text2);margin-top:2px">'+v.engineRiskDetail+'</div>':'')+'</div></div>':'<div style="padding:8px 0;font-size:13px;color:var(--text3)">Geen risicoprofiel beschikbaar</div>'}
-            ${v.knownIssues?.length?v.knownIssues.map(i=>'<div style="padding:6px 10px;background:rgba(245,166,35,.04);border-left:3px solid var(--orange);margin-bottom:4px;border-radius:0 6px 6px 0;font-size:12px;color:var(--text2)">'+i+'</div>').join(''):''}
-            ${isRiskyEngine?'<div style="background:rgba(245,166,35,.06);border:1px solid rgba(245,166,35,.15);border-radius:8px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">⚠️</span><div><div style="font-size:12px;font-weight:700;color:var(--orange)">Risicomotor gedetecteerd</div><div style="font-size:11px;color:var(--text3)">'+(engL||motC)+' — risico op '+initRisico+'/10</div></div></div>':''}
+            ${v.timingType?'<div class="drow" style="border-left:1px solid var(--border);padding-left:14px"><span class="dl">Distributie</span><span class="dv '+(v.timingType.toLowerCase().includes('ketting')?'g':'o')+'">'+v.timingType+'</span></div>':''}
           </div>
         </div>
 
