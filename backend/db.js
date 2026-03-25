@@ -615,7 +615,7 @@ async function initDB() {
   forceSave()
 
   // Auto-save every 30 seconds
-  setInterval(forceSave, 30000)
+  setInterval(forceSave, 120000)
 
   // Save on process exit
   process.on("exit", forceSave)
