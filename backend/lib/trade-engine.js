@@ -74,8 +74,9 @@ function calculateTradeBid(retailPrice, aiData, vehicleData, marketData) {
   const maxBid = Math.round(Math.max(retailPrice * bidRatio, 500) / 50) * 50
   const inkoopHigh = maxBid
   const inkoopLow = Math.round(maxBid * 0.90 / 50) * 50
-  const hwMarkup = vType === 'A' ? 1.12 : vType === 'B' ? 1.10 : 1.08
-  const handelswaarde = Math.round(maxBid * hwMarkup / 50) * 50
+  // Handelswaarde = retail met korting (B2B doorverkoop)
+  const hwRatio = vType === 'A' ? 0.88 : vType === 'B' ? 0.85 : 0.82
+  const handelswaarde = Math.round(retailPrice * hwRatio / 50) * 50
   const sellDiscount = sellSpeed === 'snel' ? 0.05 : sellSpeed === 'normaal' ? 0.08 : 0.12
   const expectedSell = Math.round(retailPrice * (1 - sellDiscount))
   const riskLevel = riskPoints >= 8 ? 'hoog' : riskPoints >= 4 ? 'gemiddeld' : 'laag'
