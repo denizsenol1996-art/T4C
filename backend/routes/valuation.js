@@ -770,7 +770,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
           // Gewogen blend
           let _blendedVerkoop = aiVerkoop
           if (_filteredVerkoop > 0 && _filteredCount >= 1) {
-            const _dataWeight = _filteredCount >= 15 ? 0.55 : _filteredCount >= 8 ? 0.45 : _filteredCount >= 5 ? 0.35 : _filteredCount >= 3 ? 0.25 : 0.0
+            const _dataWeight = _filteredCount >= 50 ? 0.30 : _filteredCount >= 15 ? 0.20 : _filteredCount >= 5 ? 0.10 : 0.0
             _blendedVerkoop = Math.round((_filteredVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
             console.log('[PRICING-BLEND]', d.make, d.model, ':', _filteredCount, 'listings (van', _dbCount, 'raw), mediaan', _filteredMedian, '-> VP', _filteredVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
           } else {
