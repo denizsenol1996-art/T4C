@@ -10,6 +10,7 @@ const pricing = require("../lib/pricing")
 const { getLearned, recordTaxatie, learn, getSeasonFactor, getDepreciation, getMarketPressure, normalizeKm, generateInsights } = pricing
 const crypto = require("crypto")
 const { scoreSource } = require("../lib/intelligence")
+const { buildComparableSet } = require("../lib/comparable-engine")
 
 // /api/market
 router.get("/api/market",async(req,res)=>{
@@ -194,6 +195,22 @@ router.get("/api/market",async(req,res)=>{
     particulier: partPrices.length >= 2 ? { median: med(partPrices), count: partPrices.length, low: partPrices[0], high: partPrices.at(-1) } : null,
   }
 
+  
+  // === COMPARABLE ENGINE ===
+  let compResult = null
+  try {
+    const compTarget = {
+      make: mk, model: searchMl, generation: '',
+      trim: '', bodyType: '', fuel: fuel || '',
+      transmission: trans || '', year: yr, km: km || 0,
+      powerHp: 0, isEV: false,
+    }
+    compResult = buildComparableSet(compTarget, allListings)
+    console.log(`  -- CompEngine: status=${compResult.status} clean=${compResult.cleanCount} strong=${compResult.strongCount} median=\u20AC${compResult.marketMedian} conf=${compResult.confidenceComparable}`)
+  } catch(compErr) {
+    console.log('[COMP-ENGINE] Error:', compErr.message)
+  }
+
   const listingsForResponse = allListings.slice(0, 15)
   console.log(`  -- Listings: ${allListings.length} total | ${allListings.filter(l=>l.sellerType==="dealer").length} dealer | ${allListings.filter(l=>l.sellerType==="particulier").length} part | ${listingsWithKm.length} w/km${kmPriceModel?" | \u20ac"+kmPriceModel.per10k+"/10k km":""}`)
 
@@ -285,6 +302,18 @@ router.get("/api/market",async(req,res)=>{
   try { saveMarketSnapshot(mk, searchMl, yr, result) } catch {}
   // ═══ STORE INDIVIDUAL LISTINGS FOR PRICE HISTORY ═══
   try { storeListingsForHistory(mk, searchMl, yr, allListings, trans) } catch(e) { console.log('[HISTORY] Store error:', e.message) }
+  // ═══ COMP ENGINE OVERRIDE ═══
+  let compMedianOverride = null
+  if (compResult && compResult.status === 'ok' && compResult.marketMedian && compResult.confidenceComparable >= 25) {
+    compMedianOverride = compResult.marketMedian
+    console.log(`  >> CompEngine override: median €${medianVal} → €${compMedianOverride} (conf=${compResult.confidenceComparable})`)
+  }
+  if (compResult) result.comparableEngine = compResult
+  if (compMedianOverride) {
+    result.compMedian = compMedianOverride
+    result.originalMedian = result.median
+    result.median = compMedianOverride
+  }
   res.json(result)
 })
 
