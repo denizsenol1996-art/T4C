@@ -10,6 +10,7 @@ const { getApiKey, hasApiKey } = require("../lib/ai")
 const { authMiddleware, staffOnly } = require("../lib/auth")
 const { getTwinListings } = require("../lib/twins")
 const { writeLog } = require("../lib/state")
+const { calculateTradeBid } = require('../lib/trade-engine')
 const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
 router.post("/api/dealer/price", express.json(), async (req, res) => {
   try {
@@ -776,13 +777,21 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
           finalVerkoop = _blendedVerkoop
           const _kmC = kmCorrection(km)
           if (_kmC.export) { d.exportFlag = true }
-          console.log('[PRICING-FINAL]', d.make, d.model, km+'km:', 'VP', finalVerkoop, _kmC.export ? '⚠ EXPORT' : '')
-          finalHandel = Math.round(finalVerkoop * hwRatio / 50) * 50
-          finalBod = finalHandel
-          finalInkoopLow = Math.round(finalHandel * 0.85 / 50) * 50
-          finalInkoopHigh = Math.round(finalHandel * 0.95 / 50) * 50
-          finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
-          if (_kmC.export) { d.exportFlag = true }
+          // Trade Engine: deterministic bid calculation
+          const _tradeResult = calculateTradeBid(finalVerkoop, aiResult, {...d, km, year, segment}, {count: mCount})
+          if (_tradeResult) {
+            finalHandel = _tradeResult.handelswaarde
+            finalBod = _tradeResult.maxBid
+            finalInkoopLow = _tradeResult.inkoopLow
+            finalInkoopHigh = _tradeResult.inkoopHigh
+            finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
+          } else {
+            finalHandel = Math.round(finalVerkoop * hwRatio / 50) * 50
+            finalBod = finalHandel
+            finalInkoopLow = Math.round(finalHandel * 0.85 / 50) * 50
+            finalInkoopHigh = Math.round(finalHandel * 0.95 / 50) * 50
+            finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
+          }
           conf += 25  // High confidence when AI provides prices
           console.log(`[AI-FIRST] Applied: Retail EUR ${finalVerkoop}, Handel EUR ${finalHandel}, Inkoop EUR ${finalInkoopLow}-${finalInkoopHigh}`)
         } else {
