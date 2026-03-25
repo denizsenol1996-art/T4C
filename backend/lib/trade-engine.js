@@ -1,5 +1,6 @@
-// T4C Trade Engine v3 — gecalibreerd op echte referentieprijzen
+// T4C Trade Engine v4 — met EV risico's, Chinese merk correctie, battery degradatie
 const RISKY_ENGINES = ['n47','n57','n55','n20','n63','ea888','ea189','thp','ep6','prince','dsg','dct','puretech','ecoboost 1.0','tce','1.2 tsi','1.4 tsi','cvt']
+const FAST_DEPRECIATION_EV = ['mg','byd','aiways','xpeng','nio','ora','seres','dfsk','maxus','jac']
 
 function calculateTradeBid(retailPrice, aiData, vehicleData, marketData) {
   if (!retailPrice || retailPrice < 500) return null
@@ -14,9 +15,13 @@ function calculateTradeBid(retailPrice, aiData, vehicleData, marketData) {
   const engineLabel = (vehicleData?.engineLabel || '').toLowerCase()
   const motorCode = (vehicleData?.motorCode || '').toLowerCase()
   const transDetail = (vehicleData?.transmissionDetail || '').toLowerCase()
+  const fuel = (vehicleData?.fuel || '').toLowerCase()
+  const make = (vehicleData?.make || '').toLowerCase()
   const isRiskyEngine = RISKY_ENGINES.some(r => engineLabel.includes(r) || motorCode.includes(r) || transDetail.includes(r))
+  const isEV = fuel.includes('elektr') || fuel.includes('electric') || engineLabel.includes('ev') || engineLabel.includes('kwh')
+  const isFastDeprecEV = isEV && FAST_DEPRECIATION_EV.includes(make)
 
-  // STAP 1: Risicopunten (gewogen per ernst)
+  // STAP 1: Risicopunten
   let riskPoints = 0
   const detectedRisks = []
   if (km > 300000) { riskPoints += 3; detectedRisks.push('zeer_hoge_km') }
@@ -35,10 +40,13 @@ function calculateTradeBid(retailPrice, aiData, vehicleData, marketData) {
   if (riskFlags.includes('structurele_apk_problemen')) { riskPoints += 1.5; detectedRisks.push('apk_structureel') }
   if (riskFlags.includes('apk_verlopen')) { riskPoints += 1; detectedRisks.push('apk_verlopen') }
 
+  // EV-specifieke risico's
+  if (isEV && age >= 4) { riskPoints += 4; detectedRisks.push('ev_batterij_oud') }
+  else if (isEV && age >= 2) { riskPoints += 1.5; detectedRisks.push('ev_batterij_verouderd') }
+  if (isFastDeprecEV) { riskPoints += 3.5; detectedRisks.push('chinese_ev_snelle_waardedaling') }
+  if (isEV && riskFlags.some(f => f.includes('batterij') || f.includes('soh') || f.includes('kWh'))) { riskPoints += 1.5; detectedRisks.push('ev_batterij_onbekend') }
+
   // STAP 2: Progressieve risico-korting
-  // Eerste 5 punten: 1% per punt (licht risico)
-  // 5-10 punten: 2% per punt (serieus risico)
-  // 10+ punten: 2.5% per punt (gevaarlijk)
   let riskPct = 0
   if (riskPoints <= 5) {
     riskPct = riskPoints * 0.01
@@ -47,7 +55,7 @@ function calculateTradeBid(retailPrice, aiData, vehicleData, marketData) {
   } else {
     riskPct = 5 * 0.01 + 5 * 0.02 + (riskPoints - 10) * 0.025
   }
-  riskPct = Math.min(riskPct, 0.35) // max 35% korting
+  riskPct = Math.min(riskPct, 0.35)
 
   // STAP 3: Basis bid ratio per type
   let baseRatio = 0.75
@@ -56,7 +64,11 @@ function calculateTradeBid(retailPrice, aiData, vehicleData, marketData) {
   else if (vType === 'B') baseRatio = 0.75
   else if (vType === 'C') baseRatio = 0.70
 
-  const bidRatio = Math.max(baseRatio - riskPct, 0.40)
+  // EV correctie: oude EV's verkopen structureel onder vraagprijs
+  if (isEV && age >= 3) baseRatio -= 0.05
+  if (isFastDeprecEV) baseRatio -= 0.05
+
+  const bidRatio = Math.max(baseRatio - riskPct, 0.35)
 
   // STAP 4: Prijzen
   const maxBid = Math.round(Math.max(retailPrice * bidRatio, 500) / 50) * 50
@@ -68,8 +80,8 @@ function calculateTradeBid(retailPrice, aiData, vehicleData, marketData) {
   const expectedSell = Math.round(retailPrice * (1 - sellDiscount))
   const riskLevel = riskPoints >= 8 ? 'hoog' : riskPoints >= 4 ? 'gemiddeld' : 'laag'
 
-  const breakdown = { retailAsk: retailPrice, expectedSell, bidRatio: Math.round(bidRatio * 100), riskPoints: Math.round(riskPoints * 10) / 10, riskPct: Math.round(riskPct * 100), detectedRisks, recon: reconEst, maxBid, riskLevel, vehicleType: vType, sellSpeed }
-  console.log('[TRADE-ENGINE] ' + (vehicleData?.make || '?') + ' ' + (vehicleData?.model || '?') + ': Retail ' + retailPrice + ' x ' + Math.round(bidRatio * 100) + '% (risk:' + Math.round(riskPoints*10)/10 + 'pts, -' + Math.round(riskPct*100) + '%) = MaxBid ' + maxBid + ' | Inkoop ' + inkoopLow + '-' + inkoopHigh + ' | HW ' + handelswaarde)
+  const breakdown = { retailAsk: retailPrice, expectedSell, bidRatio: Math.round(bidRatio * 100), riskPoints: Math.round(riskPoints * 10) / 10, riskPct: Math.round(riskPct * 100), detectedRisks, recon: reconEst, maxBid, riskLevel, vehicleType: vType, sellSpeed, isEV, isFastDeprecEV }
+  console.log('[TRADE-ENGINE] ' + (vehicleData?.make || '?') + ' ' + (vehicleData?.model || '?') + ': Retail ' + retailPrice + ' x ' + Math.round(bidRatio * 100) + '% (risk:' + Math.round(riskPoints*10)/10 + 'pts, -' + Math.round(riskPct*100) + '%' + (isEV ? ' [EV]' : '') + ') = MaxBid ' + maxBid + ' | Inkoop ' + inkoopLow + '-' + inkoopHigh + ' | HW ' + handelswaarde)
 
   return { maxBid, inkoopLow, inkoopHigh, handelswaarde, expectedSellPrice: expectedSell, breakdown }
 }

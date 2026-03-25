@@ -71,7 +71,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
           as24Waarde: d.as24Waarde || e.as24Waarde,
           anwbWaarde: d.anwbWaarde || e.anwbWaarde,
           finnikData: d.finnikData || e.finnikData,
-          marktCount: d.marktCount || e.marktCount || 0,
+          marktCount: d.marktCount || e.marktCount || 0, marketCount: d.marktCount || e.marktCount || d.marketCount || e.marketCount || 0,
           enrichedVerkoop: e.verkoopadviees || null,
           enrichedHandel: e.handelswaarde || null,
         }
@@ -370,10 +370,10 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
     // Sell speed estimate
     let sellSpeed = "Onbekend", sellDays = 0
     const velAvg = (liquidityScore + marketVelocity) / 2
-    if (velAvg >= 65) { sellSpeed = "Snel"; sellDays = Math.round(15 + Math.random() * 10) }
-    else if (velAvg >= 45) { sellSpeed = "Normaal"; sellDays = Math.round(30 + Math.random() * 20) }
-    else if (velAvg >= 25) { sellSpeed = "Langzaam"; sellDays = Math.round(60 + Math.random() * 30) }
-    else { sellSpeed = "Moeilijk"; sellDays = Math.round(90 + Math.random() * 60) }
+    if (velAvg >= 65) { sellSpeed = "Snel"; sellDays = 22 }
+    else if (velAvg >= 45) { sellSpeed = "Normaal"; sellDays = 45 }
+    else if (velAvg >= 25) { sellSpeed = "Langzaam"; sellDays = 75 }
+    else { sellSpeed = "Moeilijk"; sellDays = 120 }
 
     // Risk score (inverse of confidence + liquidity)
     let riskScore = Math.round(100 - (conf * 0.5 + liquidityScore * 0.3 + marketVelocity * 0.2))
@@ -704,7 +704,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
         console.log('[AI-FIRST] Calling GPT-5.4 + web search for', d.make, d.model, year, km + 'km')
         const aiResp = await axios.post("https://api.openai.com/v1/responses", {
           model: "gpt-5.4",
-          temperature: 0.15,
+          temperature: 0,
           max_output_tokens: 1200,
           tools: [{ type: "web_search_preview" }],
           input: sysPrompt + "\n\n" + usrPrompt
@@ -770,7 +770,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
           // Gewogen blend
           let _blendedVerkoop = aiVerkoop
           if (_filteredVerkoop > 0 && _filteredCount >= 1) {
-            const _dataWeight = _filteredCount >= 50 ? 0.30 : 0.0  // GPT primary — data pas bij 50+ schone listings
+            const _dataWeight = _filteredCount >= 15 ? 0.55 : _filteredCount >= 8 ? 0.45 : _filteredCount >= 5 ? 0.35 : _filteredCount >= 3 ? 0.25 : 0.0
             _blendedVerkoop = Math.round((_filteredVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
             console.log('[PRICING-BLEND]', d.make, d.model, ':', _filteredCount, 'listings (van', _dbCount, 'raw), mediaan', _filteredMedian, '-> VP', _filteredVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
           } else {
