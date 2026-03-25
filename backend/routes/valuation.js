@@ -14,6 +14,9 @@ const { calculateTradeBid } = require('../lib/trade-engine')
 const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
 router.post("/api/dealer/price", express.json(), async (req, res) => {
   try {
+    // Optionele auth: pak user als token meegegeven
+    let _userId = null
+    try { const { verifyToken } = require("../lib/auth"); const t = (req.headers.authorization||"").replace("Bearer ",""); if (t) { const u = verifyToken(t); _userId = u?.uid || null } } catch{}
     let d = req.body
     // If plate is provided, enrich with full vehicle data first
     if (d.plate) {
@@ -862,7 +865,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
         reconditie_kosten: 0,
         import_flag: d.importFlag ? 1 : 0, export_flag: 0,
         apk_until: d.apkUntil || "", vin: d.vin || "",
-        user_id: null, notes: "", status: "auto"
+        user_id: _userId, notes: "", status: "auto"
       })
       console.log("[TAXATIE-SAVE]", d.make, d.model, year, "-> saved")
     } catch(saveErr) { console.log("[TAXATIE-SAVE] Error:", saveErr.message) }
