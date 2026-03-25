@@ -19,7 +19,7 @@ function getCached(k, ttl = 1200000) { const e = cache.get(k); if (!e) return nu
 function setCache(k, d) { cache.set(k, { d, ts: Date.now() }); if (cache.size > 500) { const o=[...cache.entries()].sort((a,b)=>a[1].ts-b[1].ts); for (let i=0;i<100;i++) cache.delete(o[i][0]) } }
 
 // ── Constants ──
-const MIN_PRICE = 200
+const MIN_PRICE = 500
 const MAX_PRICE = 500000
 const TIMEOUT = 12000
 
