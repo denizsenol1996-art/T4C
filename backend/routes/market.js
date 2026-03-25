@@ -575,6 +575,22 @@ async function backgroundCrawl() {
         const seenL = new Set()
         listings = listings.filter(l => { const k = `${l.price}-${l.title?.slice(0,15)}`; if (seenL.has(k)) return false; seenL.add(k); return true }).slice(0, 15)
 
+        // Als extractListings niks geeft, maak listings van de losse prijzen
+        if (listings.length === 0 && allPrices.length > 0) {
+          const sources = ['Marktplaats','AutoScout24','AutoTrack','Gaspedaal','Autowereld','ViaBovag']
+          const results = [mp, as24, at, gp, aw, vb]
+          results.forEach((r, idx) => {
+            if (r.status === 'fulfilled' && r.value?.length) {
+              r.value.forEach(price => {
+                listings.push({ title: item.make + ' ' + item.model + ' ' + item.year, price, km: null, source: sources[idx], dealer: '' })
+              })
+            }
+          })
+          const seenP = new Set()
+          listings = listings.filter(l => { const k = l.price + '-' + l.source; if (seenP.has(k)) return false; seenP.add(k); return true }).slice(0, 30)
+          if (listings.length > 0) console.log('  [CRAWLER] Converted', listings.length, 'prices to listings for', item.make, item.model, item.year)
+        }
+
         // Store
         if (listings.length > 0) {
           storeListingsForHistory(item.make, item.model, item.year, listings, trans)
