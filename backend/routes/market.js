@@ -542,6 +542,8 @@ async function backgroundCrawl() {
 
     for (const item of queue) {
       try {
+        // Anti-block: random delay 1-3 sec tussen modellen
+        await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000))
         const cap = maxPrice(item.year, item.make)
         const trans = item.transmission || ''
 
