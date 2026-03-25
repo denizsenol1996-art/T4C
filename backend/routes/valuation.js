@@ -12,6 +12,7 @@ const { getTwinListings } = require("../lib/twins")
 const { writeLog } = require("../lib/state")
 const { calculateTradeBid } = require('../lib/trade-engine')
 const { calculatePricing } = require("../lib/comparable-engine/pricing-protocol")
+const { calculateConfidence } = require("../lib/comparable-engine/confidence-engine")
 const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
 const { buildComparableSet } = require("../lib/comparable-engine")
 router.post("/api/dealer/price", express.json(), async (req, res) => {
@@ -136,6 +137,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
     }
         // === COMP ENGINE VALUATION ===
     let compResult = null
+    let _l3Result = null
     try {
       const _compListings = Array.isArray(d.marketListings) ? d.marketListings : []
       if (_compListings.length > 0) {
@@ -796,7 +798,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
           // ═══ LAAG 3: PRICING PROTOCOL ═══
           const _l3Vehicle = { make: d.make, model: d.model, year, km, fuel: d.fuel || "", isEV: /elektr|electric/i.test(d.fuel || "") }
           const _l3AiClass = { vehicleType: aiResult.vehicleType || "B", sellSpeed: aiResult.sellSpeed || "normaal", riskFlags: aiResult.riskFlags || [], reconEstimate: aiResult.reconEstimate || 0 }
-          const _l3Result = calculatePricing(compResult, _l3Vehicle, _l3AiClass, { aiPrice: aiVerkoop })
+          _l3Result = calculatePricing(compResult, _l3Vehicle, _l3AiClass, { aiPrice: aiVerkoop })
           if (_l3Result.source !== "no_data" && _l3Result.retailVerkoop > 0) {
             finalVerkoop = _l3Result.retailVerkoop
             finalHandel = _l3Result.handelswaarde
@@ -938,6 +940,8 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       aiConfidence: aiValidation?.confidence || null,
       aiValidation,
       compEngine: compResult,
+      pricingL3: typeof _l3Result !== "undefined" ? _l3Result : null,
+      confidenceL4: (() => { try { const _cc = { aiPrice: (aiValidation?.verkoopadviees || 0), finnikLow: d.finnikWaardeLow || 0, finnikHigh: d.finnikWaardeHigh || 0, as24Low: d.as24Waarde?.low || 0, as24High: d.as24Waarde?.high || 0, anwbWaarde: d.anwbWaarde?.inruil || 0 }; return calculateConfidence(compResult, _l3Result, d, _cc) } catch(e) { return null } })(),
       // Nieuwe scoring module
       scores: {
         quality: _qualityScore,

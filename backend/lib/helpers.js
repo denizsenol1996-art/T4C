@@ -36,7 +36,24 @@ function maxPrice(yr,mk){const age=new Date().getFullYear()-yr;const m=String(mk
 }
 
 /* ── HELPERS ──────────────────────────────── */
-function parsePrice(t){if(!t)return 0;const c=t.replace(/[^\d.,]/g,"");let n;if(c.includes(".")&&c.includes(","))n=Number(c.replace(/\./g,"").replace(",","."));else if(c.includes(".")&&c.split(".").pop().length===3)n=Number(c.replace(/\./g,""));else n=Number(c.replace(",","."));return Number.isFinite(n)&&n>=MIN_PRICE?n:0}
+function parsePrice(t) {
+  if (!t) return 0
+  const s = String(t).trim()
+  // Reject non-price patterns
+  if (/p\/m|per\s*maand|lease|aanbetaling|vanaf|bieden|op\s*aanvraag|n\.?o\.?t\.?k|verkocht|gereserveerd/i.test(s)) return 0
+  // Strip currency symbols and whitespace
+  let c = s.replace(/[€$EUR\s]/ig, '')
+  // Handle NL format: 8.950 or 8.950,- or 8.950,00
+  c = c.replace(/\./g, '')       // 8.950 → 8950
+  c = c.replace(/,-$/, '')       // 8950,- → 8950
+  c = c.replace(/,(\d{2})$/, '') // 8950,00 → 8950
+  c = c.replace(/,/g, '')        // any remaining commas
+  // Extract integer
+  const m = c.match(/\d{3,6}/)
+  if (!m) return 0
+  const n = parseInt(m[0], 10)
+  return Number.isFinite(n) && n >= MIN_PRICE && n <= MAX_PRICE ? n : 0
+}
 
 
 // ── Safe fetch ──
