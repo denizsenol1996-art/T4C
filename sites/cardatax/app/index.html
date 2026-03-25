@@ -564,7 +564,7 @@ function renderResult(){
 
     <!-- 5 PRICE CARDS -->
     <div class="price-row">
-      <div class="pcard"><div class="pcard-label">Handelswaarde</div><div class="pcard-val">${E(hw)}</div><div class="pcard-sub">Gebaseerd op <b>${m?.count||0}</b> voertuigen</div></div>
+      <div class="pcard"><div class="pcard-label">Handelswaarde</div><div class="pcard-val">${E(hw)}</div><div class="pcard-sub">Inkoop: <b>${E(r.inkoopLow||0)}</b> — <b>${E(r.inkoopHigh||0)}</b></div></div>
       <div class="pcard"><div class="pcard-label">Voorgesteld bod</div><div class="pcard-val" style="color:var(--green)" id="pc-bod">${E(calc.bod)}</div><div class="pcard-sub">Staffel ${calc.margePctUsed}% · marge <b>${E(calc.marge)}</b></div></div>
       <div class="pcard"><div class="pcard-label">Verkoopprijs</div><div class="pcard-val">${E(vp)}</div><div class="pcard-sub">Adviesprijs${m?.p75?' · P75: <b>'+E(m.p75)+'</b>':''}</div></div>
       <div class="pcard"><div class="pcard-label">Marge</div><div class="pcard-val" style="color:${calc.marge>2000?'var(--green)':'var(--orange)'}" id="pc-marge">${E(calc.marge)}</div><div class="pcard-sub"><b id="pc-margepct">${calc.margePct}%</b> van verkoopprijs</div></div>
