@@ -12,6 +12,7 @@ const { getTwinListings } = require("../lib/twins")
 const { writeLog } = require("../lib/state")
 const { calculateTradeBid } = require('../lib/trade-engine')
 const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
+const { buildComparableSet } = require("../lib/comparable-engine")
 router.post("/api/dealer/price", express.json(), async (req, res) => {
   try {
     // Optionele auth: pak user als token meegegeven
@@ -132,6 +133,30 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
         }
       } catch(e) { console.log('[DEALER-PRICE] DB listings error:', e.message) }
     }
+        // === COMP ENGINE VALUATION ===
+    let compResult = null
+    try {
+      const _compListings = Array.isArray(d.marketListings) ? d.marketListings : []
+      if (_compListings.length > 0) {
+        const _fuel = (d.fuel||'').toLowerCase()
+        const _trans = (d.transmissionType||'').toLowerCase()
+        const _transNorm = d.transmissionAuto ? 'automaat' : (_trans.includes('handgeschakeld') || _trans.includes('manual') ? 'handgeschakeld' : _trans.includes('automaat') || _trans.includes('auto') ? 'automaat' : '')
+        const compTarget = {
+          make: d.make || '', model: d.model || '',
+          generation: d.generation || '',
+          trim: d.trimLevel || d.subModel || '',
+          bodyType: d.body || '',
+          fuel: _fuel.includes('diesel') ? 'Diesel' : _fuel.includes('benzine') ? 'Benzine' : _fuel.includes('elektr') ? 'Elektrisch' : d.fuel || '',
+          transmission: _transNorm ? _transNorm.charAt(0).toUpperCase() + _transNorm.slice(1) : '',
+          year: d.year || 0, km: d.km || 0,
+          powerHp: d.powerKw ? Math.round(d.powerKw * 1.36) : 0,
+          isEV: /elektr|electric/i.test(d.fuel || ''),
+        }
+        compResult = buildComparableSet(compTarget, _compListings)
+        console.log(`[COMP-ENGINE-VAL] ${d.make} ${d.model}: status=${compResult.status} clean=${compResult.cleanCount} strong=${compResult.strongCount} median=EUR${compResult.marketMedian} conf=${compResult.confidenceComparable}`)
+      }
+    } catch(compErr) { console.log('[COMP-ENGINE-VAL] Error:', compErr.message) }
+
     const km = d.km || 100000
     const now = new Date().getFullYear()
     const age = now - year
@@ -770,10 +795,22 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
           // Gewogen blend
           let _blendedVerkoop = aiVerkoop
           if (_filteredVerkoop > 0 && _filteredCount >= 1) {
-            const _dataWeight = 0.0  // DISABLED: DB prijzen zijn vervuild, blend pas aanzetten na data cleanup
+            // Comp Engine data is schoon — gebruik die als beschikbaar
+          let _dataWeight = 0.0
+          let _useCompEngine = false
+          if (compResult && compResult.status === 'ok' && compResult.confidenceComparable >= 25 && compResult.marketMedian > 0) {
+            _useCompEngine = true
+            // Comp engine levert schone retail mediaan — gebruik als data bron
+            const compVerkoop = Math.round(compResult.marketMedian * 0.93 / 50) * 50
+            _dataWeight = Math.min(0.4, compResult.confidenceComparable / 100)
+            _blendedVerkoop = Math.round((compVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
+            console.log('[PRICING-COMP]', d.make, d.model, ':', compResult.cleanCount, 'clean comps, compMedian', compResult.marketMedian, '-> compVP', compVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
+          }
+          if (!_useCompEngine) { _dataWeight = 0.0  // Fallback: geen comp engine, 100% GPT
             _blendedVerkoop = Math.round((_filteredVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
             console.log('[PRICING-BLEND]', d.make, d.model, ':', _filteredCount, 'listings (van', _dbCount, 'raw), mediaan', _filteredMedian, '-> VP', _filteredVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
           } else {
+          }
             console.log('[PRICING-GPT]', d.make, d.model, ': geen data, 100% GPT:', aiVerkoop)
           }
           // GPT houdt al rekening met km — geen extra km correctie
@@ -909,6 +946,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       aiTransmissieImpact: aiValidation?.transmissieImpact || null,
       aiConfidence: aiValidation?.confidence || null,
       aiValidation,
+      compEngine: compResult,
       // Nieuwe scoring module
       scores: {
         quality: _qualityScore,

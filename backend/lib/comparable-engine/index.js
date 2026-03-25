@@ -170,7 +170,7 @@ function buildComparableSet(target, rawListings, options = {}) {
     }
   }
 
-  if (strongCount === 0 && confidenceComparable < 50) {
+  if (strongCount === 0 && finalSet.length < 5) {
     return {
       status: 'insufficient_data',
       reason: 'no_strong_matches',
