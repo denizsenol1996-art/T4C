@@ -664,6 +664,11 @@ WAARDE-FACTOREN:
 - BPM REST: hoog = exportinteressant
 - RECALLS: onopgelost = risico
 
+CONSISTENTIE:
+- Baseer je op de MEDIAAN van gevonden vergelijkingen, niet op uitschieters
+- Bij meerdere bronnen: gebruik het midden van de range, niet de hoogste
+- Wees conservatief: liever iets te laag dan te hoog
+
 ANTWOORD UITSLUITEND IN JSON (geen markdown, geen backticks):
 {"verkoopadviees":12345,"handelswaarde":10800,"inkoopLow":9200,"inkoopHigh":10000,"confidence":75,"vehicleType":"B","sellSpeed":"normaal","reconEstimate":800,"facelift":"onbekend","reasoning":"max 3 zinnen NL","transmissieImpact":"beschrijf effect","riskFlags":[]}`
 
@@ -700,7 +705,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
         console.log('[AI-FIRST] Calling GPT-5.4 + web search for', d.make, d.model, year, km + 'km')
         const aiResp = await axios.post("https://api.openai.com/v1/responses", {
           model: "gpt-5.4",
-          temperature: 0.15,
+          temperature: 0.05,
           max_output_tokens: 1200,
           tools: [{ type: "web_search_preview" }],
           input: sysPrompt + "\n\n" + usrPrompt

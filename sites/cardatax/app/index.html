@@ -467,6 +467,9 @@ function recalcBod(){
   const bpmCor=c.overrides.bpmCorrectie||0;
   let bod=vp-(vp*margePct)-(rkBase+rkExtra)-rc-or+(vp*seizPct)+(vp*courantPct)+btwBonus-bpmCor;
   bod=Math.round(Math.max(bod,500));
+  // Begrens bod op GPT inkoop range als beschikbaar
+  const _il=c.r?.inkoopLow||0,_ih=c.r?.inkoopHigh||0;
+  if(_il>0&&_ih>0){bod=Math.min(bod,_ih);bod=Math.max(bod,_il);}
   const marge=vp-bod;
   return{bod,marge,margePct:vp>0?Math.round(marge/vp*100):0,margePctUsed:Math.round(margePct*100),rkTotal:rkBase+rkExtra,risicoCor:rc,onderhoud:or,courantBonus:Math.round(vp*courantPct),btwBonus,bpmCor};
 }
