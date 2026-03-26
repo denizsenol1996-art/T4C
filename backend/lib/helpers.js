@@ -104,6 +104,69 @@ function extractListings(html, cap, sourceUrl, sourceName) {
     } catch {}
   })
 
+  // Method 1b: Marktplaats specific (hz-Listing cards)
+  if (sourceName === 'Marktplaats' || (sourceUrl && sourceUrl.includes('marktplaats'))) {
+    $('a.hz-Listing-coverLink-new, a[href*="/v/auto-s/"]').each((_, card) => {
+      if (listings.length >= 25) return false
+      const $c = $(card).closest('[class*="Listing"]').length ? $(card).closest('div').parent() : $(card).parent()
+      const fullBlock = $c.length ? $c : $(card)
+      const blockText = fullBlock.text()
+      const blockHtml = fullBlock.html() || ''
+      
+      // Price
+      let price = 0
+      const priceEl = fullBlock.find('[class*="ListingPrice"], [class*="hz-Listing-price"]').first()
+      if (priceEl.length) {
+        const pt = priceEl.text().replace(/[^\d]/g, '')
+        price = parseInt(pt, 10) || 0
+      }
+      if (!price) {
+        const pm = blockText.match(/€\s?([\d.]+)/)
+        if (pm) price = parseInt(pm[1].replace(/\./g, ''), 10) || 0
+      }
+      if (!price || price < MIN_PRICE || price > cap) return
+
+      // KM - from mileage div
+      let km = null
+      const kmEl = fullBlock.find('[class*="mileage"]').first()
+      if (kmEl.length) {
+        const kmText = kmEl.text().replace(/[^\d]/g, '')
+        const kmVal = parseInt(kmText, 10)
+        if (kmVal > 1000 && kmVal < 900000) km = kmVal
+      }
+      if (!km) {
+        const kmMatch = blockText.match(/(\d{1,3}[.]\d{3})\s*km/i)
+        if (kmMatch) { const k = parseInt(kmMatch[1].replace(/\./g, ''), 10); if (k > 1000 && k < 900000) km = k }
+      }
+
+      // Title - from img title or link text
+      let title = ''
+      const imgEl = fullBlock.find('img[title]').first()
+      if (imgEl.length) title = imgEl.attr('title') || ''
+      if (!title) title = $(card).attr('title') || $(card).text().trim().split('\n')[0] || ''
+      title = title.replace(/\s+/g, ' ').trim().slice(0, 80)
+
+      // URL
+      let url = $(card).attr('href') || ''
+      if (url && !url.startsWith('http')) url = 'https://www.marktplaats.nl' + url
+
+      // Dealer
+      const dealer = fullBlock.find('[class*="seller-name"]').first().text().trim().slice(0, 60) || ''
+
+      // Year
+      let year = null
+      const yrMatch = blockText.match(/\b(19[89]\d|20[0-2]\d)\b/)
+      if (yrMatch) year = parseInt(yrMatch[1], 10)
+
+      const key = price + '-' + title.slice(0, 20)
+      if (title && !seen.has(key)) {
+        seen.add(key)
+        listings.push({ title, price, km, year, url, source: sourceName, dealer })
+      }
+    })
+    if (listings.length >= 5) return listings.slice(0, 15)
+  }
+
   // Method 2: Common HTML listing card patterns
   const cardSelectors = [
     'article[class*="listing"]', 'article[class*="result"]', 'article[class*="car"]',
