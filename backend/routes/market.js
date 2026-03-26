@@ -556,6 +556,44 @@ function storeListingsForHistory(mk, ml, yr, listings, trans) {
 
 // ═══ BACKGROUND CRAWLER — Hergebruikt bestaande scrapers elke 4 uur ═══
 
+
+// AS24 MODEL EXPANDER - BMW/Mercedes use individual model numbers
+const AS24_EXPAND = {
+  'bmw': {
+    '1 serie': ['116','118','120'],
+    '2 serie': ['218','220','225'],
+    '3 serie': ['316','318','320','325','330'],
+    '4 serie': ['420','430','435'],
+    '5 serie': ['520','530','535','540'],
+  },
+  'mercedes-benz': {
+    'a-klasse': ['a-160','a-180','a-200','a-220'],
+    'b-klasse': ['b-180','b-200','b-220'],
+    'c-klasse': ['c-180','c-200','c-220','c-250','c-300'],
+    'e-klasse': ['e-200','e-220','e-250','e-300','e-350'],
+    's-klasse': ['s-350','s-400','s-500'],
+    'v-klasse': ['v-220','v-250','v-300'],
+    'gla': ['gla-180','gla-200','gla-220'],
+    'glb': ['glb-180','glb-200','glb-220'],
+    'glc': ['glc-200','glc-220','glc-300'],
+    'gle': ['gle-300','gle-350','gle-450'],
+    'cla': ['cla-180','cla-200','cla-220'],
+    'cls': ['cls-220','cls-350','cls-450'],
+  },
+}
+function getAS24ListingUrls(make, model, year) {
+  const mk = (make || '').toLowerCase()
+  const ml = (model || '').toLowerCase()
+  const expand = AS24_EXPAND[mk] && AS24_EXPAND[mk][ml]
+  if (expand) {
+    return expand.slice(0, 3).map(slug => ({
+      name: "AutoScout24",
+      url: 'https://www.autoscout24.nl/lst/' + mk + '/' + slug + '?fregfrom=' + year + '&fregto=' + (year+1) + '&cy=NL'
+    }))
+  }
+  return [{ name: "AutoScout24", url: 'https://www.autoscout24.nl/lst/' + mk + '/' + ml + '?fregfrom=' + year + '&fregto=' + (year+1) + '&cy=NL' }]
+}
+
 let _crawlRunning = false
 async function backgroundCrawl() {
   if (_crawlRunning) return
@@ -595,7 +633,7 @@ async function backgroundCrawl() {
         // Also get listings for title/url tracking
         const listingUrls = [
           { name: "Marktplaats", url: `https://www.marktplaats.nl/q/${item.make}+${item.model}+${item.year}/` },
-          { name: "AutoScout24", url: `https://www.autoscout24.nl/lst/${item.make}/${item.model}?fregfrom=${item.year}&fregto=${item.year+1}&cy=NL` },
+          ...getAS24ListingUrls(item.make, item.model, item.year),
         ]
         const listingResults = await Promise.allSettled(listingUrls.map(async lu => {
           const html = await safeFetch(lu.url)
