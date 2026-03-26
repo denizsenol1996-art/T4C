@@ -2,9 +2,12 @@
 const { detectSegment } = require('./normalize-comparable')
 function roundTo50(v) { return Math.round(v / 50) * 50 }
 function getBaseMargin(retailVP) {
-  if (retailVP >= 15000) return 0.32
-  if (retailVP >= 8000) return 0.38
-  if (retailVP >= 4000) return 0.45
+  // Gecalibreerd op JPauto staffel
+  if (retailVP >= 40000) return 0.18
+  if (retailVP >= 25000) return 0.22
+  if (retailVP >= 15000) return 0.28
+  if (retailVP >= 8000) return 0.35
+  if (retailVP >= 4000) return 0.42
   return 0.50
 }
 function getKmMargin(km) {

@@ -561,7 +561,7 @@ function renderResult(){
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
       <div>
         <div style="font-size:26px;font-weight:800;font-family:var(--mono);letter-spacing:1px">${plate}</div>
-        <div style="font-size:14px;color:var(--text2);margin-top:2px">${v.make} ${v.model} ${v.generation||v.subModel||''}</div>
+        <div style="font-size:14px;color:var(--text2);margin-top:2px">${v.make} ${v.model!==v.make?v.model:""} ${v.generation||v.subModel||""}</div>
         <div style="font-size:12px;color:var(--text3);margin-top:2px">${v.year} · ${N(km||v.km)} km · ${v.fuel||'—'}${v.transmissionType?' · '+v.transmissionType:''}${v.trimLevel?' · '+v.trimLevel:''}</div>
       </div>
       <div style="display:flex;gap:8px">
@@ -575,12 +575,13 @@ function renderResult(){
     <!-- 5 PRICE CARDS -->
     <div class="price-row">
       <div class="pcard"><div class="pcard-label">Inkoop range</div><div class="pcard-val">${E(r.inkoopLow||0)} — ${E(r.inkoopHigh||0)}</div><div class="pcard-sub">Handelswaarde: <b>${E(hw)}</b></div></div>
-      <div class="pcard"><div class="pcard-label">Voorgesteld bod</div><div class="pcard-val" style="color:var(--green)" id="pc-bod">${E(calc.bod)}</div><div class="pcard-sub">Staffel ${calc.margePctUsed}% · marge <b>${E(calc.marge)}</b></div></div>
+      <div class="pcard"><div class="pcard-label">Voorgesteld bod</div><div class="pcard-val" style="color:var(--green)" id="pc-bod">${E(calc.bod)}</div><div class="pcard-sub">${r.pricingL3?.source==="comp_engine"?"Marktdata":"AI indicatie"} · marge <b>${E(calc.marge)}</b></div></div>
       <div class="pcard"><div class="pcard-label">Verkoopprijs</div><div class="pcard-val">${E(vp)}</div><div class="pcard-sub">Adviesprijs${m?.p75?' · P75: <b>'+E(m.p75)+'</b>':''}</div></div>
       <div class="pcard"><div class="pcard-label">Marge</div><div class="pcard-val" style="color:${calc.marge>2000?'var(--green)':'var(--orange)'}" id="pc-marge">${E(calc.marge)}</div><div class="pcard-sub"><b id="pc-margepct">${calc.margePct}%</b> van verkoopprijs</div></div>
       <div class="pcard advies"><div class="pcard-label">Biedadvies</div><div class="advies-verdict">${adv.action||'Analyseren...'}</div>
         <div class="advies-checks">${(adv.lines||[]).slice(0,4).map(l=>'<div class="advies-check"><span class="advies-dot" style="background:'+(l.startsWith('+ ')?'var(--green)':l.startsWith('! ')?'var(--orange)':'var(--text3)')+'"></span>'+l.replace(/^[+!] /,'')+'</div>').join('')}</div>
       </div>
+      <div class="pcard" style="border-color:${r.confidenceL4?.color==='green'?'var(--green)':r.confidenceL4?.color==='orange'?'var(--orange)':'var(--red)'}40"><div class="pcard-label">Betrouwbaarheid</div><div class="pcard-val" style="font-size:18px;color:${r.confidenceL4?.color==='green'?'var(--green)':r.confidenceL4?.color==='orange'?'var(--orange)':'var(--red)'}">${r.confidenceL4?.label||'Onbekend'}</div><div class="pcard-sub">${r.confidenceL4?.confidence||0}/100 · ${r.confidenceL4?.crossCheckAgree||0}/${r.confidenceL4?.crossCheckCount||0} bronnen</div></div>
     </div>
 
     <!-- 2-COL GRID: biedadvies LEFT, content RIGHT -->
@@ -591,7 +592,7 @@ function renderResult(){
         <div class="bod-card">
           <div class="bod-label">Berekend bod</div>
           <div class="bod-val" id="live-bod">${E(calc.bod)}</div>
-          <div class="bod-breakdown" id="live-breakdown">VP ${E(vp)} - marge ${calc.margePctUsed}% - RK €${calc.rkTotal} - risico €${calc.risicoCor}</div>
+          <div class="bod-breakdown" id="live-breakdown">VP ${E(vp)} · ${r.pricingL3?.source==="comp_engine"?r.pricingL3.breakdown?.compClean+" vergelijkbare autos":"AI prijsindicatie"} · marge ${r.pricingL3?.dealerMargin||calc.margePctUsed}%</div>
           <button class="bod-btn" onclick="copyBod()">Kopieer bod</button>
         </div>
 
