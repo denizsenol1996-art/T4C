@@ -13,6 +13,7 @@ const { writeLog } = require("../lib/state")
 const { calculateTradeBid } = require('../lib/trade-engine')
 const { calculatePricing } = require("../lib/comparable-engine/pricing-protocol")
 const { calculateConfidence } = require("../lib/comparable-engine/confidence-engine")
+const { normalizeModel, normalizeMake } = require("../lib/comparable-engine/model-normalizer")
 const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
 const { buildComparableSet } = require("../lib/comparable-engine")
 router.post("/api/dealer/price", express.json(), async (req, res) => {
@@ -87,9 +88,13 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
     if (!(d.marketListings && d.marketListings.length)) {
       try {
         const mk = (d.make||'').toLowerCase(); let ml = (d.model||'').toLowerCase(); if (ml.startsWith(mk + ' ')) ml = ml.slice(mk.length + 1)
+        // Normalizer: "E 350 CGI" → "e-klasse"
+        const _norm = normalizeModel(mk, ml)
+        const _crawlerMl = _norm.crawlerModel || ml
+        if (_norm.confidence !== "passthrough") console.log("[MODEL-NORM]", mk, ml, "→", _crawlerMl, "(" + _norm.confidence + ")")
         if (mk && ml) {
           // Smart model matching: probeer exact, dan eerste woord, dan nummer-extractie
-          let dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, ml + '%', (d.year||2015)-2, (d.year||2015)+2])
+          let dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, _crawlerMl + '%', (d.year||2015)-2, (d.year||2015)+2])
           // Fallback 1: eerste woord (maar niet als het een nummer is dat andere modellen matcht)
           if (dbListings.length < 3 && ml.includes(' ')) {
             const firstWord = ml.split(' ')[0]
@@ -903,6 +908,10 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
     // Auto-queue model voor crawler (hogere prioriteit)
     try {
       const mk = (d.make||'').toLowerCase(), ml = (d.model||'').toLowerCase().replace(new RegExp('^' + mk + '\s+'), '')
+        // Normalizer: "E 350 CGI" → "e-klasse"
+        const _norm = normalizeModel(mk, ml)
+        const _crawlerMl = _norm.crawlerModel || ml
+        if (_norm.confidence !== "passthrough") console.log("[MODEL-NORM]", mk, ml, "→", _crawlerMl, "(" + _norm.confidence + ")")
       if (mk && ml) run('INSERT OR IGNORE INTO crawl_queue(make,model,year) VALUES(?,?,?)', [mk, ml, year])
     } catch(eq) {}
 
