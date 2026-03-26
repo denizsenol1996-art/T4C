@@ -672,8 +672,7 @@ async function backgroundCrawl() {
           try {
             const { queryAll, run } = require("../db")
             for (const l of listings) {
-              const crypto = require("crypto")
-              const hash = crypto.createHash("md5").update((l.price||0)+"-"+(l.title||"").slice(0,30)+"-"+(l.source||"")).digest("hex").slice(0,12)
+              const hash = listingHash(l.title, l.price, l.source)
               const existing = queryAll("SELECT id, price, first_seen FROM market_listings WHERE hash=? LIMIT 1", [hash])
               if (existing.length > 0) {
                 const ex = existing[0]
