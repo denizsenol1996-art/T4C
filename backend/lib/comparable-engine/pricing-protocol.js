@@ -1,5 +1,4 @@
-// T4C Pricing Protocol — Laag 3 v2
-// Direct dealer-margin model gecalibreerd op referentieprijzen 25 maart
+// T4C Pricing Protocol — Laag 3 v3
 const { detectSegment } = require('./normalize-comparable')
 function roundTo50(v) { return Math.round(v / 50) * 50 }
 function getBaseMargin(retailVP) {
@@ -30,7 +29,8 @@ const EV_MARGIN = {
   fastDeprecBrands:['mg','byd','aiways','xpeng','nio','ora','seres','dfsk','maxus','jac'],
 }
 function calculatePricing(compResult, vehicle, aiClass, opts) {
-  aiClass = aiClass || {}; opts = opts || {}
+  aiClass = aiClass || {}
+  opts = opts || {}
   const make = (vehicle.make || '').toLowerCase()
   const segment = detectSegment(vehicle)
   const age = new Date().getFullYear() - (vehicle.year || 2015)
@@ -39,32 +39,41 @@ function calculatePricing(compResult, vehicle, aiClass, opts) {
   const isChinese = isEV && EV_MARGIN.fastDeprecBrands.includes(make)
   const vraagToRetail = segment === 'budget' ? 0.92 : 0.93
   const result = { source:null, confidence:0, segment, retailVraag:null, retailVerkoop:null, handelswaarde:null, inkoopLow:null, inkoopHigh:null, internetPrijs:null, dealerMargin:null, corrections:[], breakdown:{} }
-  let retailBase = null
+  var retailBase = null
   if (compResult && compResult.status === 'ok' && compResult.marketMedian > 0) {
-    retailBase = compResult.marketMedian; result.source = 'comp_engine'
+    retailBase = compResult.marketMedian
+    result.source = 'comp_engine'
     result.confidence = Math.min(90, 40 + compResult.confidenceComparable * 0.5)
     if (compResult.strongCount >= 3) result.confidence += 5
     if (compResult.cleanCount >= 10) result.confidence += 5
     if (compResult.marketSpread && compResult.marketSpread < 2000) result.confidence += 5
   } else if (compResult && compResult.marketMedian > 0 && compResult.cleanCount >= 2) {
-    retailBase = compResult.marketMedian; result.source = 'comp_engine_weak'
+    retailBase = compResult.marketMedian
+    result.source = 'comp_engine_weak'
     result.confidence = 30 + (compResult.confidenceComparable || 0) * 0.3
   } else if (opts.aiPrice && opts.aiPrice > 500) {
-    retailBase = opts.aiPrice; result.source = 'ai_fallback'; result.confidence = 35
-  } else { result.source = 'no_data'; return result }
+    retailBase = opts.aiPrice
+    result.source = 'ai_fallback'
+    result.confidence = 35
+  } else {
+    result.source = 'no_data'
+    return result
+  }
   result.retailVraag = roundTo50(retailBase)
-  const retailVP = retailBase * vraagToRetail
+  var retailVP = retailBase * vraagToRetail
   result.retailVerkoop = roundTo50(retailVP)
-  let margin = getBaseMargin(retailVP)
-  margin += getKmMargin(km); margin += getAgeMargin(age)
-  const sellSpeed = (aiClass.sellSpeed || 'normaal').toLowerCase()
+  var margin = getBaseMargin(retailVP)
+  var _kmM = getKmMargin(km)
+  var _ageM = getAgeMargin(age)
+  margin += _kmM + _ageM * (1 - Math.abs(_kmM))
+  var sellSpeed = (aiClass.sellSpeed || 'normaal').toLowerCase()
   if (sellSpeed === 'snel') margin -= 0.03
   else if (sellSpeed === 'langzaam') margin += 0.04
   else if (sellSpeed === 'specialistisch') margin += 0.06
-  const vType = (aiClass.vehicleType || 'B').toUpperCase()
+  var vType = (aiClass.vehicleType || 'B').toUpperCase()
   if (vType === 'A') margin -= 0.02
   else if (vType === 'C') margin += 0.04
-  const riskFlags = aiClass.riskFlags || []
+  var riskFlags = aiClass.riskFlags || []
   if (riskFlags.includes('ex_taxi')) margin += 0.05
   if (riskFlags.includes('veel_eigenaren')) margin += 0.02
   if (riskFlags.includes('niet_verzekerd')) margin += 0.03
@@ -76,11 +85,12 @@ function calculatePricing(compResult, vehicle, aiClass, opts) {
     else margin += EV_MARGIN.over6yr
     if (isChinese) margin += EV_MARGIN.chineseBrand
   }
-  margin = Math.max(0.20, Math.min(0.65, margin))
+  if (result.source === 'ai_fallback') margin = Math.min(margin, 0.40)
+  margin = Math.max(0.20, Math.min(0.55, margin))
   result.dealerMargin = Math.round(margin * 100)
   result.inkoopHigh = roundTo50(retailVP * (1 - margin))
   result.inkoopLow = roundTo50(result.inkoopHigh * 0.87)
-  const reconEst = aiClass.reconEstimate || 0
+  var reconEst = aiClass.reconEstimate || 0
   if (reconEst > 0) {
     result.inkoopHigh = roundTo50(result.inkoopHigh - reconEst * 0.5)
     result.inkoopLow = roundTo50(result.inkoopLow - reconEst * 0.7)
