@@ -11,6 +11,7 @@ const { getLearned, recordTaxatie, learn, getSeasonFactor, getDepreciation, getM
 const crypto = require("crypto")
 const { scoreSource } = require("../lib/intelligence")
 const { buildComparableSet } = require("../lib/comparable-engine")
+const { normalizeModel, normalizeMake } = require("../lib/comparable-engine/model-normalizer")
 
 // /api/market
 router.get("/api/market",async(req,res)=>{
@@ -28,6 +29,10 @@ router.get("/api/market",async(req,res)=>{
   // Build search queries
   const searchMl = sub && !ml.includes(sub) ? `${ml} ${sub}` : ml
   const baseMl = ml  // Without submodel for broad search
+  // Normalize for DB lookup (e.g. "e 350 cgi" → "e-klasse")
+  const _norm = normalizeModel(mk, ml)
+  const _crawlerMl = _norm.crawlerModel || ml
+  if (_norm.confidence !== 'passthrough') console.log('[MARKET-NORM]', mk, ml, '→', _crawlerMl, '(' + _norm.confidence + ')')
 
   const ck=`m|${mk}|${searchMl}|${yr}|${km?Math.round(km/25000)*25000:0}|${trans}`
   const cc=getCached(ck);if(cc)return res.json(cc)
