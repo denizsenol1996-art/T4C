@@ -564,7 +564,7 @@ async function backgroundCrawl() {
 
   try {
     // Get items to crawl (stale or never crawled)
-    const queue = stmts.getCrawlQueue.all(100) // 100 per run — continu crawlen — Z440 kan het aan
+    const queue = stmts.getCrawlQueue.all(300) // 100 per run — continu crawlen — Z440 kan het aan
     if (!queue.length) { _crawlRunning = false; return }
 
     console.log(`\n[CRAWLER] Starting background crawl: ${queue.length} models`)
@@ -607,7 +607,7 @@ async function backgroundCrawl() {
         listings = listings.filter(l => { const k = `${l.price}-${l.title?.slice(0,15)}`; if (seenL.has(k)) return false; seenL.add(k); return true }).slice(0, 15)
 
         // Als extractListings niks geeft, maak listings van de losse prijzen
-        if (listings.length === 0 && allPrices.length > 0) {
+        if (false && listings.length === 0 && allPrices.length > 0) { // DISABLED: creates fake listings without km/title
           const sources = ['Marktplaats','AutoScout24','AutoTrack','Gaspedaal','Autowereld','ViaBovag']
           const results = [mp, as24, at, gp, aw, vb]
           results.forEach((r, idx) => {
@@ -678,7 +678,7 @@ async function backgroundCrawl() {
         console.log(`  [CRAWLER] ${item.make} ${item.model} ${item.year}: ${allPrices.length} prices, ${listings.length} listings`)
 
         // Small delay between models to be respectful
-        await new Promise(r => setTimeout(r, 2000))
+        await new Promise(r => setTimeout(r, 1000))
       } catch (e) {
         console.log(`  [CRAWLER] Error ${item.make} ${item.model}: ${e.message}`)
       }
