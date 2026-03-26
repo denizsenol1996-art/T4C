@@ -800,6 +800,10 @@ const stmts = {
   // Market Listings (individual listing tracking)
   upsertListing: {
     run: (hash, mk, ml, yr, title, price, km, trans, source, url, dealer) => {
+      // Gate: reject bad data at DB level
+      price = Math.round(Number(price) || 0)
+      if (price < 500 || price > 500000) return 'rejected_price'
+      if (km !== null && km !== undefined) { km = Math.round(Number(km) || 0); if (km > 500000) km = null }
       const existing = queryOne("SELECT id FROM market_listings WHERE hash=?", [hash])
       if (existing) {
         run("UPDATE market_listings SET price=?, km=?, url=CASE WHEN ? LIKE '%/aanbod/%' THEN ? ELSE url END, dealer=CASE WHEN ?!='' THEN ? ELSE dealer END, last_seen=datetime('now'), status='active' WHERE hash=?", [price, km, url, url, dealer||'', dealer||'', hash])
