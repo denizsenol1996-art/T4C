@@ -466,4 +466,41 @@ router.get("/api/admin/bulk-seed-queue", (req, res) => {
   res.json({ ok: true, added: n, total: t && t[0] ? t[0].c : 0 })
 })
 
+
+// ── DB Cleanup endpoint ──
+router.post("/api/admin/cleanup-db", (req, res) => {
+  try {
+    const { run, queryAll, forceSave } = require("../db")
+    let removed = 0
+    // Decimals
+    const d = queryAll('SELECT COUNT(*) as c FROM market_listings WHERE price!=ROUND(price) AND price>0')[0].c
+    run('DELETE FROM market_listings WHERE price!=ROUND(price) AND price>0')
+    removed += d
+    // Under 1500
+    const u = queryAll('SELECT COUNT(*) as c FROM market_listings WHERE price>0 AND price<1500')[0].c
+    run('DELETE FROM market_listings WHERE price>0 AND price<1500')
+    removed += u
+    // Over 200000
+    const o = queryAll('SELECT COUNT(*) as c FROM market_listings WHERE price>200000')[0].c
+    run('DELETE FROM market_listings WHERE price>200000')
+    removed += o
+    // Fake (no km + generic title)
+    const f = queryAll('SELECT COUNT(*) as c FROM market_listings WHERE km IS NULL AND title LIKE make||" "||model||"%"')[0].c
+    run('DELETE FROM market_listings WHERE km IS NULL AND title LIKE make||" "||model||"%"')
+    removed += f
+    // Dubbele model tokens
+    const dt = queryAll('SELECT COUNT(*) as c FROM market_listings WHERE model LIKE "% % %"')[0].c
+    run('DELETE FROM market_listings WHERE model LIKE "% % %"')
+    removed += dt
+    // km > 500000
+    const k = queryAll('SELECT COUNT(*) as c FROM market_listings WHERE km > 500000')[0].c
+    run('DELETE FROM market_listings WHERE km > 500000')
+    removed += k
+    forceSave()
+    const active = queryAll('SELECT COUNT(*) as c FROM market_listings WHERE status="active" AND price>0')[0].c
+    const bad = queryAll('SELECT COUNT(*) as c FROM market_listings WHERE price>0 AND (price<500 OR price>200000 OR price!=ROUND(price))')[0].c
+    res.json({ ok: true, removed, decimals: d, under1500: u, over200k: o, fakes: f, dupeModels: dt, highKm: k, remaining: active, bad })
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
 module.exports = router
