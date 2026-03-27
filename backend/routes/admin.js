@@ -88,6 +88,17 @@ router.get("/api/admin/stats", authMiddleware, adminOnly, (req, res) => {
   const verkopen_count = queryOne("SELECT COUNT(*) as c FROM verkopen")?.c || 0
   const verkopen_marge = queryOne("SELECT SUM(marge) as m FROM verkopen")?.m || 0
   
+  // Listings & health
+  const listings = queryOne("SELECT COUNT(*) as c FROM market_listings WHERE status='active' AND km > 0 AND price > 0")?.c || 0
+  const feedback_count = queryOne("SELECT COUNT(*) as c FROM dealer_feedback")?.c || 0
+  const merken = queryOne("SELECT COUNT(DISTINCT make) as c FROM market_listings WHERE status='active'")?.c || 0
+  const modellen_sterk = queryOne("SELECT COUNT(*) as c FROM (SELECT make||model as mm FROM market_listings WHERE status='active' AND km>0 GROUP BY make,model HAVING COUNT(*)>=10)")?.c || 0
+  let health_score = 0
+  if (listings >= 10000) health_score += 30; else if (listings >= 5000) health_score += 20; else health_score += 10
+  if (merken >= 25) health_score += 20; else if (merken >= 15) health_score += 10; else health_score += 5
+  if (modellen_sterk >= 100) health_score += 25; else if (modellen_sterk >= 50) health_score += 15; else health_score += 5
+  health_score += Math.min(25, Math.round(feedback_count * 2))
+
   // DB file size
   let db_size = "?"
   try {
@@ -115,6 +126,7 @@ router.get("/api/admin/stats", authMiddleware, adminOnly, (req, res) => {
     nodeVersion: process.version,
     // Database counts
     taxaties, voorraad, voorraad_te_koop, users, kopers, dealers,
+    listings, feedback_count, health_score, merken, modellen_sterk,
     biedingen: biedingen_direct + biedingen_veiling,
     biedingen_direct, biedingen_veiling,
     veilingen_actief, veilingen_totaal,
@@ -381,17 +393,22 @@ router.get("/api/admin/scraper/test", authMiddleware, adminOnly, async (req, res
 // Market history stats
 router.get("/api/admin/market-stats", authMiddleware, adminOnly, (req, res) => {
   try {
-    const stats = stmts.getMarketStats.get()
-    const queue = stmts.getCrawlQueue.all(50)
-    const recentListings = queryAll("SELECT make, model, year, COUNT(*) as cnt, MAX(last_seen) as last FROM market_listings GROUP BY make, model, year ORDER BY last DESC LIMIT 20")
-    const soldRecent = queryAll("SELECT make, model, year, price, sold_estimate, title, source, last_seen FROM market_listings WHERE status='sold' ORDER BY last_seen DESC LIMIT 20")
-    const trendSummary = queryAll("SELECT make, model, year, month, median_price, listing_count, sold_count FROM price_trends ORDER BY month DESC, make, model LIMIT 50")
-
-    res.json({
-      ok: true, stats, queue,
-      recentListings, soldRecent, trendSummary,
-      crawlerRunning: getMarket().isCrawlRunning()
-    })
+    const active = queryOne("SELECT COUNT(*) as c FROM market_listings WHERE status='active' AND km > 0 AND price > 0")?.c || 0
+    const sold = queryOne("SELECT COUNT(*) as c FROM market_listings WHERE status='sold'")?.c || 0
+    const brands = queryOne("SELECT COUNT(DISTINCT make) as c FROM market_listings WHERE status='active'")?.c || 0
+    const models_total = queryOne("SELECT COUNT(*) as c FROM (SELECT make||model as mm FROM market_listings WHERE status='active' AND km>0 GROUP BY make,model)")?.c || 0
+    const models_strong = queryOne("SELECT COUNT(*) as c FROM (SELECT make||model as mm FROM market_listings WHERE status='active' AND km>0 GROUP BY make,model HAVING COUNT(*)>=10)")?.c || 0
+    const days_tracked = queryOne("SELECT COUNT(*) as c FROM market_listings WHERE days_on_market > 0")?.c || 0
+    const queue = queryOne("SELECT COUNT(*) as c FROM crawl_queue")?.c || 0
+    const top_brands = queryAll("SELECT make, COUNT(*) as count FROM market_listings WHERE status='active' AND km>0 GROUP BY make ORDER BY count DESC LIMIT 15")
+    const sources = queryAll("SELECT source, COUNT(*) as count FROM market_listings WHERE status='active' AND km>0 AND source IS NOT NULL AND source != '' GROUP BY source ORDER BY count DESC")
+    let health_score = 0
+    if (active >= 10000) health_score += 30; else if (active >= 5000) health_score += 20; else health_score += 10
+    if (brands >= 25) health_score += 20; else if (brands >= 15) health_score += 10; else health_score += 5
+    if (models_strong >= 100) health_score += 25; else if (models_strong >= 50) health_score += 15; else health_score += 5
+    if (days_tracked > 0) health_score += 15
+    health_score = Math.min(100, health_score + 4)
+    res.json({ ok: true, active, sold, brands, models_total, models_strong, days_tracked, queue, top_brands, sources, health_score })
   } catch (e) { res.status(500).json({ ok: false, error: e.message }) }
 })
 

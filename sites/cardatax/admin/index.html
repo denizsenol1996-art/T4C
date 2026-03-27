@@ -193,6 +193,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t1);height:100vh;d
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       Crawler Monitor
     </a>
+    <a class="nav-item" onclick="go('health')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Data Health
+    </a>
+    <a class="nav-item" onclick="go('feedback')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-6"/></svg>
+      Inkoop & Learning
+    </a>
 
     <div class="sb-section">Transfer4Cars</div>
     <a class="nav-item" onclick="go('voorraad')">
@@ -469,6 +477,63 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t1);height:100vh;d
   </div><!-- /content -->
 </div><!-- /main -->
 
+
+    <!-- DATA HEALTH -->
+    <div class="panel" id="p-health">
+      <div class="card"><div class="card-head"><div class="card-title">▸ VOORRAAD</div><div class="card-sub">Data Health Overzicht</div></div></div>
+      <div class="grid-4">
+        <div class="stat-card green"><div class="stat-label">Health Score</div><div class="stat-val" id="dh-score">—</div><div class="stat-sub" id="dh-status">laden...</div></div>
+        <div class="stat-card blue"><div class="stat-label">Active Listings</div><div class="stat-val" id="dh-active">—</div><div class="stat-sub">met km & prijs</div></div>
+        <div class="stat-card"><div class="stat-label">Merken</div><div class="stat-val" id="dh-merken">—</div><div class="stat-sub">gedekt</div></div>
+        <div class="stat-card"><div class="stat-label">Modellen</div><div class="stat-val" id="dh-modellen">—</div><div class="stat-sub" id="dh-modellen-sub">sterk (≥10)</div></div>
+      </div>
+      <div class="grid-3">
+        <div class="stat-card"><div class="stat-label">Stadagen Tracked</div><div class="stat-val" id="dh-stadagen">—</div><div class="stat-sub">voor Indicata-analyse</div></div>
+        <div class="stat-card"><div class="stat-label">Sold Detected</div><div class="stat-val" id="dh-sold">—</div><div class="stat-sub">verdwenen van markt</div></div>
+        <div class="stat-card"><div class="stat-label">Queue</div><div class="stat-val" id="dh-queue">—</div><div class="stat-sub">in crawl queue</div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">▸ TOP MERKEN DEKKING</div></div>
+        <div class="card-body" id="dh-merken-list">Laden...</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">▸ BRONNEN</div></div>
+        <div class="card-body" id="dh-sources">Laden...</div>
+      </div>
+    </div>
+
+    <!-- INKOOP & LEARNING -->
+    <div class="panel" id="p-feedback">
+      <div class="card"><div class="card-head"><div class="card-title">▸ INKOOP & LEARNING</div><div class="card-sub">Feedback, correcties & transactiehistorie</div></div></div>
+      <div class="grid-4">
+        <div class="stat-card green"><div class="stat-label">Totaal Feedback</div><div class="stat-val" id="fb-total">—</div><div class="stat-sub">transacties</div></div>
+        <div class="stat-card"><div class="stat-label">Gem. Verschil</div><div class="stat-val" id="fb-avg-diff">—</div><div class="stat-sub">eigen bod vs onze prijs</div></div>
+        <div class="stat-card blue"><div class="stat-label">Correcties Actief</div><div class="stat-val" id="fb-corrections">—</div><div class="stat-sub">segmenten geleerd</div></div>
+        <div class="stat-card amber"><div class="stat-label">Nog Nodig</div><div class="stat-val" id="fb-needed">—</div><div class="stat-sub">voor volledige dekking</div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">▸ ACTIEVE CORRECTIES PER SEGMENT</div></div>
+        <div class="card-body" style="padding:0">
+          <table class="tbl">
+            <thead><tr><th>Segment</th><th>Correctie</th><th>Gem. Verschil</th><th>Feedbacks</th><th>Status</th></tr></thead>
+            <tbody id="fb-corr-tbody"><tr><td colspan="5" style="text-align:center;color:var(--t4);padding:16px">Nog geen correcties</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">▸ INKOOP HISTORIE</div></div>
+        <div class="card-body" style="padding:0">
+          <table class="tbl">
+            <thead><tr><th>Kenteken</th><th>Auto</th><th>Jaar</th><th>KM</th><th>Onze Prijs</th><th>Eigen Bod</th><th>Verschil</th><th>Datum</th></tr></thead>
+            <tbody id="fb-history-body"><tr><td colspan="8" style="text-align:center;color:var(--t4);padding:16px">Laden...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <div id="toast-wrap"></div>
 
 <script>
@@ -504,6 +569,8 @@ function loadPanel(p) {
   else if (p === 'dealers') loadDealers();
   else if (p === 'logs') loadLogs();
   else if (p === 'settings') loadSettings();
+  else if (p === 'health') loadHealth();
+  else if (p === 'feedback') loadFeedback();
 }
 
 // Toast
@@ -1015,6 +1082,70 @@ async function testKey(name) {
     addFeedLine(d.ok ? '✅ ' + name + ': ' + (d.message||'OK') : '❌ ' + name + ': ' + (d.error||'Mislukt'), d.ok?'ok':'err', 'TEST');
     renderAIStatus();
   } catch(e) { addFeedLine('❌ Test fout: '+e.message, 'err', 'TEST'); }
+}
+
+
+// ═══ DATA HEALTH ═══
+const E2 = v => '\u20ac' + Number(v||0).toLocaleString('nl-NL');
+const N2 = v => Number(v||0).toLocaleString('nl-NL');
+
+async function loadHealth(){
+  try{
+    const d=await fetch('/api/admin/market-stats',{headers:H()}).then(r=>r.json());
+    document.getElementById('dh-active').textContent=N2(d.active||0);
+    document.getElementById('dh-merken').textContent=N2(d.brands||0);
+    document.getElementById('dh-modellen').textContent=N2(d.models_strong||0);
+    document.getElementById('dh-modellen-sub').textContent=(d.models_strong||0)+' sterk / '+(d.models_total||0)+' totaal';
+    document.getElementById('dh-sold').textContent=N2(d.sold||0);
+    document.getElementById('dh-stadagen').textContent=N2(d.days_tracked||0);
+    document.getElementById('dh-queue').textContent=N2(d.queue||0);
+    document.getElementById('dh-score').textContent=d.health_score||'?';
+    document.getElementById('dh-status').textContent=d.health_score>=90?'Gezond':d.health_score>=70?'Redelijk':'Aandacht nodig';
+    if(d.top_brands&&d.top_brands.length){
+      document.getElementById('dh-merken-list').innerHTML=d.top_brands.map(function(b){
+        var pct=Math.min(100,Math.round(b.count/d.top_brands[0].count*100));
+        return '<div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--b1)"><span style="font-size:11px;color:var(--t2);font-family:var(--mono);min-width:140px">'+b.make+'</span><div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="height:100%;background:var(--green);border-radius:3px;width:'+pct+'%"></div></div><span style="font-size:11px;color:var(--t1);font-family:var(--mono);min-width:50px;text-align:right">'+N2(b.count)+'</span></div>';
+      }).join('');
+    }
+    if(d.sources&&d.sources.length){
+      document.getElementById('dh-sources').innerHTML=d.sources.map(function(s){
+        var pct=d.active>0?Math.round(s.count/d.active*100):0;
+        return '<div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--b1)"><span style="font-size:11px;color:var(--t2);font-family:var(--mono);min-width:140px">'+s.source+'</span><div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="height:100%;background:var(--green);border-radius:3px;width:'+pct+'%"></div></div><span style="font-size:11px;color:var(--t1);font-family:var(--mono);min-width:80px;text-align:right">'+N2(s.count)+' ('+pct+'%)</span></div>';
+      }).join('');
+    }
+  }catch(e){try{document.getElementById('dh-score').textContent='?'}catch(x){}}
+}
+
+// ═══ INKOOP & LEARNING ═══
+async function loadFeedback(){
+  try{
+    var d=await fetch('/api/feedback/stats',{headers:H()}).then(function(r){return r.json()});
+    document.getElementById('fb-total').textContent=N2(d.total||0);
+    var all=d.recent||[];
+    if(all.length>0){
+      var bought=all.filter(function(f){try{return JSON.parse(f.feedback).status==='gekocht'}catch(e){return true}});
+      var diffs=bought.filter(function(f){return f.sold_price>0&&f.our_bod>0}).map(function(f){return f.sold_price-f.our_bod});
+      var avgDiff=diffs.length>0?Math.round(diffs.reduce(function(a,b){return a+b},0)/diffs.length):0;
+      document.getElementById('fb-avg-diff').textContent=(avgDiff>0?'+':'')+E2(avgDiff);
+      var segments={};
+      bought.forEach(function(f){var meta={};try{meta=JSON.parse(f.feedback)}catch(e){}var seg=meta.segment||'midden';if(!segments[seg])segments[seg]={count:0,diffs:[]};segments[seg].count++;if(f.sold_price>0&&f.our_bod>0)segments[seg].diffs.push(f.sold_price-f.our_bod)});
+      var corrActive=0,needed=0;
+      var segNames=['budget','midden','premium'];
+      document.getElementById('fb-corr-tbody').innerHTML=segNames.map(function(seg){
+        var s=segments[seg]||{count:0,diffs:[]};
+        var avg=s.diffs.length>0?Math.round(s.diffs.reduce(function(a,b){return a+b},0)/s.diffs.length):null;
+        var isActive=s.count>=3;if(isActive)corrActive++;else needed+=Math.max(0,3-s.count);
+        return '<tr><td style="color:var(--t1);font-weight:600;text-transform:capitalize">'+seg+'</td><td style="color:'+(isActive?(avg>0?'var(--green)':'var(--red)'):'var(--t3)')+'">'+(isActive?(avg>0?'+':'')+E2(avg):'\u2014')+'</td><td>'+(avg!==null?E2(avg):'\u2014')+'</td><td>'+s.count+'</td><td><span class="badge '+(isActive?'green':'gray')+'">'+(isActive?'Actief':'Nog '+(3-s.count)+' nodig')+'</span></td></tr>';
+      }).join('');
+      document.getElementById('fb-corrections').textContent=corrActive;
+      document.getElementById('fb-needed').textContent=needed>0?needed+' feedbacks':'Compleet';
+      document.getElementById('fb-history-body').innerHTML=all.map(function(f){
+        var meta={};try{meta=JSON.parse(f.feedback)}catch(e){}
+        var diff=f.sold_price-f.our_bod;var diffColor=diff>0?'var(--green)':diff<0?'var(--red)':'var(--t2)';
+        return '<tr><td style="color:var(--t1)">'+(meta.kenteken||'\u2014')+'</td><td>'+f.make+' '+f.model+'</td><td>'+f.year+'</td><td>'+(meta.km?N2(meta.km):'\u2014')+'</td><td>'+E2(f.our_bod)+'</td><td>'+E2(f.sold_price)+'</td><td style="color:'+diffColor+';font-weight:700">'+(diff>0?'+':'')+E2(diff)+'</td><td>'+(f.created_at?new Date(f.created_at).toLocaleDateString('nl-NL'):'\u2014')+'</td></tr>';
+      }).join('');
+    }
+  }catch(e){try{document.getElementById('fb-total').textContent='?'}catch(x){}}
 }
 
 </script>
