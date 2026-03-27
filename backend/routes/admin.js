@@ -503,4 +503,46 @@ router.post("/api/admin/cleanup-db", (req, res) => {
   } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
 })
 
+
+// ── Dealer Feedback & Learning ──
+router.post("/api/feedback", (req, res) => {
+  try {
+    const { run, queryAll } = require("../db")
+    const { kenteken, make, model, year, km, segment, onze_inkoop_high, onze_verkoop, eigen_bod, status, notitie } = req.body
+    if (!eigen_bod && status !== 'niet_gekocht') return res.json({ ok: false, error: "eigen_bod is verplicht" })
+    const userId = req.userId || req.body.user_id || 0
+    
+    // Gebruik bestaande tabel met extra velden
+    run("INSERT INTO dealer_feedback (make,model,year,our_bod,sold_price,feedback) VALUES (?,?,?,?,?,?)",
+      [make||'', model||'', year||0, onze_inkoop_high||0, eigen_bod||0, JSON.stringify({status:status||'gekocht',km:km||0,kenteken:kenteken||'',segment:segment||'midden',onze_verkoop:onze_verkoop||0,notitie:notitie||'',user_id:userId})])
+    
+    // Bereken correctie voor dit segment
+    const seg = segment || 'midden'
+    const all = queryAll("SELECT sold_price, our_bod, feedback FROM dealer_feedback WHERE sold_price > 0 AND our_bod > 0")
+    const segFeedbacks = all.filter(f => { try { return JSON.parse(f.feedback).segment === seg && JSON.parse(f.feedback).status === 'gekocht' } catch(e) { return false } })
+    
+    if (segFeedbacks.length >= 3) {
+      const diffs = segFeedbacks.map(f => f.sold_price - f.our_bod)
+      const avgVerschil = Math.round(diffs.reduce((a,b) => a+b, 0) / diffs.length)
+      const avgOnze = Math.round(segFeedbacks.reduce((a,f) => a+f.our_bod, 0) / segFeedbacks.length)
+      const correctionPct = avgOnze > 0 ? Math.round(avgVerschil / avgOnze * 1000) / 10 : 0
+      
+      console.log("[FEEDBACK]", make, model, ": eigen EUR" + eigen_bod, "vs onze EUR" + onze_inkoop_high, "| verschil EUR" + (eigen_bod - onze_inkoop_high), "| correctie:", correctionPct + "% (" + segFeedbacks.length + " feedbacks)")
+      res.json({ ok: true, correction: correctionPct, feedbackCount: segFeedbacks.length, avgVerschil })
+    } else {
+      console.log("[FEEDBACK]", make, model, ": eigen EUR" + eigen_bod, "| nog", (3 - segFeedbacks.length), "nodig")
+      res.json({ ok: true, correction: null, feedbackCount: segFeedbacks.length, message: "Nog " + (3 - segFeedbacks.length) + " feedbacks nodig" })
+    }
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
+router.get("/api/feedback/stats", (req, res) => {
+  try {
+    const { queryAll } = require("../db")
+    const all = queryAll("SELECT * FROM dealer_feedback ORDER BY created_at DESC LIMIT 50")
+    const total = queryAll("SELECT COUNT(*) as c FROM dealer_feedback")[0].c
+    res.json({ ok: true, total, recent: all })
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
 module.exports = router

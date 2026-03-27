@@ -594,6 +594,11 @@ function renderResult(){
           <div class="bod-val" id="live-bod">${E(calc.bod)}</div>
           <div class="bod-breakdown" id="live-breakdown">VP ${E(vp)} · ${r.pricingL3?.source==="comp_engine"?r.pricingL3.breakdown?.compClean+" vergelijkbare autos":"AI prijsindicatie"} · marge ${r.pricingL3?.dealerMargin||calc.margePctUsed}%</div>
           <button class="bod-btn" onclick="copyBod()">Kopieer bod</button>
+          <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+            <input type="text" id="eigen-bod" placeholder="Eigen bod €" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text1);font-size:16px;font-family:var(--mono)" inputmode="numeric">
+            <button class="bod-btn" style="background:var(--blue,#3b82f6);white-space:nowrap" onclick="sendFeedback()">Opslaan</button>
+          </div>
+          <div id="feedback-msg" style="margin-top:8px;font-size:12px;color:var(--text3)"></div>
         </div>
 
         <!-- TURNTABLE -->
@@ -769,6 +774,23 @@ function buildTT(images){
 function ttGo(i){ttIdx=i;document.getElementById('tt-track').style.transform='translateX(-'+i*100+'%)';document.querySelectorAll('.tdot').forEach((d,j)=>d.classList.toggle('active',j===i))}
 
 // ── Copy & PDF ──
+function sendFeedback(){
+  const inp=document.getElementById('eigen-bod');const msg=document.getElementById('feedback-msg');
+  const bod=parseInt(inp.value.replace(/[^0-9]/g,''),10);
+  if(!bod||bod<100){msg.textContent='Vul een geldig bedrag in';msg.style.color='var(--orange)';return}
+  if(!last||!last.r)return;
+  const data={kenteken:last.plate,make:last.v.make,model:last.v.model,year:last.v.year,km:last.km,
+    segment:window._t4c?.segment||'midden',onze_inkoop_high:last.r.inkoopHigh||0,onze_verkoop:last.r.verkoopadviees||0,
+    eigen_bod:bod,status:'gekocht'};
+  fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){
+        msg.style.color='var(--green)';
+        msg.textContent='Opgeslagen!'+(d.correction!==null?' Correctie: '+d.correction+'% ('+d.feedbackCount+' feedbacks)':' '+d.message);
+        inp.value='';inp.style.borderColor='var(--green)';setTimeout(()=>{inp.style.borderColor=''},2000)
+      } else { msg.textContent=d.error||'Fout';msg.style.color='var(--red)' }
+    }).catch(e=>{msg.textContent='Fout: '+e.message;msg.style.color='var(--red)'})
+}
 function copyBod(){
   const c=window._t4c;if(!c)return;
   const bod=document.getElementById('live-bod')?.textContent||'';
