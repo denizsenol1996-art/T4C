@@ -252,9 +252,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t1);height:100vh;d
     <!-- DASHBOARD -->
     <div class="panel active" id="p-dashboard">
       <div class="grid-4" id="dash-stats">
-        <div class="stat-card green"><div class="stat-label">Gebruikers</div><div class="stat-val" id="ds-users">—</div><div class="stat-sub">totaal accounts</div></div>
-        <div class="stat-card blue"><div class="stat-label">Taxaties vandaag</div><div class="stat-val" id="ds-taxaties">—</div><div class="stat-sub">API calls</div></div>
-        <div class="stat-card amber"><div class="stat-label">Voorraad</div><div class="stat-val" id="ds-voorraad">—</div><div class="stat-sub">actieve auto's</div></div>
+        <div class="stat-card green"><div class="stat-label">Health Score</div><div class="stat-val" id="ds-health">—</div><div class="stat-sub" id="ds-health-sub">laden...</div></div>
+        <div class="stat-card blue"><div class="stat-label">Active Listings</div><div class="stat-val" id="ds-listings">—</div><div class="stat-sub">met km & prijs</div></div>
+        <div class="stat-card"><div class="stat-label">Taxaties Totaal</div><div class="stat-val" id="ds-taxaties">—</div><div class="stat-sub">alle tijd</div></div>
+        <div class="stat-card amber"><div class="stat-label">Feedback</div><div class="stat-val" id="ds-feedback">—</div><div class="stat-sub">transacties geleerd</div></div>
         <div class="stat-card"><div class="stat-label">DB Grootte</div><div class="stat-val" id="ds-db">—</div><div class="stat-sub">SQLite</div></div>
       </div>
 
@@ -474,9 +475,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t1);height:100vh;d
       </div>
     </div>
 
-  </div><!-- /content -->
-</div><!-- /main -->
-
 
     <!-- DATA HEALTH -->
     <div class="panel" id="p-health">
@@ -534,6 +532,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t1);height:100vh;d
   </div>
 </div>
 
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
 <div id="toast-wrap"></div>
 
 <script>
@@ -544,8 +546,8 @@ else { document.body.style.display = ''; }
 const H = () => ({ 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' });
 
 // Navigation
-const panels = { dashboard:'p-dashboard', users:'p-users', db:'p-db', api:'p-api', compliance:'p-compliance', crawler:'p-crawler', voorraad:'p-voorraad', dealers:'p-dealers', logs:'p-logs', settings:'p-settings' };
-const titles = { dashboard:'DASHBOARD', users:'GEBRUIKERS', db:'DATABASE', api:'API GEBRUIK', compliance:'COMPLIANCE LOG', crawler:'CRAWLER MONITOR', voorraad:'VOORRAAD', dealers:'DEALERS', logs:'SERVER LOGS', settings:'INSTELLINGEN' };
+const panels = { dashboard:'p-dashboard', users:'p-users', db:'p-db', api:'p-api', compliance:'p-compliance', crawler:'p-crawler', health:'p-health', feedback:'p-feedback', voorraad:'p-voorraad', dealers:'p-dealers', logs:'p-logs', settings:'p-settings' };
+const titles = { dashboard:'DASHBOARD', users:'GEBRUIKERS', db:'DATABASE', api:'API GEBRUIK', compliance:'COMPLIANCE LOG', crawler:'CRAWLER MONITOR', health:'DATA HEALTH', feedback:'INKOOP & LEARNING', voorraad:'VOORRAAD', dealers:'DEALERS', logs:'SERVER LOGS', settings:'INSTELLINGEN' };
 let currentPanel = 'dashboard';
 
 function go(panel) {
@@ -593,10 +595,13 @@ async function loadDashboard() {
     const r = await fetch('/api/admin/stats', { headers: H() });
     const d = await r.json();
     if (d.ok || d.uptime !== undefined) {
-      document.getElementById('ds-users').textContent = d.users ?? '—';
-      document.getElementById('ds-voorraad').textContent = d.voorraad ?? '—';
+      document.getElementById('ds-health').textContent = d.health_score ?? '—';
+      document.getElementById('ds-health-sub').textContent = (d.health_score||0)>=90?'Gezond':(d.health_score||0)>=70?'Redelijk':'Aandacht nodig';
+      document.getElementById('ds-listings').textContent = (d.listings||0).toLocaleString('nl-NL');
+      document.getElementById('ds-taxaties').textContent = d.taxaties ?? '—';
+      document.getElementById('ds-feedback').textContent = d.feedback_count ?? '—';
       document.getElementById('ds-db').textContent = d.db_size || '—';
-      document.getElementById('sb-uptime').textContent = d.uptime ? Math.floor(d.uptime/3600) + 'h' : '—';
+      document.getElementById('sb-uptime').textContent = d.uptime ? Math.floor(d.uptime/3600) + 'h ' + Math.floor((d.uptime%3600)/60) + 'm' : '—';
     }
   } catch(e) {}
   loadRecentTaxaties();
