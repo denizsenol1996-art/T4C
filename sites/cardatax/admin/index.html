@@ -633,7 +633,7 @@ async function createUser() {
   const role = document.getElementById('nu-role').value;
   if (!name || !email || !password) return toast('Vul alle velden in','err');
   try {
-    const r = await fetch('/api/users', { method:'POST', headers:H(), body:JSON.stringify({name,email,password,role}) });
+    const r = await fetch('/api/users', { method:'POST', headers:H(), body:JSON.stringify({username:name,name,email,password,role}) });
     const d = await r.json();
     if (d.ok) { toast('Gebruiker aangemaakt','ok'); loadUsers(); document.getElementById('add-user-form').style.display='none'; }
     else toast(d.error||'Fout','err');
