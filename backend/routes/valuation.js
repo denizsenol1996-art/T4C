@@ -683,15 +683,15 @@ EXTRA INSCHATTING:
 
 WAARDE-FACTOREN:
 - TRANSMISSIE: automaat +8-15% premium, +3-5% budget. Handgeschakeld omgekeerd
-- KM-IMPACT OP PRIJS (CRUCIAAL):
-  * <50k km: +5-15% premium
+- KM-IMPACT OP DEALER-VRAAGPRIJS:
+  * <50k km: +5-10% premium
   * 50-100k: marktgemiddelde
-  * 100-150k: -10 tot -20%
-  * 150-200k: -25 tot -40%
-  * 200-250k: -40 tot -55%
-  * 250-300k: -55 tot -70%
-  * >300k: -70 tot -85%
-  Pas je prijs hier STERK op aan voor DEZE specifieke km-stand
+  * 100-150k: -5 tot -15%
+  * 150-200k: -15 tot -25%
+  * 200-250k: -25 tot -40%
+  * 250-300k: -35 tot -50%
+  * >300k: -50 tot -65%
+  Dit is de DEALER-VRAAGPRIJS correctie, niet de particuliere. Een BMW 535i 289k km verkoopt bij een dealer nog voor EUR 8000-10000
 - TRIM: M-Sport/S-Line/AMG/GTI = premium. Base = minder
 - KLEUR: zwart/wit/grijs = populair. Geel/oranje/paars = niche
 - IMPORT: -3%, mag marktwaarde niet blind vernietigen

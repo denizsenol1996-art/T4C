@@ -103,14 +103,14 @@ function extractFeatures(listing) {
   }
 
   // Engine size extraction (1.0, 1.6, 2.0, 3.0 etc)
-  const _engSz = title.match(/(\d\.\d)\s*(tsi|tfsi|tdi|tce|cdi|cdti|dci|hdi|skyactiv|ecoboost|puretech|bluehdi|gdi|t-gdi|mpi|vtec|vvt-i|turbo|l|liter)/i)
+  const _engSz = text.match(/(\d\.\d)\s*(tsi|tfsi|tdi|tce|cdi|cdti|dci|hdi|skyactiv|ecoboost|puretech|bluehdi|gdi|t-gdi|mpi|vtec|vvt-i|turbo|l|liter)/i)
   if (_engSz) features.engineSize = parseFloat(_engSz[1])
   if (!features.engineSize) {
-    const _sizeOnly = title.match(/\b(\d\.\d)\s*(?:16v|8v|turbo|t)?\b/)
+    const _sizeOnly = text.match(/\b(\d\.\d)\s*(?:16v|8v|turbo|t)?\b/)
     if (_sizeOnly && parseFloat(_sizeOnly[1]) >= 0.6 && parseFloat(_sizeOnly[1]) <= 6.5) features.engineSize = parseFloat(_sizeOnly[1])
   }
   // Power from title (150pk, 184 pk, 306 hp)
-  const _pwMatch = title.match(/(\d{2,3})\s*(?:pk|hp|ps|bhp)/i)
+  const _pwMatch = text.match(/(\d{2,3})\s*(?:pk|hp|ps|bhp)/i)
   if (_pwMatch) features.powerHp = parseInt(_pwMatch[1], 10)
   return features
 }
