@@ -5,11 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080a0f">
 <title>CarDatax — Dealer Platform</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="icon" href="/m/favicon-32.png">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#080a0f;--bg2:#0c1018;--card:#101520;--card2:#141a28;
+  --bg:#060a12;--bg2:#0a0f1a;--card:#0f1520;--card2:#131a28;
   --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.10);
   --green:#00e68a;--green-d:#00cc7d;--green-soft:rgba(0,230,138,.06);--green-border:rgba(0,230,138,.18);
   --orange:#f5a623;--red:#ef4444;--blue:#4a9eff;
@@ -27,29 +32,31 @@ input,select{font-family:var(--font)}
 
 /* ══ LAYOUT ══ */
 .app{display:flex;height:100vh}
-.sidebar{width:260px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar{width:260px;background:var(--bg2);border-right:1px solid rgba(255,255,255,.04);display:flex;flex-direction:column;flex-shrink:0}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{height:52px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0}
-.content{flex:1;overflow-y:auto;padding:24px 28px}
+.topbar{height:52px;background:rgba(14,20,32,.85);border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0;backdrop-filter:blur(12px)}
+.content{flex:1;overflow-y:auto;padding:24px 28px;position:relative;background:radial-gradient(ellipse at 50% 40%,rgba(15,80,200,.25) 0%,rgba(10,50,140,.12) 35%,transparent 65%),radial-gradient(ellipse at 75% 80%,rgba(0,230,138,.07) 0%,transparent 50%),radial-gradient(ellipse at 25% 80%,rgba(60,100,200,.05) 0%,transparent 40%)}
+.content::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;background:linear-gradient(180deg,transparent 44%,rgba(40,120,220,.035) 46%,rgba(0,230,138,.02) 48%,transparent 50%),linear-gradient(180deg,transparent 74%,rgba(60,140,240,.025) 75.5%,rgba(0,180,130,.015) 77%,transparent 78%),linear-gradient(180deg,transparent 30%,rgba(30,100,200,.02) 31%,transparent 32%)}
+.content::after{content:'';position:absolute;bottom:0;left:0;right:0;height:120px;pointer-events:none;background:linear-gradient(0deg,rgba(0,230,138,.03) 0%,transparent 100%)}
 
 /* ══ SIDEBAR ══ */
-.sb-logo{padding:16px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
-.sb-logo img{height:28px}
+.sb-logo{padding:8px 16px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border)}
+.sb-logo img{height:55px;width:auto;max-width:100%}
 .sb-logo-text{font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase}
 .sb-nav{padding:10px 10px 6px}
-.sb-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text2);border:1px solid transparent;background:none;width:100%;text-align:left;transition:.15s}
+.sb-item{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:9px;font-size:14px;font-weight:500;color:var(--text2);border:1px solid transparent;background:none;width:100%;text-align:left;transition:.15s}
 .sb-item:hover{background:rgba(255,255,255,.03);color:var(--text)}
 .sb-item.active{background:var(--green-soft);color:var(--green);border-color:var(--green-border)}
 .sb-item svg{width:18px;height:18px;flex-shrink:0;opacity:.6}
 .sb-item.active svg{opacity:1;stroke:var(--green)}
 .sb-divider{height:1px;background:var(--border);margin:6px 16px}
-.sb-label{font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.5px;text-transform:uppercase;padding:8px 18px 4px}
+.sb-label{font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.8px;text-transform:uppercase;padding:10px 20px 6px}
 .sb-list{flex:1;overflow-y:auto;padding:4px 10px}
-.sb-entry{padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:.15s;margin-bottom:2px}
+.sb-entry{padding:12px 14px;border-radius:10px;cursor:pointer;border:1px solid transparent;transition:.2s;margin-bottom:4px}
 .sb-entry:hover{background:rgba(255,255,255,.03);border-color:var(--border2)}
-.sb-plate{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)}
-.sb-car{font-size:11px;color:var(--text3);margin-top:2px}
-.sb-price{font-size:12px;color:var(--green);font-weight:600;margin-top:3px}
+.sb-plate{font-family:var(--mono);font-weight:700;font-size:15px;color:var(--text);letter-spacing:.5px}
+.sb-car{font-size:11px;color:var(--text3);margin-top:3px}
+.sb-price{font-size:13px;color:var(--green);font-weight:700;margin-top:4px}
 .sb-bottom{padding:12px;border-top:1px solid var(--border);margin-top:auto}
 
 /* ══ TOPBAR ══ */
@@ -62,27 +69,28 @@ input,select{font-family:var(--font)}
 .panel{display:none}.panel.active{display:block}
 
 /* ══ TAXATIE FORM ══ */
-.tax-form{max-width:560px;margin:40px auto 0}
-.tax-form-title{font-size:22px;font-weight:800;text-align:center;margin-bottom:6px}
-.tax-form-sub{font-size:13px;color:var(--text3);text-align:center;margin-bottom:28px}
-.plate-wrap{display:flex;align-items:stretch;border-radius:12px;overflow:hidden;border:2px solid var(--border2);height:60px;margin-bottom:16px;transition:.2s}
+.tax-form{max-width:640px;margin:48px auto 0;position:relative;z-index:1}
+.tax-form-title{font-size:28px;font-weight:800;text-align:center;margin-bottom:8px;letter-spacing:-.5px}
+.tax-form-sub{font-size:14px;color:var(--text3);text-align:center;margin-bottom:32px}
+.tax-form::after{content:'';position:absolute;bottom:-30px;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(0,230,138,.15),rgba(74,158,255,.15),transparent);filter:blur(2px)}
+.plate-wrap{display:flex;align-items:stretch;border-radius:14px;overflow:hidden;border:2px solid rgba(255,255,255,.1);height:64px;margin-bottom:18px;transition:.2s;box-shadow:0 4px 20px rgba(0,0,0,.25)}
 .plate-wrap:focus-within{border-color:var(--green)}
-.plate-nl{width:44px;background:#003da5;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.plate-nl{width:52px;background:#003da5;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .plate-nl-stars{font-size:6px;color:#ffd700}
 .plate-nl-code{font-size:14px;font-weight:800;color:#fff}
-.plate-input{flex:1;background:#f5c518;border:none;outline:none;font-size:28px;font-weight:800;color:#1a1a1a;text-align:center;letter-spacing:3px;text-transform:uppercase;padding:0 10px;font-family:var(--mono)}
+.plate-input{flex:1;background:#f5c518;border:none;outline:none;font-size:32px;font-weight:800;color:#1a1a1a;text-align:center;letter-spacing:4px;text-transform:uppercase;padding:0 12px;font-family:var(--mono)}
 .plate-input::placeholder{color:rgba(0,0,0,.2);font-size:18px;letter-spacing:1px}
 .km-wrap{position:relative;margin-bottom:16px}
-.km-input{width:100%;background:var(--card);border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:14px 50px 14px 16px;font-size:18px;font-weight:600;color:var(--text);outline:none;font-family:var(--mono);transition:.2s}
+.km-input{width:100%;background:rgba(14,20,32,.8);border:1.5px solid rgba(255,255,255,.08);border-radius:12px;padding:16px 50px 16px 18px;font-size:18px;font-weight:600;color:var(--text);outline:none;font-family:var(--mono);transition:.2s}
 .km-input:focus{border-color:var(--green)}
 .km-input::placeholder{color:var(--text4)}
 .km-suf{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;font-weight:500}
-.tax-btn{width:100%;height:56px;background:var(--green);border:none;border-radius:14px;font-size:16px;font-weight:800;color:#000;letter-spacing:.3px;transition:.15s;display:flex;align-items:center;justify-content:center;gap:10px}
+.tax-btn{width:100%;height:52px;background:linear-gradient(135deg,#00e68a 0%,#00cc7d 50%,#00b870 100%);border:none;border-radius:14px;font-size:17px;font-weight:800;color:#000;letter-spacing:.3px;transition:.2s;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 24px rgba(0,230,138,.18)}
 .tax-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
 .tax-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .tax-error{color:var(--red);font-size:12px;text-align:center;margin-top:12px;min-height:18px}
 .recent-chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 0}
-.recent-chip{padding:6px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--card);color:var(--text2);font-size:11px;font-weight:600;font-family:var(--mono);letter-spacing:.5px;transition:.15s}
+.recent-chip{padding:8px 14px;border:1px solid rgba(255,255,255,.07);border-radius:10px;background:rgba(255,255,255,.03);color:var(--text2);font-size:12px;font-weight:600;font-family:var(--mono);letter-spacing:.5px;transition:.2s;backdrop-filter:blur(8px)}
 .recent-chip:hover{border-color:var(--green-border);color:var(--green);background:var(--green-soft)}
 
 /* ══ LOADING ══ */
@@ -97,26 +105,30 @@ input,select{font-family:var(--font)}
 .ld-step.done{color:var(--text3)}.ld-step.done::before{content:'✓';color:var(--green)}
 
 /* ══ RESULT: 5 PRICE CARDS ══ */
-.price-row{display:grid;grid-template-columns:repeat(4,1fr) 1.4fr;gap:10px;margin-bottom:20px}
-.pcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;transition:.15s}
-.pcard:hover{border-color:var(--border2)}
-.pcard-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.pcard-val{font-size:26px;font-weight:800;font-family:var(--mono);color:var(--text);letter-spacing:-1px;line-height:1.1}
+.price-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.pcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:.2s}
+.pcard:hover{border-color:rgba(255,255,255,.08)}
+.pcard-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.pcard-val{font-size:24px;font-weight:800;font-family:var(--mono);color:var(--text);letter-spacing:-.5px;line-height:1.2}
 .pcard-sub{font-size:11px;color:var(--text3);margin-top:5px}
 .pcard-sub b{color:var(--text2)}
-.pcard.advies{background:linear-gradient(135deg,rgba(0,230,138,.04),rgba(0,230,138,.01));border-color:var(--green-border)}
+.pcard.advies{border-color:var(--green-border)}
+.pcard.advies.kopen{background:rgba(0,230,138,.06);border-color:rgba(0,230,138,.25)}
+.pcard.advies.voorzichtig{background:rgba(245,166,35,.06);border-color:rgba(245,166,35,.25)}
+.pcard.advies.niet{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25)}
+.pcard.advies.bieden{background:rgba(74,158,255,.06);border-color:rgba(74,158,255,.25)}
 .advies-verdict{font-size:15px;font-weight:700;color:var(--text);margin-top:2px}
 .advies-checks{margin-top:8px;display:flex;flex-direction:column;gap:4px}
 .advies-check{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)}
 .advies-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
 
 /* ══ 2-COL GRID ══ */
-.result-grid{display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start}
+.result-grid{display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start}
 .bied-panel{position:sticky;top:0}
 
 /* ══ CARDS ══ */
-.rcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
-.rcard-head{padding:13px 16px;font-size:13px;font-weight:700;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.rcard{background:rgba(12,19,32,.6);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:14px;overflow:hidden}
+.rcard-head{padding:14px 18px;font-size:14px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:center}
 .rcard-body{padding:14px 16px}
 .drow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
 .drow:last-child{border-bottom:none}
@@ -147,7 +159,7 @@ input,select{font-family:var(--font)}
 .score-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
 .score-row:last-child{border-bottom:none}
 .score-lbl{font-size:12px;font-weight:500;color:var(--text2);min-width:85px}
-.score-bar{flex:1;height:6px;background:var(--card2);border-radius:3px;overflow:hidden}
+.score-bar{flex:1;height:8px;background:rgba(20,26,40,.8);border-radius:4px;overflow:hidden}
 .score-fill{height:100%;border-radius:3px;transition:width .4s}
 .score-num{font-size:14px;font-weight:700;font-family:var(--mono);min-width:30px;text-align:right}
 .barometer{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--red) 0%,var(--orange) 35%,#22c55e 70%,var(--green) 100%);position:relative;margin:10px 0 4px}
@@ -182,15 +194,15 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
 .toggle-cost{font-size:10px;font-weight:700;color:var(--orange);font-family:var(--mono)}
 
 /* ══ BOD SECTION ══ */
-.bod-card{background:linear-gradient(135deg,#0a1a10,#0a150a);border:1px solid var(--green-border);border-radius:var(--radius);padding:16px;margin-bottom:14px;text-align:center}
+.bod-card{background:rgba(0,230,138,.04);backdrop-filter:blur(20px);border:1px solid rgba(0,230,138,.15);border-radius:16px;padding:22px;margin-bottom:16px;text-align:center}
 .bod-label{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px}
 .bod-val{font-size:36px;font-weight:900;font-family:var(--mono);color:var(--green);letter-spacing:-2px;line-height:1.1;margin:4px 0}
 .bod-breakdown{font-size:10px;color:var(--text4);line-height:1.5}
-.bod-btn{width:100%;padding:13px;border-radius:var(--radius-sm);background:var(--green);border:none;color:#000;font-size:14px;font-weight:700;margin-top:10px;transition:.15s}
+.bod-btn{width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#00e68a,#00d47d);border:none;color:#000;font-size:14px;font-weight:700;margin-top:10px;transition:.2s;box-shadow:0 2px 12px rgba(0,230,138,.15)}
 .bod-btn:hover{filter:brightness(1.1)}
 
 /* ══ ADVIES BLOCK ══ */
-.advies-block{padding:12px 16px;border-radius:10px;margin-bottom:14px}
+.advies-block{padding:14px 18px;border-radius:12px;margin-bottom:16px;backdrop-filter:blur(12px)}
 .advies-block.kopen{background:rgba(0,230,138,.04);border-left:4px solid var(--green)}
 .advies-block.bieden{background:rgba(74,158,255,.04);border-left:4px solid var(--blue)}
 .advies-block.voorzichtig{background:rgba(245,166,35,.04);border-left:4px solid var(--orange)}
@@ -201,21 +213,21 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
 
 /* ══ ACTIONS ══ */
 .action-row{display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
-.action-btn{padding:12px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;transition:.15s;display:flex;align-items:center;gap:6px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--text2)}
+.action-btn{padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;transition:.2s;display:flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.03);color:var(--text2);backdrop-filter:blur(8px)}
 .action-btn:hover{border-color:var(--green-border);color:var(--text)}
 .action-btn.primary{background:var(--green);border-color:var(--green);color:#000}
 .action-btn.blue{background:rgba(74,158,255,.1);border-color:rgba(74,158,255,.25);color:var(--blue)}
 
 /* ══ WARNINGS ══ */
 .warns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-.warn-tag{display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:600}
+.warn-tag{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:600;backdrop-filter:blur(8px)}
 .warn-tag.danger{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);color:var(--red)}
 .warn-tag.warning{background:var(--green-soft);border:1px solid var(--green-border);color:var(--green)}
 .warn-tag.money{background:rgba(245,166,35,.06);border:1px solid rgba(245,166,35,.2);color:var(--orange)}
 
 /* ══ LOGIN ══ */
 .login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-.login-box{background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:40px;width:100%;max-width:360px;text-align:center}
+.login-box{background:rgba(14,20,32,.7);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.06);border-radius:22px;padding:40px;width:100%;max-width:360px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.4)}
 .login-box input{width:100%;padding:13px 16px;background:var(--bg);border:1.5px solid var(--border2);border-radius:10px;color:var(--text);font-size:14px;margin-bottom:10px;outline:none}
 .login-box input:focus{border-color:var(--green-border)}
 .login-box input::placeholder{color:var(--text4)}
@@ -252,7 +264,7 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
 <!-- ══ LOGIN ══ -->
 <div id="login-screen" class="login-wrap">
   <div class="login-box">
-    <img src="/m/logo-cardatax-large.png" alt="CarDatax" style="height:55px;margin:0 auto 8px">
+    <img src="/m/logo-cardatax-new-med.png" alt="CarDatax" style="height:80px;margin:0 auto 12px;display:block">
     <div style="color:var(--text3);font-size:10px;letter-spacing:3px;margin-bottom:28px;text-transform:uppercase">Dealer Platform</div>
     <input id="lu" type="text" placeholder="Gebruikersnaam" autocomplete="username" autofocus>
     <input id="lp" type="password" placeholder="Wachtwoord" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
@@ -267,8 +279,8 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
   <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sb-logo">
-      <img src="/m/logo-cardatax-medium.png" alt="CarDatax">
-      <span class="sb-logo-text">Platform</span>
+      <img src="/m/logo-sidebar.png" alt="CarDatax">
+      
     </div>
     <div class="sb-nav">
       <button class="sb-item active" onclick="showPanel('taxatie')" id="nav-taxatie">
@@ -309,8 +321,7 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
       <!-- TAXATIE PANEL -->
       <div class="panel active" id="p-taxatie">
         <div class="tax-form">
-          <div class="tax-form-title">Snelle Taxatie</div>
-          <div class="tax-form-sub">Kenteken invoeren voor direct bod + marktwaarde</div>
+          <div class="tax-card" style="background:rgba(8,14,26,.4);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border:1px solid rgba(80,160,255,.18);border-radius:20px;padding:32px 28px 24px;box-shadow:0 40px 100px rgba(0,0,0,.5),0 0 200px rgba(12,60,180,.1),inset 0 1px 0 rgba(255,255,255,.07);position:relative;overflow:visible"><div style="position:absolute;top:-1px;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent)"></div>
           <div class="plate-wrap">
             <div class="plate-nl"><div class="plate-nl-stars">★★★</div><div class="plate-nl-code">NL</div></div>
             <input class="plate-input" id="mp" maxlength="9" placeholder="XX-999-X" autocapitalize="characters" oninput="this.value=fmtP(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('mk').focus()}">
@@ -320,11 +331,12 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
             <span class="km-suf">km</span>
           </div>
           <button class="tax-btn" onclick="doTax()" id="tax-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             Taxeer voertuig
           </button>
           <div class="tax-error" id="tax-error"></div>
-          <div class="recent-chips" id="recent-chips"></div>
+          <div style="position:absolute;bottom:-40px;left:5%;right:5%;height:40px;background:radial-gradient(ellipse at 50% 0%,rgba(0,230,138,.06) 0%,rgba(40,100,220,.04) 40%,transparent 80%);filter:blur(16px);pointer-events:none"></div>
+          <div class="recent-chips" id="recent-chips"></div></div>
         </div>
       </div>
 
@@ -453,7 +465,7 @@ async function initApp(){
 function renderSidebar(){
   const el=document.getElementById('sb-list');
   if(!recent.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text4);font-size:12px">Nog geen taxaties</div>';return}
-  el.innerHTML=recent.slice(0,20).map((r,i)=>`<div class="sb-entry" onclick="reloadTax('${r.plate}')"><div class="sb-plate">${fmtP(r.plate)}</div><div class="sb-car">${r.make||''} ${r.model||''} · ${r.year||''}</div>${r.bod?'<div class="sb-price">'+E(r.bod)+'</div>':''}</div>`).join('');
+  el.innerHTML=recent.slice(0,20).map((r,i)=>{const pc=(r.plate||'').replace(/[^A-Z0-9]/gi,'').toUpperCase();const img='/photos/generated/'+pc+'/1-front.png';return`<div class="sb-entry" onclick="reloadTax('${r.plate}')" style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:34px;border-radius:6px;overflow:hidden;flex-shrink:0;background:var(--card2);border:1px solid var(--border)"><img src="${img}" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover"></div><div style="flex:1;min-width:0"><div class="sb-plate">${fmtP(r.plate)}</div><div class="sb-car">${r.make||''} ${r.model||''} · ${r.year||''}</div>${r.bod?'<div class="sb-price">'+E(r.bod)+'</div>':''}</div></div>`}).join('');
 }
 function renderChips(){
   const el=document.getElementById('recent-chips');
@@ -544,8 +556,8 @@ async function doTax(){
     const v=await vR.json();if(v.error)throw new Error(v.error);if(!v?.make)throw new Error('Kenteken niet gevonden bij RDW');
     ldStep(2);
     const[mR,pR]=await Promise.allSettled([
-      fetch('/api/market?make='+encodeURIComponent(v.make)+'&model='+encodeURIComponent(v.model)+'&year='+v.year+'&km='+(km||0)+'&sub='+encodeURIComponent(v.subModel||'')+'&body='+encodeURIComponent(v.body||'')+'&fuel='+encodeURIComponent(v.fuel||'')+'&transmission='+encodeURIComponent(v.transmissionAuto?'automaat':'')).then(r=>r.json()),
-      fetch('/api/dealer/price',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plate:fmtP(p),make:v.make,model:v.model,year:v.year,km:Number(km)||v.km||0,fuel:v.fuel,weightKg:v.weightKg,catalogPrice:v.catalogPrice,bpm:v.bpm,power:v.powerKw,ownerCount:v.ownerCount||0,isExDealer:v.isExDealer||false,bpmRest:v.bpmRest||0,importFlag:v.importFlag,stolenFlag:v.stolenFlag,transmissionAuto:v.transmissionAuto,transmissionType:v.transmissionType,transmissionDetail:v.transmissionDetail,engineLabel:v.engineLabel,subModel:v.subModel,vin:v.vin,motorCode:v.motorCode,generation:v.generation,trimLevel:v.trimLevel,drivetrain:v.drivetrain,engineRiskProfile:v.engineRiskProfile,courantScore:v.courantScore,optionPriceImpact:v.optionPriceImpact})}).then(r=>r.json())
+      _api('/api/market?make='+encodeURIComponent(v.make)+'&model='+encodeURIComponent(v.model)+'&year='+v.year+'&km='+(km||0)+'&sub='+encodeURIComponent(v.subModel||'')+'&body='+encodeURIComponent(v.body||'')+'&fuel='+encodeURIComponent(v.fuel||'')+'&transmission='+encodeURIComponent(v.transmissionAuto?'automaat':'')).then(r=>r.json()),
+      _api('/api/dealer/price',{method:'POST',headers:_authH(),body:JSON.stringify({plate:fmtP(p),make:v.make,model:v.model,year:v.year,km:Number(km)||v.km||0,fuel:v.fuel,weightKg:v.weightKg,catalogPrice:v.catalogPrice,bpm:v.bpm,power:v.powerKw,ownerCount:v.ownerCount||0,isExDealer:v.isExDealer||false,bpmRest:v.bpmRest||0,importFlag:v.importFlag,stolenFlag:v.stolenFlag,transmissionAuto:v.transmissionAuto,transmissionType:v.transmissionType,transmissionDetail:v.transmissionDetail,engineLabel:v.engineLabel,subModel:v.subModel,vin:v.vin,motorCode:v.motorCode,generation:v.generation,trimLevel:v.trimLevel,drivetrain:v.drivetrain,engineRiskProfile:v.engineRiskProfile,courantScore:v.courantScore,optionPriceImpact:v.optionPriceImpact})}).then(r=>r.json())
     ]);
     const m=mR.status==='fulfilled'?mR.value:null;
     const r=pR.status==='fulfilled'?pR.value:null;
@@ -625,7 +637,7 @@ function renderResult(){
       <div class="pcard"><div class="pcard-label">Voorgesteld bod</div><div class="pcard-val" style="color:var(--green)" id="pc-bod">${E(calc.bod)}</div><div class="pcard-sub">${r.pricingL3?.source==="comp_engine"?"Marktdata":"AI indicatie"} · marge <b>${E(calc.marge)}</b></div></div>
       <div class="pcard"><div class="pcard-label">Verkoopprijs</div><div class="pcard-val">${E(vp)}</div><div class="pcard-sub">Adviesprijs${m?.p75?' · P75: <b>'+E(m.p75)+'</b>':''}</div></div>
       <div class="pcard"><div class="pcard-label">Marge</div><div class="pcard-val" style="color:${calc.marge>2000?'var(--green)':'var(--orange)'}" id="pc-marge">${E(calc.marge)}</div><div class="pcard-sub"><b id="pc-margepct">${calc.margePct}%</b> van verkoopprijs</div></div>
-      <div class="pcard advies"><div class="pcard-label">Biedadvies</div><div class="advies-verdict">${adv.action||'Analyseren...'}</div>
+      <div class="pcard advies ${advClass}"><div class="pcard-label">Biedadvies</div><div class="advies-verdict" style="color:${advColor}">${adv.action||'Analyseren...'}</div>
         <div class="advies-checks">${(adv.lines||[]).slice(0,4).map(l=>'<div class="advies-check"><span class="advies-dot" style="background:'+(l.startsWith('+ ')?'var(--green)':l.startsWith('! ')?'var(--orange)':'var(--text3)')+'"></span>'+l.replace(/^[+!] /,'')+'</div>').join('')}</div>
       </div>
       <div class="pcard" style="border-color:${r.confidenceL4?.color==='green'?'var(--green)':r.confidenceL4?.color==='orange'?'var(--orange)':'var(--red)'}40"><div class="pcard-label">Betrouwbaarheid</div><div class="pcard-val" style="font-size:18px;color:${r.confidenceL4?.color==='green'?'var(--green)':r.confidenceL4?.color==='orange'?'var(--orange)':'var(--red)'}">${r.confidenceL4?.label||'Onbekend'}</div><div class="pcard-sub">${r.confidenceL4?.confidence||0}/100 · ${r.confidenceL4?.crossCheckAgree||0}/${r.confidenceL4?.crossCheckCount||0} bronnen</div></div>
@@ -829,7 +841,7 @@ function sendFeedback(){
   const data={kenteken:last.plate,make:last.v.make,model:last.v.model,year:last.v.year,km:last.km,
     segment:window._t4c?.segment||'midden',onze_inkoop_high:last.r.inkoopHigh||0,onze_verkoop:0,
     eigen_bod:bod,status:'gekocht'};
-  fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+  _api('/api/feedback',{method:'POST',headers:_authH(),body:JSON.stringify(data)})
     .then(r=>r.json()).then(d=>{
       if(d.ok){
         msg.style.color='var(--green)';

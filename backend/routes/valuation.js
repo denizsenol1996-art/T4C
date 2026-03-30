@@ -956,6 +956,13 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       aiConfidence: aiValidation?.confidence || null,
       aiValidation,
       compEngine: compResult,
+      confidenceL4: {
+        label: confidenceLabel,
+        confidence: conf,
+        color: conf >= 75 ? 'green' : conf >= 55 ? 'orange' : 'red',
+        crossCheckAgree: (compResult ? 1 : 0) + (aiValidation ? 1 : 0),
+        crossCheckCount: 2
+      },
       // Nieuwe scoring module
       scores: {
         quality: _qualityScore,

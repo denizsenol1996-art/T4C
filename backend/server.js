@@ -125,9 +125,18 @@ app.use((req, res, next) => {
   express.static(CARDATAX_DIR, { extensions: ["html"] })(req, res, next)
 })
 
+// /app/ — altijd verse file, nooit cache
+app.get('/app/', (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  res.set('Pragma', 'no-cache')
+  res.set('Expires', '0')
+  res.set('Surrogate-Control', 'no-store')
+  const p = require('path')
+  res.sendFile(p.join(__dirname, '..', 'sites', 'cardatax', 'app', 'index.html'))
+})
 // Localhost fallbacks
 app.use("/verkoop", express.static(T4C_SALES_DIR, { extensions: ["html"] }))
-app.use(express.static(CARDATAX_DIR, { extensions: ["html"] }))
+app.use(express.static(CARDATAX_DIR, { extensions: ["html"], setHeaders: (res,p) => { if(p.endsWith(".html")){res.set("Cache-Control","no-store, no-cache, must-revalidate")} } }))
 app.use("/app", (req, res, next) => {
   if (req.path.match(/\.(js|css|svg|png|jpg|ico|woff|woff2|ttf)$/)) return next()
   next()
