@@ -230,6 +230,8 @@ router.post("/api/generate-car-images", express.json(), async (req, res) => {
         else { fs.writeFileSync(savePath, Buffer.from(imgB64, "base64")) }
 
         console.log(`[DALL-E] ✓ ${angle} saved for ${plateClean}`)
+        // Auto-compress: 2MB -> ~50KB
+        try { require('child_process').execSync(`python3 -c "from PIL import Image;img=Image.open('${savePath}');img.thumbnail((800,600),Image.LANCZOS);img.convert('RGB').save('${savePath}','JPEG',quality=80,optimize=True)"`) } catch(e) { console.log('[IMG-COMPRESS] failed:', e.message) }
         return { angle, url: `/photos/generated/${plateClean}/${angle}.png` }
       } catch (err) {
         console.error(`[DALL-E] ✗ ${angle} failed:`, err.response?.data?.error?.message || err.message)
