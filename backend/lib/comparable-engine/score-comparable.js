@@ -38,6 +38,42 @@ function scoreComparable(target, listing) {
     maxPossible += 8
     if (tf.bodyType === lf.bodyType) { score += 8; reasons.push('bodytype_match') }
   }
+  // Engine size — critical for price differentiation (535i vs 520d)
+  if (tf.engineSize && lf.engineSize) {
+    maxPossible += 15
+    const diff = Math.abs(tf.engineSize - lf.engineSize)
+    if (diff < 0.2) { score += 15; reasons.push('engine_exact') }
+    else if (diff < 0.5) { score += 8; reasons.push('engine_close') }
+    else if (diff < 1.0) { score += 3; reasons.push('engine_far') }
+    else { score = Math.min(score, 35); reasons.push('engine_mismatch') }
+  }
+  // Power class — if we know HP
+  if (tf.powerHp && lf.powerHp && tf.powerHp > 0 && lf.powerHp > 0) {
+    maxPossible += 10
+    const pDiff = Math.abs(tf.powerHp - lf.powerHp) / tf.powerHp
+    if (pDiff < 0.1) { score += 10; reasons.push('power_exact') }
+    else if (pDiff < 0.25) { score += 6; reasons.push('power_close') }
+    else if (pDiff < 0.5) { score += 2; reasons.push('power_far') }
+    else { score = Math.min(score, 35); reasons.push('power_mismatch') }
+  }
+  // Engine size — critical for price differentiation (535i vs 520d)
+  if (tf.engineSize && lf.engineSize) {
+    maxPossible += 15
+    const diff = Math.abs(tf.engineSize - lf.engineSize)
+    if (diff < 0.2) { score += 15; reasons.push('engine_exact') }
+    else if (diff < 0.5) { score += 8; reasons.push('engine_close') }
+    else if (diff < 1.0) { score += 3; reasons.push('engine_far') }
+    else { score = Math.min(score, 35); reasons.push('engine_mismatch') }
+  }
+  // Power class — if we know HP
+  if (tf.powerHp && lf.powerHp && tf.powerHp > 0 && lf.powerHp > 0) {
+    maxPossible += 10
+    const pDiff = Math.abs(tf.powerHp - lf.powerHp) / tf.powerHp
+    if (pDiff < 0.1) { score += 10; reasons.push('power_exact') }
+    else if (pDiff < 0.25) { score += 6; reasons.push('power_close') }
+    else if (pDiff < 0.5) { score += 2; reasons.push('power_far') }
+    else { score = Math.min(score, 35); reasons.push('power_mismatch') }
+  }
 
   // Trim — only count if both have it
   if (tf.trimCore && lf.trimCore) {

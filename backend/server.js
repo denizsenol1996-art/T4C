@@ -207,7 +207,7 @@ app.get("/app/*", (req, res) => {
     let backgroundCrawl = null
     try { backgroundCrawl = require("./routes/market").backgroundCrawl } catch(e) {}
     if (backgroundCrawl) {
-      setInterval(() => { backgroundCrawl().catch(e => console.error('[CRAWLER] Timer error:', e.message)) }, 5 * 60 * 1000)  // 5 min interval — continu data opbouwen
+      setInterval(() => { backgroundCrawl().catch(e => console.error('[CRAWLER] Timer error:', e.message)) }, 2 * 60 * 1000)  // 2 min interval — max speed — continu data opbouwen
       setTimeout(() => { console.log('[CRAWLER] First run starting...'); backgroundCrawl().then(() => console.log('[CRAWLER] First run done')).catch(e => console.error('[CRAWLER] First run error:', e.message)) }, 60000)
     } else {
       console.log("[CRAWLER] backgroundCrawl not available from market module")
@@ -216,7 +216,105 @@ app.get("/app/*", (req, res) => {
     // Email queue processor
     try {
       const { processEmailQueue } = require("./lib/mailer")
-      setInterval(() => { try { processEmailQueue() } catch(e) {} }, 60000)
+      setInterval(() => { try { processEmailQueue() } catch(e) {}
+
+    // ── Daily scrapers: ILSA + Autohero (elke 24 uur, gespreid) ──
+    const runDailyScrapers = async () => {
+      try {
+        console.log('[DAILY] Starting ILSA scraper...')
+        const axios = require('axios')
+        const crypto = require('crypto')
+        const _srcMap = {'autoofy':'nlmarket','autohero':'nlretail'}
+        
+        // ILSA (Autoofy) — 7400+ listings
+        try {
+          const ILSA_URL = 'https://api-nl.ilsa.cloud/crRvy1uXUuuT/searchresults'
+          const PAGE = 100
+          let offset = 0, ilsaNew = 0, ilsaUpd = 0
+          while (true) {
+            const { data } = await axios.get(ILSA_URL + '?_fieldset=searchresults&_limit=' + PAGE + '&_offset=' + offset, {
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0' },
+              timeout: 15000
+            })
+            if (!data.results || !data.results.length) break
+            for (const r of data.results) {
+              const g = r.general || {}
+              const mk = (g.make?.name || '').toLowerCase().trim()
+              const ml = (g.model?.name || '').toLowerCase().trim()
+              const yr = g.year || 0
+              const title = (g.type?.name || (mk + ' ' + ml)).slice(0, 80)
+              const priceRaw = r.sales_conditions?.pricing?.asking?.general?.formatted || ''
+              const price = parseInt(String(priceRaw).replace(/[^\d]/g, ''), 10) || 0
+              const kmRaw = r.condition?.odometer?.formatted || ''
+              const km = parseInt(String(kmRaw).replace(/[^\d]/g, ''), 10) || 0
+              const trans = r.powertrain?.transmission?.type?.display_value || ''
+              const dealer = (r.advertiser?.name || '').slice(0, 60)
+              if (!mk || !ml || !yr || price < 500 || price > 500000) continue
+              if (km < 1000 || km > 500000) continue
+              const hash = crypto.createHash('md5').update('nlmarket|' + mk + '|' + ml + '|' + yr + '|' + price + '|' + km + '|' + title.slice(0,30)).digest('hex')
+              const ex = queryOne('SELECT id FROM market_listings WHERE hash=?', [hash])
+              if (ex) { run("UPDATE market_listings SET price=?, km=?, last_seen=datetime('now'), status='active', dealer=? WHERE hash=?", [price, km, dealer, hash]); ilsaUpd++ }
+              else { run("INSERT INTO market_listings (hash,make,model,year,title,price,km,transmission,source,url,dealer) VALUES (?,?,?,?,?,?,?,?,?,?,?)", [hash, mk, ml, yr, title, price, km, trans, 'nlmarket', '', dealer]); ilsaNew++ }
+            }
+            offset += PAGE
+            if (offset >= (data.num_results || 0)) break
+            await new Promise(r => setTimeout(r, Math.random() * 2000 + 500))
+          }
+          console.log('[DAILY] ILSA done: ' + ilsaNew + ' new, ' + ilsaUpd + ' updated')
+        } catch(e) { console.log('[DAILY] ILSA error:', e.message) }
+
+        // Autohero — 1100+ listings via JSON-LD
+        try {
+          const cheerio = require('cheerio')
+          let ahNew = 0, ahUpd = 0, page = 1
+          while (page <= 100) {
+            const { data } = await axios.get('https://www.autohero.com/nl/search/?page=' + page, {
+              headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15' },
+              timeout: 15000
+            })
+            const $ = cheerio.load(data)
+            let found = 0
+            $('script[type="application/ld+json"]').each((_, el) => {
+              try {
+                const j = JSON.parse($(el).html())
+                if (j['@type'] !== 'Product') return
+                const brand = (j.brand || '').toLowerCase()
+                const name = j.name || ''
+                const model = name.replace(new RegExp('^' + (j.brand||''), 'i'), '').trim().toLowerCase()
+                const price = j.offers?.[0]?.price || 0
+                if (!brand || !model || price < 500) return
+                const hash = crypto.createHash('md5').update('nlretail|' + brand + '|' + model + '|' + price + '|' + name.slice(0,30)).digest('hex')
+                const ex = queryOne('SELECT id FROM market_listings WHERE hash=?', [hash])
+                if (ex) { run("UPDATE market_listings SET price=?, last_seen=datetime('now'), status='active' WHERE hash=?", [price, hash]); ahUpd++ }
+                else { run("INSERT INTO market_listings (hash,make,model,year,title,price,km,transmission,source,url,dealer) VALUES (?,?,?,?,?,?,?,?,?,?,?)", [hash, brand, model, 0, name.slice(0,80), price, 0, '', 'nlretail', '', 'Retail']); ahNew++ }
+                found++
+              } catch {}
+            })
+            if (found === 0) break
+            page++
+            await new Promise(r => setTimeout(r, Math.random() * 3000 + 1500))
+          }
+          console.log('[DAILY] Autohero done: ' + ahNew + ' new, ' + ahUpd + ' updated')
+        } catch(e) { console.log('[DAILY] Autohero error:', e.message) }
+
+        forceSave()
+      } catch(e) { console.error('[DAILY] Fatal:', e.message) }
+    }
+
+    // Run dagelijks om ~3:00 's nachts (random offset 0-60 min)
+    const msUntil3AM = () => {
+      const now = new Date()
+      const target = new Date(now)
+      target.setHours(3, Math.floor(Math.random() * 60), 0, 0)
+      if (target <= now) target.setDate(target.getDate() + 1)
+      return target - now
+    }
+    setTimeout(() => {
+      runDailyScrapers()
+      setInterval(runDailyScrapers, 24 * 60 * 60 * 1000)
+    }, msUntil3AM())
+    console.log('[DAILY] Scrapers scheduled for ~3:00 AM')
+ }, 60000)
     } catch(e) {}
 
     app.listen(PORT, () => {

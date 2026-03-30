@@ -56,7 +56,7 @@ function generateFactuur(veiling, bod, winnaar, car) {
 }
 
 /* ═══ PUBLIEKE ROUTES ═══ */
-router.get("/api/veilingen", (req, res) => {
+router.get("/api/veilingen", authMiddleware, (req, res) => {
   try {
     const status = req.query.status || 'actief'
     let veilingen

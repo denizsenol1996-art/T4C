@@ -11,9 +11,6 @@ const { authMiddleware, staffOnly } = require("../lib/auth")
 const { getTwinListings } = require("../lib/twins")
 const { writeLog } = require("../lib/state")
 const { calculateTradeBid } = require('../lib/trade-engine')
-const { calculatePricing } = require("../lib/comparable-engine/pricing-protocol")
-const { calculateConfidence } = require("../lib/comparable-engine/confidence-engine")
-const { normalizeModel, normalizeMake } = require("../lib/comparable-engine/model-normalizer")
 const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
 const { buildComparableSet } = require("../lib/comparable-engine")
 router.post("/api/dealer/price", express.json(), async (req, res) => {
@@ -88,13 +85,9 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
     if (!(d.marketListings && d.marketListings.length)) {
       try {
         const mk = (d.make||'').toLowerCase(); let ml = (d.model||'').toLowerCase(); if (ml.startsWith(mk + ' ')) ml = ml.slice(mk.length + 1)
-        // Normalizer: "E 350 CGI" → "e-klasse"
-        const _norm = normalizeModel(mk, ml)
-        const _crawlerMl = _norm.crawlerModel || ml
-        if (_norm.confidence !== "passthrough") console.log("[MODEL-NORM]", mk, ml, "→", _crawlerMl, "(" + _norm.confidence + ")")
         if (mk && ml) {
           // Smart model matching: probeer exact, dan eerste woord, dan nummer-extractie
-          let dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, _crawlerMl + '%', (d.year||2015)-2, (d.year||2015)+2])
+          let dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, ml + '%', (d.year||2015)-2, (d.year||2015)+2])
           // Fallback 1: eerste woord (maar niet als het een nummer is dat andere modellen matcht)
           if (dbListings.length < 3 && ml.includes(' ')) {
             const firstWord = ml.split(' ')[0]
@@ -142,7 +135,6 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
     }
         // === COMP ENGINE VALUATION ===
     let compResult = null
-    let _l3Result = null
     try {
       const _compListings = Array.isArray(d.marketListings) ? d.marketListings : []
       if (_compListings.length > 0) {
@@ -690,7 +682,15 @@ EXTRA INSCHATTING:
 
 WAARDE-FACTOREN:
 - TRANSMISSIE: automaat +8-15% premium, +3-5% budget. Handgeschakeld omgekeerd
-- KM: >150k exponentieel effect, maar neutraliseert NIET sterke uitvoering
+- KM-IMPACT OP PRIJS (CRUCIAAL):
+  * <50k km: +5-15% premium
+  * 50-100k: marktgemiddelde
+  * 100-150k: -10 tot -20%
+  * 150-200k: -25 tot -40%
+  * 200-250k: -40 tot -55%
+  * 250-300k: -55 tot -70%
+  * >300k: -70 tot -85%
+  Pas je prijs hier STERK op aan voor DEZE specifieke km-stand
 - TRIM: M-Sport/S-Line/AMG/GTI = premium. Base = minder
 - KLEUR: zwart/wit/grijs = populair. Geel/oranje/paars = niche
 - IMPORT: -3%, mag marktwaarde niet blind vernietigen
@@ -800,35 +800,45 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
           const _filteredVerkoop = _filteredMedian > 0 ? Math.round(_filteredMedian * 0.93 / 50) * 50 : _dataVerkoop
           const _filteredCount = _dbPrices.length
 
-          // ═══ LAAG 3: PRICING PROTOCOL ═══
-          const _l3Vehicle = { make: d.make, model: d.model, year, km, fuel: d.fuel || "", isEV: /elektr|electric/i.test(d.fuel || "") }
-          const _l3AiClass = { vehicleType: aiResult.vehicleType || "B", sellSpeed: aiResult.sellSpeed || "normaal", riskFlags: aiResult.riskFlags || [], reconEstimate: aiResult.reconEstimate || 0 }
-          _l3Result = calculatePricing(compResult, _l3Vehicle, _l3AiClass, { aiPrice: aiVerkoop })
-          if (_l3Result.source !== "no_data" && _l3Result.retailVerkoop > 0) {
-            finalVerkoop = _l3Result.retailVerkoop
-            finalHandel = _l3Result.handelswaarde
-            finalBod = _l3Result.inkoopHigh
-            finalInkoopLow = _l3Result.inkoopLow
-            finalInkoopHigh = _l3Result.inkoopHigh
-            finalInternet = _l3Result.internetPrijs
+          // Gewogen blend
+          let _blendedVerkoop = aiVerkoop
+          if (_filteredVerkoop > 0 && _filteredCount >= 1) {
+            // Comp Engine data is schoon — gebruik die als beschikbaar
+          let _dataWeight = 0.0
+          let _useCompEngine = false
+          if (compResult && compResult.status === 'ok' && compResult.confidenceComparable >= 25 && compResult.marketMedian > 0) {
+            _useCompEngine = true
+            // Comp engine levert schone retail mediaan — gebruik als data bron
+            const compVerkoop = Math.round(compResult.marketMedian * 0.93 / 50) * 50
+            _dataWeight = Math.min(0.4, compResult.confidenceComparable / 100)
+            _blendedVerkoop = Math.round((compVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
+            console.log('[PRICING-COMP]', d.make, d.model, ':', compResult.cleanCount, 'clean comps, compMedian', compResult.marketMedian, '-> compVP', compVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
+          }
+          if (!_useCompEngine) { _dataWeight = 0.0  // Fallback: geen comp engine, 100% GPT
+            _blendedVerkoop = Math.round((_filteredVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
+            console.log('[PRICING-BLEND]', d.make, d.model, ':', _filteredCount, 'listings (van', _dbCount, 'raw), mediaan', _filteredMedian, '-> VP', _filteredVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
           } else {
-            finalVerkoop = aiVerkoop
-            const _kmC = kmCorrection(km)
-            if (_kmC.export) { d.exportFlag = true }
-            const _tradeResult = calculateTradeBid(finalVerkoop, aiResult, {...d, km, year, segment}, {count: mCount})
-            if (_tradeResult) {
-              finalHandel = _tradeResult.handelswaarde
-              finalBod = _tradeResult.maxBid
-              finalInkoopLow = _tradeResult.inkoopLow
-              finalInkoopHigh = _tradeResult.inkoopHigh
-              finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
-            } else {
-              finalHandel = Math.round(finalVerkoop * hwRatio / 50) * 50
-              finalBod = finalHandel
-              finalInkoopLow = Math.round(finalHandel * 0.85 / 50) * 50
-              finalInkoopHigh = Math.round(finalHandel * 0.95 / 50) * 50
-              finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
-            }
+          }
+            console.log('[PRICING-GPT]', d.make, d.model, ': geen data, 100% GPT:', aiVerkoop)
+          }
+          // GPT houdt al rekening met km — geen extra km correctie
+          finalVerkoop = _blendedVerkoop
+          const _kmC = kmCorrection(km)
+          if (_kmC.export) { d.exportFlag = true }
+          // Trade Engine: deterministic bid calculation
+          const _tradeResult = calculateTradeBid(finalVerkoop, aiResult, {...d, km, year, segment}, {count: mCount})
+          if (_tradeResult) {
+            finalHandel = _tradeResult.handelswaarde
+            finalBod = _tradeResult.maxBid
+            finalInkoopLow = _tradeResult.inkoopLow
+            finalInkoopHigh = _tradeResult.inkoopHigh
+            finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
+          } else {
+            finalHandel = Math.round(finalVerkoop * hwRatio / 50) * 50
+            finalBod = finalHandel
+            finalInkoopLow = Math.round(finalHandel * 0.85 / 50) * 50
+            finalInkoopHigh = Math.round(finalHandel * 0.95 / 50) * 50
+            finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
           }
           conf += 25  // High confidence when AI provides prices
           console.log(`[AI-FIRST] Applied: Retail EUR ${finalVerkoop}, Handel EUR ${finalHandel}, Inkoop EUR ${finalInkoopLow}-${finalInkoopHigh}`)
@@ -908,10 +918,6 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
     // Auto-queue model voor crawler (hogere prioriteit)
     try {
       const mk = (d.make||'').toLowerCase(), ml = (d.model||'').toLowerCase().replace(new RegExp('^' + mk + '\s+'), '')
-        // Normalizer: "E 350 CGI" → "e-klasse"
-        const _norm = normalizeModel(mk, ml)
-        const _crawlerMl = _norm.crawlerModel || ml
-        if (_norm.confidence !== "passthrough") console.log("[MODEL-NORM]", mk, ml, "→", _crawlerMl, "(" + _norm.confidence + ")")
       if (mk && ml) run('INSERT OR IGNORE INTO crawl_queue(make,model,year) VALUES(?,?,?)', [mk, ml, year])
     } catch(eq) {}
 
@@ -949,8 +955,6 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       aiConfidence: aiValidation?.confidence || null,
       aiValidation,
       compEngine: compResult,
-      pricingL3: typeof _l3Result !== "undefined" ? _l3Result : null,
-      confidenceL4: (() => { try { const _cc = { aiPrice: (aiValidation?.verkoopadviees || 0), finnikLow: d.finnikWaardeLow || 0, finnikHigh: d.finnikWaardeHigh || 0, as24Low: d.as24Waarde?.low || 0, as24High: d.as24Waarde?.high || 0, anwbWaarde: d.anwbWaarde?.inruil || 0 }; return calculateConfidence(compResult, _l3Result, d, _cc) } catch(e) { return null } })(),
       // Nieuwe scoring module
       scores: {
         quality: _qualityScore,

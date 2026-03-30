@@ -522,12 +522,22 @@ router.post("/api/admin/cleanup-db", (req, res) => {
 
 
 // ── Dealer Feedback & Learning ──
-router.post("/api/feedback", (req, res) => {
+router.post("/api/feedback", authMiddleware, (req, res) => {
   try {
     const { run, queryAll } = require("../db")
     const { kenteken, make, model, year, km, segment, onze_inkoop_high, onze_verkoop, eigen_bod, status, notitie } = req.body
     if (!eigen_bod && status !== 'niet_gekocht') return res.json({ ok: false, error: "eigen_bod is verplicht" })
-    const userId = req.userId || req.body.user_id || 0
+    // Pak user_id uit auth token als aanwezig
+    let userId = req.body.user_id || 0
+    try {
+      const token = (req.headers.authorization || "").replace("Bearer ", "")
+      if (token) {
+        const jwt = require("jsonwebtoken")
+        const { getSecret } = require("../lib/auth")
+        const decoded = jwt.verify(token, getSecret())
+        userId = decoded.userId || decoded.sub || 0
+      }
+    } catch(authErr) {}
     
     // Gebruik bestaande tabel met extra velden
     run("INSERT INTO dealer_feedback (make,model,year,our_bod,sold_price,feedback) VALUES (?,?,?,?,?,?)",
@@ -553,7 +563,7 @@ router.post("/api/feedback", (req, res) => {
   } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
 })
 
-router.get("/api/feedback/stats", (req, res) => {
+router.get("/api/feedback/stats", authMiddleware, (req, res) => {
   try {
     const { queryAll } = require("../db")
     const all = queryAll("SELECT * FROM dealer_feedback ORDER BY created_at DESC LIMIT 50")

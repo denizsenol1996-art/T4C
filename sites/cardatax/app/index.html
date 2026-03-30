@@ -357,6 +357,53 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
 
 const _token=()=>localStorage.getItem('t4c_token')||'';
 const _authH=()=>({'Content-Type':'application/json','Authorization':'Bearer '+_token()});
+// Globale API wrapper — vangt 401 op met re-login popup
+async function _api(url, opts={}) {
+  if (!opts.headers && url !== '/api/login') opts.headers = _authH();
+  const r = await fetch(url, opts);
+  if (r.status === 401 && url !== '/api/login' && url !== '/api/me') {
+    // Sessie verlopen — toon popup
+    if (!document.getElementById('reauth-modal')) {
+      const m = document.createElement('div');
+      m.id = 'reauth-modal';
+      m.innerHTML = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">' +
+        '<div style="background:var(--card,#1a1a2e);border:1px solid var(--border2,#333);border-radius:16px;padding:30px;max-width:340px;width:90%;text-align:center">' +
+        '<div style="font-size:24px;margin-bottom:8px">🔒</div>' +
+        '<div style="color:var(--text,#fff);font-size:16px;font-weight:600;margin-bottom:6px">Sessie verlopen</div>' +
+        '<div style="color:var(--text3,#999);font-size:13px;margin-bottom:20px">Log opnieuw in om verder te gaan</div>' +
+        '<input id="reauth-user" placeholder="Gebruikersnaam" style="width:100%;padding:10px 14px;background:var(--bg,#0a0a1a);border:1px solid var(--border2,#333);border-radius:8px;color:var(--text,#fff);font-size:14px;margin-bottom:8px;box-sizing:border-box">' +
+        '<input id="reauth-pass" type="password" placeholder="Wachtwoord" style="width:100%;padding:10px 14px;background:var(--bg,#0a0a1a);border:1px solid var(--border2,#333);border-radius:8px;color:var(--text,#fff);font-size:14px;margin-bottom:12px;box-sizing:border-box">' +
+        '<div id="reauth-err" style="color:var(--red,#f44);font-size:12px;min-height:18px;margin-bottom:8px"></div>' +
+        '<button onclick="doReauth()" style="width:100%;padding:12px;background:var(--green,#00d26a);color:#000;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Opnieuw inloggen</button>' +
+        '</div></div>';
+      document.body.appendChild(m);
+      // Pre-fill username
+      const stored = JSON.parse(localStorage.getItem('t4c_user')||'{}');
+      if (stored.username) document.getElementById('reauth-user').value = stored.username;
+      document.getElementById('reauth-pass').focus();
+      document.getElementById('reauth-pass').addEventListener('keydown', e => { if(e.key==='Enter') doReauth() });
+    }
+    throw new Error('SESSION_EXPIRED');
+  }
+  return r;
+}
+async function doReauth() {
+  const u = document.getElementById('reauth-user').value.trim();
+  const p = document.getElementById('reauth-pass').value;
+  const err = document.getElementById('reauth-err');
+  if (!u || !p) { err.textContent = 'Vul beide velden in'; return; }
+  try {
+    const r = await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u, password:p})});
+    const d = await r.json();
+    if (d.token) {
+      localStorage.setItem('t4c_token', d.token);
+      if (d.user) localStorage.setItem('t4c_user', JSON.stringify(d.user));
+      user = d.user || d;
+      document.getElementById('reauth-modal')?.remove();
+      toast('Weer ingelogd!', 'success');
+    } else { err.textContent = d.error || 'Ongeldige inloggegevens'; }
+  } catch(e) { err.textContent = 'Server niet bereikbaar'; }
+}
 let user=null, last=null, recent=JSON.parse(localStorage.getItem('t4c_rec')||'[]');
 
 // ── Helpers ──
@@ -749,7 +796,7 @@ async function generateCarImages(){
     const cR=await fetch('/api/car-images/'+pc);const cache=await cR.json();
     if(cache.ok&&cache.images?.length>=4){if(ld)ld.style.display='none';buildTT(cache.images);return}
     if(ld)ld.style.display='flex';
-    const gR=await fetch('/api/generate-car-images',{method:'POST',headers:{'Content-Type':'application/json',..._authH()},body:JSON.stringify({make:v.make,model:v.model,year:v.year,color:v.color,body:v.body,plate:plate,variant:v.modelVariant||'',generation:v.generation||'',subModel:v.subModel||'',trimLevel:v.trimLevel||''})});
+    const gR=await _api('/api/generate-car-images',{method:'POST',headers:{'Content-Type':'application/json',..._authH()},body:JSON.stringify({make:v.make,model:v.model,year:v.year,color:v.color,body:v.body,plate:plate,variant:v.modelVariant||'',generation:v.generation||'',subModel:v.subModel||'',trimLevel:v.trimLevel||''})});
     const gen=await gR.json();if(ld)ld.style.display='none';
     if(gen.images?.length)buildTT(gen.images.filter(i=>i.url));
   }catch(e){if(ld)ld.style.display='none'}
@@ -780,7 +827,7 @@ function sendFeedback(){
   if(!bod||bod<100){msg.textContent='Vul een geldig bedrag in';msg.style.color='var(--orange)';return}
   if(!last||!last.r)return;
   const data={kenteken:last.plate,make:last.v.make,model:last.v.model,year:last.v.year,km:last.km,
-    segment:window._t4c?.segment||'midden',onze_inkoop_high:last.r.inkoopHigh||0,onze_verkoop:last.r.verkoopadviees||0,
+    segment:window._t4c?.segment||'midden',onze_inkoop_high:last.r.inkoopHigh||0,onze_verkoop:0,
     eigen_bod:bod,status:'gekocht'};
   fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
     .then(r=>r.json()).then(d=>{
@@ -801,7 +848,7 @@ async function exportPdf(){
   if(!last)return;toast('PDF genereren...','info',2000);
   const calc=recalcBod(),c=window._t4c||{};
   try{
-    const r=await fetch('/api/pdf',{method:'POST',headers:_authH(),body:JSON.stringify({vehicle:{make:last.v.make,model:last.v.model,year:last.v.year,fuel:last.v.fuel,plate:last.plate,body:last.v.body||'',powerHp:last.v.powerHp,powerKw:last.v.powerKw,transmissionType:last.v.transmissionType||'',engineLabel:last.v.engineLabel||'',subModel:last.v.subModel||'',trimLevel:last.v.trimLevel||'',vin:last.v.vin||'',motorCode:last.v.motorCode||'',catalogPrice:last.v.catalogPrice,bpm:last.v.bpm,bpmRest:last.v.bpmRest||0,ownerCount:last.v.ownerCount||0,apkUntil:last.v.apkUntil||'',engineRiskProfile:last.v.engineRiskProfile||'',napOk:last.v.napOk,importFlag:last.v.importFlag,stolenFlag:last.v.stolenFlag,co2:last.v.co2,emissieKlasse:last.v.emissieKlasse,mrb:last.v.mrb},result:{verkoopadviees:last.r.verkoopadviees,handelswaarde:last.r.handelswaarde,inkoopLow:last.r.inkoopLow,inkoopHigh:last.r.inkoopHigh,internetPrijs:last.r.internetPrijs,t4cBod:calc.bod,confidence:last.r.confidence||0,smartSummary:last.r.smartSummary||[]},market:{count:last.m?.count||0,avg:last.m?.avg||0,median:last.m?.median||0,p25:last.m?.p25||0,p75:last.m?.p75||0},km:last.km,bod:calc.bod,atr:last.r.verkoopadviees||last.r.internetPrijs,etr:last.r.handelswaarde,marge:calc.marge,margePct:calc.margePct,breakdown:'VP '+E(c.vp)+' - marge '+calc.margePctUsed+'%'})});
+    const r=await _api('/api/pdf',{method:'POST',headers:_authH(),body:JSON.stringify({vehicle:{make:last.v.make,model:last.v.model,year:last.v.year,fuel:last.v.fuel,plate:last.plate,body:last.v.body||'',powerHp:last.v.powerHp,powerKw:last.v.powerKw,transmissionType:last.v.transmissionType||'',engineLabel:last.v.engineLabel||'',subModel:last.v.subModel||'',trimLevel:last.v.trimLevel||'',vin:last.v.vin||'',motorCode:last.v.motorCode||'',catalogPrice:last.v.catalogPrice,bpm:last.v.bpm,bpmRest:last.v.bpmRest||0,ownerCount:last.v.ownerCount||0,apkUntil:last.v.apkUntil||'',engineRiskProfile:last.v.engineRiskProfile||'',napOk:last.v.napOk,importFlag:last.v.importFlag,stolenFlag:last.v.stolenFlag,co2:last.v.co2,emissieKlasse:last.v.emissieKlasse,mrb:last.v.mrb},result:{verkoopadviees:last.r.verkoopadviees,handelswaarde:last.r.handelswaarde,inkoopLow:last.r.inkoopLow,inkoopHigh:last.r.inkoopHigh,internetPrijs:last.r.internetPrijs,t4cBod:calc.bod,confidence:last.r.confidence||0,smartSummary:last.r.smartSummary||[]},market:{count:last.m?.count||0,avg:last.m?.avg||0,median:last.m?.median||0,p25:last.m?.p25||0,p75:last.m?.p75||0},km:last.km,bod:calc.bod,atr:last.r.verkoopadviees||last.r.internetPrijs,etr:last.r.handelswaarde,marge:calc.marge,margePct:calc.margePct,breakdown:'VP '+E(c.vp)+' - marge '+calc.margePctUsed+'%'})});
     if(!r.ok)throw new Error('PDF fout');
     const blob=await r.blob();const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download='taxatie-'+last.plate+'.pdf';a.click();URL.revokeObjectURL(url);

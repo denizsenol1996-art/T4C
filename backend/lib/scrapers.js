@@ -15,26 +15,68 @@ async function scrapeAutoScout24NL(mk,ml,yr,c,km,trans){
   return extractPrices(await safeFetch(url),c)
 }
 async function scrapeAutoTrack(mk,ml,yr,c){
-  return extractPrices(await safeFetch(`https://www.autotrack.nl/aanbod?merk=${mk}&model=${ml}&bouwjaar_van=${yr}&bouwjaar_tot=${yr}`),c)
+  const base=`https://www.autotrack.nl/aanbod?merk=${mk}&model=${ml}&bouwjaar_van=${yr}&bouwjaar_tot=${yr}`
+  const all=new Set()
+  for(let page=1;page<=20;page++){
+    const url=base+(page>1?`&pagina=${page}`:'')
+    const prices=extractPrices(await safeFetch(url),c)
+    const before=all.size
+    prices.forEach(p=>all.add(p))
+    if(prices.length<3||all.size===before)break
+    await new Promise(r=>setTimeout(r,800+Math.random()*1500))
+  }
+  return[...all]
 }
 async function scrapeGaspedaal(mk,ml,yr,c){
   const m=mk.toLowerCase(),d=ml.toLowerCase()
-  let p=extractPrices(await safeFetch(`https://www.gaspedaal.nl/${m}-${d}/jaar-${yr}`),c)
-  if(!p.length)p=extractPrices(await safeFetch(`https://www.gaspedaal.nl/${m}/${d}?year=${yr}`),c)
-  if(!p.length)p=extractPrices(await safeFetch(`https://www.gaspedaal.nl/zoeken?q=${m}+${d}+${yr}`),c)
-  return p
+  const urls=[`https://www.gaspedaal.nl/${m}-${d}/jaar-${yr}`,`https://www.gaspedaal.nl/${m}/${d}?year=${yr}`,`https://www.gaspedaal.nl/zoeken?q=${m}+${d}+${yr}`]
+  const all=new Set()
+  for(const baseUrl of urls){
+    for(let page=1;page<=10;page++){
+      const url=baseUrl+(baseUrl.includes('?')?`&page=${page}`:`?page=${page}`)
+      const prices=extractPrices(await safeFetch(url),c)
+      const before=all.size
+      prices.forEach(p=>all.add(p))
+      if(prices.length<3||all.size===before)break
+      await new Promise(r=>setTimeout(r,800+Math.random()*1500))
+    }
+    if(all.size>0)break
+  }
+  return[...all]
 }
 async function scrapeAutowereld(mk,ml,yr,c){
   const m=mk.toLowerCase(),d=ml.toLowerCase()
-  let p=extractPrices(await safeFetch(`https://www.autowereld.nl/${m}/${m}-${d}/b_${yr}`),c)
-  if(!p.length)p=extractPrices(await safeFetch(`https://www.autowereld.nl/${m}/${d}/b_${yr}`),c)
-  return p
+  const urls=[`https://www.autowereld.nl/${m}/${m}-${d}/b_${yr}`,`https://www.autowereld.nl/${m}/${d}/b_${yr}`]
+  const all=new Set()
+  for(const baseUrl of urls){
+    for(let page=1;page<=10;page++){
+      const url=baseUrl+(page>1?`/p_${page}`:'')
+      const prices=extractPrices(await safeFetch(url),c)
+      const before=all.size
+      prices.forEach(p=>all.add(p))
+      if(prices.length<3||all.size===before)break
+      await new Promise(r=>setTimeout(r,800+Math.random()*1500))
+    }
+    if(all.size>0)break
+  }
+  return[...all]
 }
 async function scrapeViaBovag(mk,ml,yr,c){
   const m=mk.toLowerCase(),d=ml.toLowerCase()
-  let p=extractPrices(await safeFetch(`https://www.viabovag.nl/auto/merk-${m}/model-${d}?bouwjaarVan=${yr}&bouwjaarTot=${yr+1}`),c)
-  if(!p.length)p=extractPrices(await safeFetch(`https://www.viabovag.nl/auto?merk=${m}&model=${d}&bouwjaarVan=${yr}&bouwjaarTot=${yr+1}`),c)
-  return p
+  const urls=[`https://www.viabovag.nl/auto/merk-${m}/model-${d}?bouwjaarVan=${yr}&bouwjaarTot=${yr+1}`,`https://www.viabovag.nl/auto?merk=${m}&model=${d}&bouwjaarVan=${yr}&bouwjaarTot=${yr+1}`]
+  const all=new Set()
+  for(const baseUrl of urls){
+    for(let page=1;page<=10;page++){
+      const url=baseUrl+`&pagina=${page}`
+      const prices=extractPrices(await safeFetch(url),c)
+      const before=all.size
+      prices.forEach(p=>all.add(p))
+      if(prices.length<3||all.size===before)break
+      await new Promise(r=>setTimeout(r,800+Math.random()*1500))
+    }
+    if(all.size>0)break
+  }
+  return[...all]
 }
 
 // ═══ TIER 2: NL SECONDARY ═══

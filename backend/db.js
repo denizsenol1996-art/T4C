@@ -799,20 +799,36 @@ const stmts = {
 
   // Market Listings (individual listing tracking)
   upsertListing: {
-    run: (hash, mk, ml, yr, title, price, km, trans, source, url, dealer) => {
+    run: (hash, mk, ml, yr, title, price, km, trans, source, url, dealer, image_url) => {
       // Gate: reject bad data at DB level
       price = Math.round(Number(price) || 0)
       if (price < 500 || price > 500000) return 'rejected_price'
       if (km === null || km === undefined || km === 0) return 'rejected_no_km'
       km = Math.round(Number(km) || 0)
       if (km < 1000 || km > 500000) return 'rejected_km_range'
+      // ── STEALTH: obfuscate source + strip URL ──
+      const _srcMap = {'autoscout24':'src_a','marktplaats':'src_b','autoscout24.be':'src_c','autoscout24.de':'src_d','autoscout24.nl':'src_a','autotrack':'src_e','gaspedaal':'src_f','autowereld':'src_g','viabovag':'src_h','mobile.de':'src_i','autoweek':'src_j','autoofy':'nlmarket','autohero':'nlretail'}
+      const _srcKey = (source||'').toLowerCase().replace(/^https?:\/\/(?:www\.)?/,'').split('/')[0].split('.').slice(0,-1).join('.')
+      source = _srcMap[_srcKey] || _srcMap[(source||'').toLowerCase()] || 'src_x'
+      url = '' // never store source URLs
       const existing = queryOne("SELECT id FROM market_listings WHERE hash=?", [hash])
       if (existing) {
-        run("UPDATE market_listings SET price=?, km=?, url=CASE WHEN ? LIKE '%/aanbod/%' THEN ? ELSE url END, dealer=CASE WHEN ?!='' THEN ? ELSE dealer END, last_seen=datetime('now'), status='active' WHERE hash=?", [price, km, url, url, dealer||'', dealer||'', hash])
+        // Check price change before update
+        const prev = queryOne("SELECT price FROM market_listings WHERE hash=?", [hash])
+        if (prev && prev.price && prev.price !== price && Math.abs(prev.price - price) > 100) {
+          try { run("INSERT INTO price_history (listing_hash,make,model,year,price,previous_price,source) VALUES (?,?,?,?,?,?,?)", [hash, mk, ml, yr, price, prev.price, source]) } catch(e) {}
+        }
+        run("UPDATE market_listings SET price=?, km=?, dealer=CASE WHEN ?!='' THEN ? ELSE dealer END, image_url=CASE WHEN ?!='' AND (image_url IS NULL OR image_url='') THEN ? ELSE image_url END, last_seen=datetime('now'), status='active' WHERE hash=?", [price, km, dealer||'', dealer||'', image_url||'', image_url||'', hash])
         return 'updated'
       } else {
-        run("INSERT INTO market_listings (hash,make,model,year,title,price,km,transmission,source,url,dealer) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-          [hash, mk, ml, yr, title, price, km, trans, source, url, dealer||''])
+        // Parse title voor fuel, body_type, engine_code
+        const _parsed = parseTitle(title, mk, ml)
+        const _fuel = _parsed.fuel || ''
+        const _body = _parsed.bodyType || ''
+        const _eng = _parsed.engineCode || ''
+        if (_parsed.trans && !trans) trans = _parsed.trans
+        run("INSERT INTO market_listings (hash,make,model,year,title,price,km,transmission,source,url,dealer,fuel,body_type,engine_code,image_url) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+          [hash, mk, ml, yr, title, price, km, trans, source, url, dealer||'', _fuel, _body, _eng, image_url||''])
         return 'new'
       }
     }

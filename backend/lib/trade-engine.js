@@ -57,12 +57,29 @@ function calculateTradeBid(retailPrice, aiData, vehicleData, marketData) {
   }
   riskPct = Math.min(riskPct, 0.35)
 
-  // STAP 3: Basis bid ratio per type
-  let baseRatio = 0.75
-  if (vType === 'A' && sellSpeed === 'snel') baseRatio = 0.77
-  else if (vType === 'A') baseRatio = 0.76
-  else if (vType === 'B') baseRatio = 0.75
-  else if (vType === 'C') baseRatio = 0.70
+  // STAP 3: Basis bid ratio per segment + type
+  // Budget auto's hebben lagere inkoop ratio (meer marge nodig)
+  // Premium auto's hebben hogere ratio (duurdere auto, minder relatieve marge)
+  const seg = (vehicleData?.segment || 'C').toUpperCase()
+  let baseRatio = 0.70
+  if (seg === 'P' || seg === 'L') {
+    baseRatio = vType === 'A' ? 0.78 : vType === 'B' ? 0.75 : 0.70
+  } else if (seg === 'B') {
+    baseRatio = vType === 'A' ? 0.72 : vType === 'B' ? 0.68 : 0.62
+  } else {
+    baseRatio = vType === 'A' ? 0.75 : vType === 'B' ? 0.72 : 0.65
+  }
+  // Hoge km korting — mild, GPT verkoopadviees is al km-gecorrigeerd
+  if (km > 300000) baseRatio -= 0.08
+  else if (km > 250000) baseRatio -= 0.06
+  else if (km > 200000) baseRatio -= 0.04
+  else if (km > 150000) baseRatio -= 0.02
+  // Lage km bonus
+  if (km < 50000) baseRatio += 0.05
+  else if (km < 30000) baseRatio += 0.08
+  // Sell speed
+  if (sellSpeed === 'snel') baseRatio += 0.03
+  else if (sellSpeed === 'langzaam') baseRatio -= 0.03
 
   // EV correctie: oude EV's verkopen structureel onder vraagprijs
   if (isEV && age >= 3) baseRatio -= 0.05

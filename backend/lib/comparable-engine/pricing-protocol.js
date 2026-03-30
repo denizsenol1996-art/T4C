@@ -1,14 +1,13 @@
-// T4C Pricing Protocol — Laag 3 v3
+// T4C Pricing Protocol — Laag 3 v4 — AI PRIMARY, comp validates
 const { detectSegment } = require('./normalize-comparable')
 function roundTo50(v) { return Math.round(v / 50) * 50 }
 function getBaseMargin(retailVP) {
-  // Gecalibreerd op JPauto staffel
-  if (retailVP >= 40000) return 0.18
-  if (retailVP >= 25000) return 0.22
-  if (retailVP >= 15000) return 0.28
-  if (retailVP >= 8000) return 0.35
-  if (retailVP >= 4000) return 0.42
-  return 0.50
+  if (retailVP >= 40000) return 0.12
+  if (retailVP >= 25000) return 0.15
+  if (retailVP >= 15000) return 0.20
+  if (retailVP >= 8000) return 0.25
+  if (retailVP >= 4000) return 0.28
+  return 0.32
 }
 function getKmMargin(km) {
   if (!km || km <= 0) return 0.03
@@ -43,21 +42,35 @@ function calculatePricing(compResult, vehicle, aiClass, opts) {
   const vraagToRetail = segment === 'budget' ? 0.92 : 0.93
   const result = { source:null, confidence:0, segment, retailVraag:null, retailVerkoop:null, handelswaarde:null, inkoopLow:null, inkoopHigh:null, internetPrijs:null, dealerMargin:null, corrections:[], breakdown:{} }
   var retailBase = null
-  if (compResult && compResult.status === 'ok' && compResult.marketMedian > 0) {
-    retailBase = compResult.marketMedian
-    result.source = 'comp_engine'
-    result.confidence = Math.min(90, 40 + compResult.confidenceComparable * 0.5)
-    if (compResult.strongCount >= 3) result.confidence += 5
-    if (compResult.cleanCount >= 10) result.confidence += 5
-    if (compResult.marketSpread && compResult.marketSpread < 2000) result.confidence += 5
-  } else if (compResult && compResult.marketMedian > 0 && compResult.cleanCount >= 2) {
-    retailBase = compResult.marketMedian
-    result.source = 'comp_engine_weak'
-    result.confidence = 30 + (compResult.confidenceComparable || 0) * 0.3
-  } else if (opts.aiPrice && opts.aiPrice > 500) {
+  var compMedian = (compResult && compResult.marketMedian > 0) ? compResult.marketMedian : 0
+  var compStrong = compResult && compResult.status === 'ok' && compResult.strongCount >= 5
+  var compConf = compResult ? (compResult.confidenceComparable || 0) : 0
+  if (opts.aiPrice && opts.aiPrice > 500) {
     retailBase = opts.aiPrice
-    result.source = 'ai_fallback'
-    result.confidence = 35
+    result.source = 'ai_primary'
+    result.confidence = 55
+    if (compMedian > 0 && compStrong) {
+      retailBase = Math.round(opts.aiPrice * 0.60 + compMedian * 0.40)
+      result.source = 'ai_comp_blend'
+      result.confidence = Math.min(90, 55 + compConf * 0.3)
+      result.corrections.push({ type:'comp_blend', pct:40 })
+    } else if (compMedian > 0) {
+      var ratio = compMedian / opts.aiPrice
+      if (ratio > 0.5 && ratio < 2.0) {
+        retailBase = Math.round(opts.aiPrice * 0.80 + compMedian * 0.20)
+        result.source = 'ai_comp_light'
+        result.confidence += 10
+        result.corrections.push({ type:'comp_light', pct:20 })
+      }
+    }
+  } else if (compMedian > 0 && compStrong) {
+    retailBase = compMedian
+    result.source = 'comp_engine'
+    result.confidence = Math.min(85, 40 + compConf * 0.5)
+  } else if (compMedian > 0) {
+    retailBase = compMedian
+    result.source = 'comp_engine_weak'
+    result.confidence = 30 + compConf * 0.3
   } else {
     result.source = 'no_data'
     return result
@@ -68,7 +81,15 @@ function calculatePricing(compResult, vehicle, aiClass, opts) {
   var margin = getBaseMargin(retailVP)
   var _kmM = getKmMargin(km)
   var _ageM = getAgeMargin(age)
-  margin += _kmM + _ageM * (1 - Math.abs(_kmM))
+  // Als AI primair is, heeft GPT km+leeftijd al meegewogen in zijn prijs
+  // Dan alleen basis margin + lichte age correctie, geen km margin
+  if (result.source === 'ai_primary' || result.source === 'ai_comp_light') {
+    margin += _ageM * 0.3
+  } else if (result.source === 'ai_comp_blend') {
+    margin += _kmM * 0.4 + _ageM * 0.5
+  } else {
+    margin += _kmM + _ageM * (1 - Math.abs(_kmM))
+  }
   var sellSpeed = (aiClass.sellSpeed || 'normaal').toLowerCase()
   if (sellSpeed === 'snel') margin -= 0.03
   else if (sellSpeed === 'langzaam') margin += 0.04
@@ -88,7 +109,6 @@ function calculatePricing(compResult, vehicle, aiClass, opts) {
     else margin += EV_MARGIN.over6yr
     if (isChinese) margin += EV_MARGIN.chineseBrand
   }
-  if (result.source === 'ai_fallback') margin = Math.min(margin, 0.40)
   margin = Math.max(0.20, Math.min(0.55, margin))
   result.dealerMargin = Math.round(margin * 100)
   result.inkoopHigh = roundTo50(retailVP * (1 - margin))
@@ -105,7 +125,7 @@ function calculatePricing(compResult, vehicle, aiClass, opts) {
   result.handelswaarde = roundTo50(retailVP * (1 - margin * 0.55))
   result.internetPrijs = roundTo50(retailVP * 1.06)
   result.confidence = Math.max(0, Math.min(95, Math.round(result.confidence)))
-  result.breakdown = { compMedian:compResult?.marketMedian||null, compClean:compResult?.cleanCount||0, compStrong:compResult?.strongCount||0, compSpread:compResult?.marketSpread||null, segment, vType, sellSpeed, baseMargin:Math.round(getBaseMargin(retailVP)*100), kmMargin:Math.round(getKmMargin(km)*100), ageMargin:Math.round(getAgeMargin(age)*100), totalMargin:Math.round(margin*100), reconEst, isEV, isChinese }
+  result.breakdown = { compMedian:compResult?.marketMedian||null, compClean:compResult?.cleanCount||0, compStrong:compResult?.strongCount||0, compSpread:compResult?.marketSpread||null, aiPrice:opts.aiPrice||null, segment, vType, sellSpeed, baseMargin:Math.round(getBaseMargin(retailVP)*100), kmMargin:Math.round(getKmMargin(km)*100), ageMargin:Math.round(getAgeMargin(age)*100), totalMargin:Math.round(margin*100), reconEst, isEV, isChinese }
   console.log('[PRICING-L3] ' + vehicle.make + ' ' + vehicle.model + ': VP EUR' + result.retailVerkoop + ' | HW EUR' + result.handelswaarde + ' | Inkoop EUR' + result.inkoopLow + '-EUR' + result.inkoopHigh + ' | margin=' + result.dealerMargin + '% | conf=' + result.confidence + ' [' + result.source + ']')
   return result
 }

@@ -14,7 +14,7 @@ const { buildComparableSet } = require("../lib/comparable-engine")
 const { normalizeModel, normalizeMake } = require("../lib/comparable-engine/model-normalizer")
 
 // /api/market
-router.get("/api/market",async(req,res)=>{
+router.get("/api/market",authMiddleware,async(req,res)=>{
   const mk=String(req.query.make||"").toLowerCase().trim()
   let ml=String(req.query.model||"").toLowerCase().trim()
   const yr=Number(req.query.year||0)
@@ -216,7 +216,7 @@ router.get("/api/market",async(req,res)=>{
     console.log('[COMP-ENGINE] Error:', compErr.message)
   }
 
-  const listingsForResponse = allListings.slice(0, 15)
+  const listingsForResponse = allListings.slice(0, 50)
   console.log(`  -- Listings: ${allListings.length} total | ${allListings.filter(l=>l.sellerType==="dealer").length} dealer | ${allListings.filter(l=>l.sellerType==="particulier").length} part | ${listingsWithKm.length} w/km${kmPriceModel?" | \u20ac"+kmPriceModel.per10k+"/10k km":""}`)
 
   // Round 2: Broad search (without trim) — only if submodel AND not enough data
@@ -531,7 +531,7 @@ function storeListingsForHistory(mk, ml, yr, listings, trans) {
     const hash = listingHash(l.title, l.price, l.source)
     activeHashes.push(hash)
     try {
-      const result = stmts.upsertListing.run(hash, mk, ml, yr, l.title, l.price, l.km||null, trans||'', l.source, l.url||'', l.dealer||'')
+      const result = stmts.upsertListing.run(hash, mk, ml, yr, l.title, l.price, l.km||null, trans||'', l.source, l.url||'', l.dealer||'', l.image_url||'')
       if (result === 'new') newCount++
       else updCount++
     } catch {}
@@ -636,18 +636,35 @@ async function backgroundCrawl() {
         }
 
         // Also get listings for title/url tracking
-        const listingUrls = [
-          { name: "Marktplaats", url: `https://www.marktplaats.nl/q/${item.make}+${item.model}+${item.year}/` },
-          ...getAS24ListingUrls(item.make, item.model, item.year),
-        ]
-        const listingResults = await Promise.allSettled(listingUrls.map(async lu => {
-          const html = await safeFetch(lu.url)
-          return extractListings(html, cap, lu.url, lu.name)
-        }))
+        // Sequentieel pagineren — alle bronnen, stealth delays, stop als leeg
         let listings = []
-        listingResults.forEach(lr => { if (lr.status === 'fulfilled' && lr.value?.length) listings.push(...lr.value) })
+        const seenKeys = new Set()
+        const sources = [
+          { name: "Marktplaats", base: `https://www.marktplaats.nl/q/${item.make}+${item.model}+${item.year}/`, pageFn: p => `p/${p}/` },
+          { name: "AutoScout24", base: `https://www.autoscout24.nl/lst/${item.make}/${item.model}?fregfrom=${item.year}&fregto=${item.year+1}&cy=NL`, pageFn: p => `&page=${p}` },
+          { name: "AutoTrack", base: `https://www.autotrack.nl/aanbod?merk=${item.make}&model=${item.model}&bouwjaar_van=${item.year}&bouwjaar_tot=${item.year}`, pageFn: p => `&pagina=${p}` },
+          { name: "Gaspedaal", base: `https://www.gaspedaal.nl/${item.make}-${item.model}/jaar-${item.year}`, pageFn: p => `?page=${p}` },
+          { name: "Autowereld", base: `https://www.autowereld.nl/${item.make}/${item.make}-${item.model}/b_${item.year}`, pageFn: p => `/p_${p}` },
+          { name: "ViaBovag", base: `https://www.viabovag.nl/auto/merk-${item.make}/model-${item.model}?bouwjaarVan=${item.year}&bouwjaarTot=${item.year+1}`, pageFn: p => `&pagina=${p}` },
+        ]
+        for (const src of sources) {
+          for (let page = 1; page <= 10; page++) {
+            try {
+              const url = page === 1 ? src.base : src.base + src.pageFn(page)
+              const html = await safeFetch(url)
+              const found = extractListings(html, cap, url, src.name)
+              let added = 0
+              for (const l of found) {
+                const key = l.price + '-' + (l.title||'').slice(0,20)
+                if (!seenKeys.has(key)) { seenKeys.add(key); listings.push(l); added++ }
+              }
+              if (found.length < 3 || added === 0) break
+              await new Promise(r => setTimeout(r, 800 + Math.random() * 1500))
+            } catch { break }
+          }
+        }
         const seenL = new Set()
-        listings = listings.filter(l => { const k = `${l.price}-${l.title?.slice(0,15)}`; if (seenL.has(k)) return false; seenL.add(k); return true }).slice(0, 15)
+        listings = listings.filter(l => { const k = `${l.price}-${l.title?.slice(0,15)}`; if (seenL.has(k)) return false; seenL.add(k); return true }).slice(0, 200)
 
         // Als extractListings niks geeft, maak listings van de losse prijzen
         if (false && listings.length === 0 && allPrices.length > 0) { // DISABLED: creates fake listings without km/title

@@ -98,7 +98,7 @@ function extractListings(html, cap, sourceUrl, sourceName) {
           const year = parseInt(item.vehicleModelDate || item.productionDate || 0, 10)
           const key = `${price}-${title.slice(0,20)}`
           const dealer = item.seller?.name || item.offers?.[0]?.seller?.name || item.brand?.name || ""
-          if (!seen.has(key)) { seen.add(key); listings.push({ title: title.slice(0, 80), price, km: km || null, year: year || null, url: url.startsWith("http") ? url : (url ? baseUrl + url : ""), source: sourceName, dealer: dealer.slice(0,60) }) }
+          if (!seen.has(key)) { seen.add(key); listings.push({ title: title.slice(0, 80), price, km: km || null, year: year || null, url: url.startsWith("http") ? url : (url ? baseUrl + url : ""), source: sourceName, dealer: dealer.slice(0,60), image_url: (item.image || item.images?.[0]?.contentUrl || item.images?.[0] || '').slice(0,200) }) }
         }
       }
     } catch {}
@@ -107,7 +107,7 @@ function extractListings(html, cap, sourceUrl, sourceName) {
   // Method 1b: Marktplaats specific (hz-Listing cards)
   if (sourceName === 'Marktplaats' || (sourceUrl && sourceUrl.includes('marktplaats'))) {
     $('a.hz-Listing-coverLink-new, a[href*="/v/auto-s/"]').each((_, card) => {
-      if (listings.length >= 25) return false
+      if (listings.length >= 100) return false
       const $c = $(card).closest('[class*="Listing"]').length ? $(card).closest('div').parent() : $(card).parent()
       const fullBlock = $c.length ? $c : $(card)
       const blockText = fullBlock.text()
@@ -161,10 +161,12 @@ function extractListings(html, cap, sourceUrl, sourceName) {
       const key = price + '-' + title.slice(0, 20)
       if (title && !seen.has(key)) {
         seen.add(key)
-        listings.push({ title, price, km, year, url, source: sourceName, dealer })
+        const _img1 = fullBlock.find('img[src*="http"]').first()
+        const _imgUrl1 = (_img1.attr('src') || _img1.attr('data-src') || '').slice(0,200)
+        listings.push({ title, price, km, year, url, source: sourceName, dealer, image_url: _imgUrl1 })
       }
     })
-    if (listings.length >= 5) return listings.slice(0, 15)
+    if (listings.length >= 20) return listings.slice(0, 50)
   }
 
   // Method 2: Common HTML listing card patterns
@@ -177,7 +179,7 @@ function extractListings(html, cap, sourceUrl, sourceName) {
   ]
   for (const sel of cardSelectors) {
     $(sel).each((_, card) => {
-      if (listings.length >= 25) return false
+      if (listings.length >= 100) return false
       const $c = $(card)
       // Find price
       let price = 0
@@ -215,12 +217,14 @@ function extractListings(html, cap, sourceUrl, sourceName) {
 
       const key = `${price}-${title.slice(0,20)}`
       const dealer = $c.find("[class*=dealer],[class*=seller],[class*=vendor],[data-dealer]").first().text().trim().slice(0,60) || ""
-      if (title && !seen.has(key)) { seen.add(key); listings.push({ title, price, km, year, url, source: sourceName, dealer }) }
+      if (title && !seen.has(key)) { const _img2 = $(card).find('img[src*="http"]').first()
+        const _imgUrl2 = (_img2.attr('src') || _img2.attr('data-src') || '').slice(0,200)
+        seen.add(key); listings.push({ title, price, km, year, url, source: sourceName, dealer, image_url: _imgUrl2 }) }
     })
-    if (listings.length >= 10) break
+    if (listings.length >= 100) break
   }
 
-  return listings.slice(0, 15)
+  return listings.slice(0, 50)
 }
 
 /* ── SCRAPERS ─────────────────────────────
