@@ -456,7 +456,8 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
       if (apiKey && apiKey !== "sk-..." && typeof axios !== 'undefined') {
 
         // ── Build rich vehicle description ──
-        const carDesc = (d.make||'?') + ' ' + (d.model||'?') + ' (' + year + '), ' + km.toLocaleString('nl-NL') + ' km, ' + (d.fuel||'?') + ', segment ' + segment + ', ' + age + ' jaar oud'
+        const _variant = [d.subModel, d.engineLabel, d.trimLevel].filter(Boolean).join(' / ')
+        const carDesc = (d.make||'?') + ' ' + (d.model||'?') + (_variant ? ' [' + _variant + ']' : '') + ' (' + year + '), ' + km.toLocaleString('nl-NL') + ' km, ' + (d.fuel||'?') + ', segment ' + segment + ', ' + age + ' jaar oud'
         const specDesc = [
           d.transmissionType ? 'Transmissie: ' + d.transmissionType + (d.transmissionDetail ? ' (' + d.transmissionDetail + ')' : '') + (d.transmissionType === 'Automaat' ? ' [AUTOMAAT = MEER WAARD]' : ' [HANDGESCHAKELD = MINDER WAARD]') : null,
           d.motorCode ? 'Motor: ' + d.motorCode : null,
