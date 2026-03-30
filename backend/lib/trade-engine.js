@@ -65,18 +65,18 @@ function calculateTradeBid(retailPrice, aiData, vehicleData, marketData) {
   if (seg === 'P' || seg === 'L') {
     baseRatio = vType === 'A' ? 0.78 : vType === 'B' ? 0.75 : 0.70
   } else if (seg === 'B') {
-    baseRatio = vType === 'A' ? 0.72 : vType === 'B' ? 0.68 : 0.62
+    baseRatio = vType === 'A' ? 0.76 : vType === 'B' ? 0.72 : 0.66
   } else {
     baseRatio = vType === 'A' ? 0.75 : vType === 'B' ? 0.72 : 0.65
   }
   // Hoge km korting — mild, GPT verkoopadviees is al km-gecorrigeerd
-  if (km > 300000) baseRatio -= 0.08
-  else if (km > 250000) baseRatio -= 0.06
-  else if (km > 200000) baseRatio -= 0.04
-  else if (km > 150000) baseRatio -= 0.02
+  if (km > 300000) baseRatio -= 0.05
+  else if (km > 250000) baseRatio -= 0.04
+  else if (km > 200000) baseRatio -= 0.03
+  else if (km > 150000) baseRatio -= 0.01
   // Lage km bonus
-  if (km < 50000) baseRatio += 0.05
-  else if (km < 30000) baseRatio += 0.08
+  if (km < 30000) baseRatio += 0.12
+  else if (km < 50000) baseRatio += 0.07
   // Sell speed
   if (sellSpeed === 'snel') baseRatio += 0.03
   else if (sellSpeed === 'langzaam') baseRatio -= 0.03
