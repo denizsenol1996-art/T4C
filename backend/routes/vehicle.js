@@ -510,6 +510,7 @@ REGELS:
 - Motorcode: kies de ENIGE juiste code voor dit bouwjaar (bijv BMW 320i 2013 = N20B20, NIET B48)
 - Opties: ALLEEN wat STANDAARD is bij deze uitvoering/trim. NIET gokken op extra opties
 - Als je iets niet zeker weet: laat het veld LEEG (null/[])
+- BELANGRIJK: De RDW Type code bevat vaak de generatie-aanduiding. Bijv Opel Type "A-H/SW" = Astra H (niet J of K). BMW Type "3L" = 3-serie. Gebruik de Type code als primaire bron voor generatie, NIET je eigen kennis.
 - UITZONDERING: "transmission" MOET ALTIJD ingevuld worden ("Automaat" of "Handgeschakeld"). Gebruik Type/Variant codes, vermogen en bouwjaar om dit te bepalen. Dit is VERPLICHT.
 - GEEN Harman Kardon, panoramadak, camera etc toekennen tenzij standaard bij trim
 - Interior kleur is NIET af te leiden uit RDW data — laat leeg

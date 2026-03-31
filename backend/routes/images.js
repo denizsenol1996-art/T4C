@@ -191,7 +191,8 @@ router.post("/api/generate-car-images", express.json(), async (req, res) => {
     const bodyEn = BODY_MAP[(body || "").toLowerCase()] || (body || "hatchback").toLowerCase()
     const cleanSub = (subModel && model && !subModel.toLowerCase().includes(model.toLowerCase().split(" ")[0])) ? "" : subModel
     const trimInfo = [variant, generation, cleanSub, trimLevel].filter(Boolean).join(" ")
-    const carDesc = `${year || 2020} ${make} ${model}${trimInfo ? " " + trimInfo : ""}, ${bodyEn}, ${colorDesc}`
+    const genHint = generation ? ` (${generation} generation, NOT the current/latest model)` : (year < 2020 ? ` (${year} model year version, NOT the current/latest model)` : "")
+    const carDesc = `${year || 2020} ${make} ${model}${trimInfo ? " " + trimInfo : ""}${genHint}, ${bodyEn}, ${colorDesc}`
 
     // 5 turntable angles — include plate text so DALL-E picks the right model, UI overlay corrects the text
     const plateText = plate || "XX-999-X"
