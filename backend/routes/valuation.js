@@ -20,7 +20,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
     try { const { verifyToken } = require("../lib/auth"); const t = (req.headers.authorization||"").replace("Bearer ",""); if (t) { const u = verifyToken(t); _userId = u?.uid || null } } catch{}
     let d = req.body
     // If plate is provided, enrich with full vehicle data first
-    if (d.plate) {
+    if (d.plate && (!d.make || !d.model || !d.year)) {
       try {
         // Direct cache lookup — no HTTP roundtrip (same process, shared cache)
         const _ck = "vehicle_" + d.plate.replace(/[\s-]/g, "").toUpperCase()
