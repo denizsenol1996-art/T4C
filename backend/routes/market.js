@@ -35,7 +35,7 @@ router.get("/api/market",authMiddleware,async(req,res)=>{
   if (_norm.confidence !== 'passthrough') console.log('[MARKET-NORM]', mk, ml, '→', _crawlerMl, '(' + _norm.confidence + ')')
 
   const ck=`m|${mk}|${searchMl}|${yr}|${km?Math.round(km/25000)*25000:0}|${trans}`
-  const cc=getCached(ck);if(cc)return res.json(cc)
+  const cc=getCached(ck, 7200000);if(cc)return res.json(cc)
   const cap=maxPrice(yr,mk)
 
   // ══ MULTI-TIER SEARCH STRATEGY — NEDERLAND ONLY ══

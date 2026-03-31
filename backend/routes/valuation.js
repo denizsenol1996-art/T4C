@@ -19,6 +19,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
     let _userId = null
     try { const { verifyToken } = require("../lib/auth"); const t = (req.headers.authorization||"").replace("Bearer ",""); if (t) { const u = verifyToken(t); _userId = u?.uid || null } } catch{}
     let d = req.body
+    const _t0 = Date.now()
     // If plate is provided, enrich with full vehicle data first
     if (d.plate && (!d.make || !d.model || !d.year)) {
       try {
@@ -842,6 +843,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
             finalInternet = Math.round(finalVerkoop * 1.06 / 50) * 50
           }
           conf += 25  // High confidence when AI provides prices
+          console.log(`[AI-FIRST] TIMING: ${Date.now()-_t0}ms`)
           console.log(`[AI-FIRST] Applied: Retail EUR ${finalVerkoop}, Handel EUR ${finalHandel}, Inkoop EUR ${finalInkoopLow}-${finalInkoopHigh}`)
         } else {
           console.log(`[AI-FIRST] SANITY FAIL: AI said EUR ${aiVerkoop} but formula says EUR ${formulaBase} (bounds ${saneFloor}-${saneCeiling}). Using formula.`)
