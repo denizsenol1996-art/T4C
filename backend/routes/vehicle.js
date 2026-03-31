@@ -510,6 +510,7 @@ REGELS:
 - Motorcode: kies de ENIGE juiste code voor dit bouwjaar (bijv BMW 320i 2013 = N20B20, NIET B48)
 - Opties: ALLEEN wat STANDAARD is bij deze uitvoering/trim. NIET gokken op extra opties
 - Als je iets niet zeker weet: laat het veld LEEG (null/[])
+- UITZONDERING: "transmission" MOET ALTIJD ingevuld worden ("Automaat" of "Handgeschakeld"). Gebruik Type/Variant codes, vermogen en bouwjaar om dit te bepalen. Dit is VERPLICHT.
 - GEEN Harman Kardon, panoramadak, camera etc toekennen tenzij standaard bij trim
 - Interior kleur is NIET af te leiden uit RDW data — laat leeg
 - likelyOptions moet LEEG blijven — we kunnen opties niet verifiëren
@@ -582,6 +583,19 @@ Antwoord ALLEEN in JSON:
             vinData = { ...vinData, ...parsed }
             setCache(vinCk, vinData)
             console.log(`[VIN] ✓ Full decode: ${vin} → ${vinData.specificModel||'?'} | ${vinData.transmission} | ${vinData.motorCode} | ${vinData.generation} | ${vinData.trimLevel} | ${(vinData.standardEquipment||[]).length} std + ${(vinData.likelyOptions||[]).length} opts | risk: ${vinData.engineRiskProfile} | courant: ${vinData.courantScore}`)
+            // Transmissie fallback als null
+            if (vinData.transmission === null && vinKey) {
+              try {
+                const tResp = await axios.post("https://api.openai.com/v1/chat/completions", {
+                  model: "gpt-5.4", temperature: 0, max_completion_tokens: 20,
+                  messages: [{role:"user",content:`${s(d.merk)} ${s(d.handelsbenaming)}, Type:${rdwType}, Variant:${rdwVariant}, Bouwjaar:${year}, ${fuelLabel}, ${powerHp}pk, ${cc||"?"}cc. Automaat of Handgeschakeld? Antwoord 1 woord.`}]
+                }, {headers:{"Authorization":"Bearer "+vinKey,"Content-Type":"application/json"},timeout:8000})
+                const tAns = (tResp.data?.choices?.[0]?.message?.content||'').trim().toLowerCase()
+                if (tAns.includes('automaat')) { vinData.transmission = 'Automaat'; console.log('[VIN] ✓ Transmissie fallback: Automaat') }
+                else if (tAns.includes('handgeschakeld') || tAns.includes('handge') || tAns.includes('manueel')) { vinData.transmission = 'Handgeschakeld'; console.log('[VIN] ✓ Transmissie fallback: Handgeschakeld') }
+                setCache(vinCk, vinData)
+              } catch(te) { console.log('[VIN] Transmissie fallback failed:', te.message) }
+            }
           } else {
             console.log('[VIN] ✗ No OpenAI API key configured')
           }
