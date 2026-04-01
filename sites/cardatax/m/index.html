@@ -642,10 +642,7 @@ if (window.innerWidth >= 1024 && !navigator.userAgent.match(/Mobile|Android|iPho
         </div>
       </div>
     </button></div>
-    <div class="desktop-only" style="width:100%;background:linear-gradient(135deg,rgba(245,158,11,.08) 0%,rgba(245,158,11,.02) 100%);border:1px solid rgba(245,158,11,.2);border-radius:20px;padding:20px;text-align:center">
-      <div style="font-size:16px;font-weight:700;color:#f59e0b;margin-bottom:6px">Schade Scanner</div>
-      <div style="font-size:13px;color:var(--text3)">Open de app op je telefoon om de schade scanner te gebruiken</div>
-    </div>
+    <!-- Desktop scanner verborgen -->
 
     <!-- Verkooptekst -->
     <button onclick="go('verkooptekst')" style="width:100%;background:linear-gradient(135deg,rgba(139,92,246,.08) 0%,rgba(139,92,246,.02) 100%);border:1px solid rgba(139,92,246,.2);border-radius:20px;padding:0;cursor:pointer;overflow:hidden;text-align:left;position:relative;transition:all .2s;-webkit-tap-highlight-color:transparent">
@@ -752,7 +749,7 @@ if (window.innerWidth >= 1024 && !navigator.userAgent.match(/Mobile|Android|iPho
   <div class="header">
     <button class="header-back" onclick="go('taxatie')">‹</button>
     <div class="header-logo"><span style="font-size:16px;font-weight:800;letter-spacing:-.3px"><span style="color:#fff">Car</span><span style="color:#00FF9C">Datax</span></span></div>
-    <div class="header-right"><button onclick="go('taxatie')" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--green);padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer">+ Nieuw</button></div>
+    <div class="header-right"><button onclick="document.getElementById('mp').value='';go('taxatie')" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--green);padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer">+ Nieuw</button></div>
   </div>
   <div class="greenline"></div>
   <div id="rc"></div>
