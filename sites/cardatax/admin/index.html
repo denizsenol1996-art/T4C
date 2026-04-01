@@ -726,10 +726,21 @@ async function loadUsers() {
       body.innerHTML = d.users.map(u => `<tr>
         <td style="color:var(--t1);font-weight:600">${u.name||u.username||'—'}</td>
         <td>${u.email||'—'}</td>
-        <td><span class="badge ${u.role==='admin'?'red':u.role==='t4c'?'blue':'green'}">${u.role||'—'}</span></td>
+        <td>
+          <select onchange="changeRole(${u.id},this.value)" style="background:var(--bg3);color:var(--t1);border:1px solid var(--b1);border-radius:4px;padding:2px 6px;font-size:11px;font-family:var(--mono)">
+            <option value="admin" ${u.role==='admin'?'selected':''}>admin</option>
+            <option value="t4c" ${u.role==='t4c'?'selected':''}>t4c</option>
+            <option value="inkoper" ${u.role==='inkoper'?'selected':''}>inkoper</option>
+            <option value="dealer" ${u.role==='dealer'?'selected':''}>dealer</option>
+            <option value="koper" ${u.role==='koper'?'selected':''}>koper</option>
+          </select>
+        </td>
         <td><span class="badge ${u.active!==false?'green':'gray'}">${u.active!==false?'Actief':'Inactief'}</span></td>
         <td>${u.created_at ? new Date(u.created_at).toLocaleDateString('nl-NL') : '—'}</td>
-        <td><button class="tb-btn btn-ghost" onclick="deleteUser(${u.id},'${u.name||u.username}')">Verwijder</button></td>
+        <td style="display:flex;gap:4px">
+          <button class="tb-btn btn-ghost" onclick="resetPassword(${u.id},'${u.name||u.username}')" style="font-size:10px">🔑 Reset</button>
+          <button class="tb-btn btn-ghost" onclick="deleteUser(${u.id},'${u.name||u.username}')" style="font-size:10px;color:var(--red)">✕</button>
+        </td>
       </tr>`).join('');
     } else {
       body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--t4);padding:20px">Geen gebruikers</td></tr>';
@@ -756,6 +767,24 @@ async function createUser() {
   } catch(e) { toast('Netwerkfout','err'); }
 }
 
+async function changeRole(id, role) {
+  try {
+    const r = await fetch('/api/users/' + id, { method:'PUT', headers:{...H(),'Content-Type':'application/json'}, body:JSON.stringify({role}) });
+    const d = await r.json();
+    if (d.ok) toast('Rol gewijzigd naar ' + role, 'ok');
+    else toast(d.error || 'Fout', 'err');
+  } catch(e) { toast('Netwerkfout', 'err'); }
+}
+async function resetPassword(id, name) {
+  const pw = prompt('Nieuw wachtwoord voor ' + name + ':');
+  if (!pw || pw.length < 6) { if (pw !== null) toast('Minimaal 6 tekens', 'err'); return; }
+  try {
+    const r = await fetch('/api/users/' + id, { method:'PUT', headers:{...H(),'Content-Type':'application/json'}, body:JSON.stringify({password:pw}) });
+    const d = await r.json();
+    if (d.ok) toast('Wachtwoord gewijzigd voor ' + name, 'ok');
+    else toast(d.error || 'Fout', 'err');
+  } catch(e) { toast('Netwerkfout', 'err'); }
+}
 async function deleteUser(id, name) {
   if (!confirm(`${name} verwijderen?`)) return;
   try {
