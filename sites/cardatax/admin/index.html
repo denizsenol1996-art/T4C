@@ -912,10 +912,23 @@ async function pollCrawlerStatus() {
         addCrawlerLine('Geen scraper activiteit in logs', 'warn', 'LOG');
       }
     }
-    // Also get stats
-    const r2 = await fetch('/api/admin/stats', { headers: H() });
-    const d2 = await r2.json();
-    if (d2.crawlQueue !== undefined) addCrawlerLine('Queue: ' + d2.crawlQueue + ' items', 'ok', 'QUEUE');
+    // Update cards met live stats
+    try {
+      const r2 = await fetch('/api/admin/crawler-stats', { headers: H() });
+      const d2 = await r2.json();
+      if (d2.ok) {
+        const srcMap = {};
+        (d2.sources || []).forEach(s => srcMap[s.source] = s);
+        CRAWLERS.forEach(cr => {
+          const s = srcMap[cr.id] || { total: 0, active: 0, last_hour: 0 };
+          const ind = document.getElementById('cci-' + cr.id);
+          const stat = document.getElementById('ccs-' + cr.id);
+          if (ind) ind.className = 'crawler-indicator ' + (s.last_hour > 0 ? 'ok' : s.total > 0 ? 'idle' : 'err');
+          if (stat) stat.textContent = s.active + ' actief / ' + s.total + ' totaal | +' + s.last_hour + '/uur';
+        });
+        addCrawlerLine('Queue: ' + d2.queue + ' | Actief: ' + d2.active + ' | Cache: ' + d2.vehicle_cache, 'ok', 'STATS');
+      }
+    } catch(e2) {}
   } catch(e) {
     addCrawlerLine('Log endpoint niet bereikbaar: ' + e.message, 'err', 'ERR');
   }
