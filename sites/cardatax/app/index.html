@@ -472,7 +472,10 @@ function renderChips(){
 function reloadTax(plate){
   document.getElementById('mp').value=plate.replace(/-/g,'');
   document.getElementById('mp').dispatchEvent(new Event('input'));
+  const r=recent.find(x=>x.plate===plate||x.plate===fmtP(plate));
+  if(r&&r.km)document.getElementById('mk').value=r.km.toLocaleString('nl-NL');
   showPanel('taxatie');
+  setTimeout(()=>doTax(),300);
 }
 
 // ── Panels ──
