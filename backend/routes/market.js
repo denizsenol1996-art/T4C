@@ -531,7 +531,7 @@ function storeListingsForHistory(mk, ml, yr, listings, trans) {
     const hash = listingHash(l.title, l.price, l.source)
     activeHashes.push(hash)
     try {
-      const result = stmts.upsertListing.run(hash, mk, ml, yr, l.title, l.price, l.km||null, trans||'', l.source, l.url||'', l.dealer||'', l.image_url||'', l.options||'')
+      const result = stmts.upsertListing.run(hash, mk, ml, yr, l.title, l.price, l.km||null, l.transmission||trans||'', l.source, l.url||'', l.dealer||'', l.image_url||'', l.options||'')
       if (result === 'new') newCount++
       else updCount++
     } catch {}
