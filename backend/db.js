@@ -811,8 +811,9 @@ const stmts = {
       if (km < 1000 || km > 500000) return 'rejected_km_range'
       // ── STEALTH: obfuscate source + strip URL ──
       const _srcMap = {'autoscout24':'src_a','marktplaats':'src_b','autoscout24.be':'src_c','autoscout24.de':'src_d','autoscout24.nl':'src_a','autotrack':'src_e','gaspedaal':'src_f','autowereld':'src_g','viabovag':'src_h','mobile.de':'src_i','autoweek':'src_j','autoofy':'nlmarket','autohero':'nlretail','AutoScout24.de':'src_d','AutoScout24.be':'src_c'}
-      const _srcKey = (source||'').toLowerCase().replace(/^https?:\/\/(?:www\.)?/,'').split('/')[0].split('.').slice(0,-1).join('.')
-      source = _srcMap[_srcKey] || _srcMap[(source||'').toLowerCase()] || 'src_x'
+      const _srcFull = (source||'').toLowerCase().replace(/^https?:\/\/(?:www\.)?/,'').split('/')[0]
+      const _srcKey = _srcFull.split('.').slice(0,-1).join('.')
+      source = _srcMap[_srcFull] || _srcMap[_srcKey] || _srcMap[(source||'').toLowerCase()] || 'src_x'
       url = '' // never store source URLs
       const existing = queryOne("SELECT id FROM market_listings WHERE hash=?", [hash])
       if (existing) {
