@@ -169,6 +169,39 @@ function extractListings(html, cap, sourceUrl, sourceName) {
     if (listings.length >= 20) return listings.slice(0, 50)
   }
 
+  // Method 1c: Autowereld specific (article.item cards)
+  if (sourceName === 'Autowereld' || (sourceUrl && sourceUrl.includes('autowereld'))) {
+    $('article.item').each((_, card) => {
+      if (listings.length >= 100) return false
+      const $c = $(card)
+      const link = $c.find('a.frame')
+      const title = (link.attr('title') || '').replace(/ - ,? ?/, ' ').trim().slice(0, 80)
+      const href = link.attr('href') || ''
+      const url = href.startsWith('http') ? href : 'https://www.autowereld.nl' + href
+      const priceText = $c.find('.price').first().text().replace(/[^\d]/g, '')
+      const price = parseInt(priceText, 10) || 0
+      if (!price || price < MIN_PRICE || price > cap) return
+      let km = null
+      const kmEl2 = $c.find('.km,.mileage,.kilometer').first()
+      if (kmEl2.length) { km = parseInt(kmEl2.text().replace(/[^\d]/g, ''), 10) || null }
+      if (!km) { const _t = $c.text(); const kmM = _t.match(/(\d{1,3}\.\d{3})\s*km/); if (kmM) km = parseInt(kmM[1].replace(/\./g, ''), 10) || null }
+      if (km && (km < 1000 || km > 900000)) return
+      const allText = $c.text().replace(/\s+/g, ' ')
+      let year = null
+      const yrMatch = allText.match(/\b(19[89]\d|20[0-2]\d)\b/)
+      if (yrMatch) year = parseInt(yrMatch[1], 10)
+      const dealer = ($c.find('.dealer-name,.dealer').first().text().trim() || allText.match(/([A-Z][a-z]+ (?:Auto|Cars|Mobility|Occasions)[^\d]{0,20})/)?.[1] || '').slice(0, 60)
+      const img = $c.find('img').first()
+      const image_url = (img.attr('src') || img.attr('data-src') || '').slice(0, 200)
+      const key = price + '-' + title.slice(0, 20)
+      if (title && !seen.has(key)) {
+        seen.add(key)
+        listings.push({ title, price, km, year, url, source: sourceName, dealer, image_url })
+      }
+    })
+    if (listings.length >= 10) return listings.slice(0, 100)
+  }
+
   // Method 2: Common HTML listing card patterns
   const cardSelectors = [
     'article[class*="listing"]', 'article[class*="result"]', 'article[class*="car"]',
@@ -237,4 +270,82 @@ function extractListings(html, cap, sourceUrl, sourceName) {
 // ── Formatting ──
 function fmtE(n) { return "\u20AC " + new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 0 }).format(n) }
 
-module.exports = { ua, cache, getCached, setCache, MIN_PRICE, MAX_PRICE, TIMEOUT, parsePrice, safeFetch, extractPrices, extractListings, fmtE, maxPrice, UAs, LUX, PREM }
+
+
+/* ── DETAIL PAGE SCRAPERS — haalt opties, specs, foto's uit individuele advertenties ── */
+async function scrapeAutowereldDetail(detailUrl) {
+  try {
+    const html = await safeFetch(detailUrl)
+    if (!html || html.length < 5000) return null
+    const $ = cheerio.load(html)
+    const result = {}
+
+    // Specs table
+    $('table.specifications tr').each((_, tr) => {
+      const term = $(tr).find('td.term').text().trim().toLowerCase()
+      const value = $(tr).find('td.value').text().trim()
+      if (!term || !value) return
+      if (term.includes('kilometerstand')) {
+        const km = parseInt(value.replace(/[^\d]/g, ''), 10)
+        if (km > 1000 && km < 900000) result.km = km
+      }
+      if (term.includes('brandstof')) result.fuel = value
+      if (term.includes('transmissie')) result.transmission = value
+      if (term.includes('motorvermogen')) {
+        result.powerLabel = value
+        const kwM = value.match(/(\d+)\s*kW/)
+        const hpM = value.match(/(\d+)\s*pk/)
+        if (kwM) result.powerKw = parseInt(kwM[1], 10)
+        if (hpM) result.powerHp = parseInt(hpM[1], 10)
+      }
+      if (term.includes('kenteken')) result.kenteken = value.replace(/\s/g, '')
+      if (term.includes('carrosserie')) result.body = value
+      if (term === 'apk') result.apk = value
+      if (term.includes('cilinder') && term.includes('inhoud')) result.cc = parseInt(value.replace(/[^\d]/g, ''), 10) || null
+      if (term.includes('bouwjaar')) result.year = parseInt(value, 10) || null
+      if (term.includes('energielabel')) result.energyLabel = value
+      if (term.includes('kleur') && !term.includes('oorspronk')) result.color = value
+      if (term.includes('datum deel 1')) {
+        result.dateDeel1 = value
+        if (value.toLowerCase().includes('import')) result.importFlag = true
+      }
+      if (term.includes('btw')) result.btw = value
+      if (term.includes('gewicht') && !term.includes('trek')) result.weight = parseInt(value.replace(/[^\d]/g, ''), 10) || null
+    })
+
+    // Opties & accessoires
+    const options = []
+    $('div.features li, div.options li, .option-list li, .features-list li').each((_, el) => {
+      const t = $(el).text().trim()
+      if (t && t.length > 1 && t.length < 60) options.push(t)
+    })
+    if (options.length > 0) result.options = options.join(', ')
+
+    // NAP
+    const napEl = $('img[alt*="NAP"], img[alt*="Nationale Auto Pas"], .naplabel, img.naplabel')
+    result.nap = napEl.length > 0
+
+    // Foto's (hoge resolutie)
+    const photos = []
+    $('img[src*="cdn.autowereld"]').each((_, el) => {
+      const src = $(el).attr('src') || ''
+      if (src && src.includes('/') && !photos.includes(src)) photos.push(src)
+    })
+    result.photoCount = photos.length
+    if (photos.length > 0) result.mainPhoto = photos[0].replace(/\/\d+x\d+\//, '/1280x0/')
+
+    // Dealer
+    const dealerEl = $('div.dealer-info, .aanbieder, .dealer-details')
+    if (dealerEl.length) result.dealer = dealerEl.text().replace(/\s+/g, ' ').trim().slice(0, 100)
+
+    // Extra info / beschrijving
+    const extra = $('div.extra-information, .extra-info, .description').text().replace(/\s+/g, ' ').trim()
+    if (extra && extra.length > 20) result.description = extra.slice(0, 1000)
+
+    return result
+  } catch(e) {
+    return null
+  }
+}
+
+module.exports = { ua, cache, getCached, setCache, MIN_PRICE, MAX_PRICE, TIMEOUT, parsePrice, safeFetch, extractPrices, extractListings, fmtE, maxPrice, UAs, LUX, PREM, scrapeAutowereldDetail }

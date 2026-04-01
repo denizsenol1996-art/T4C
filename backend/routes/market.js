@@ -3,7 +3,7 @@ const express = require("express")
 const router = express.Router()
 const { stmts, queryAll, queryOne, run } = require("../db")
 const { authMiddleware, adminOnly } = require("../lib/auth")
-const { getCached, setCache, parsePrice, maxPrice, safeFetch, extractListings, extractPrices } = require("../lib/helpers")
+const { getCached, setCache, parsePrice, maxPrice, safeFetch, extractListings, extractPrices, scrapeAutowereldDetail } = require("../lib/helpers")
 const scrapers = require("../lib/scrapers")
 const { scrapeMarktplaats, scrapeAutoScout24NL, scrapeAutoTrack, scrapeGaspedaal, scrapeAutowereld, scrapeViaBovag, scrapeAutoWeek, scrapeAutosNL, scrapeAutoGids, scrapeDealerOccasions, scrapeAutoBedrijven, scrapeAutoBedrijf24, scrapeAutoKopen, scrapeAutoDealers, scrapeAutoWerk, scrapeVakgarage, scrapeAutoBedrijfNL, scrapeMobileDE, scrapeAutoScout24DE, scrapeAutoScout24BE, scrape2eHandsBE, scrapeAutoScout24COM, scrapeLeBonCoin, scrapeAutoVeiling, scrapeBCA, scrapeOpenLane, scrapeAdesaEU, scrapeCopart, scrapeAutoBidDE, scrapeGoogleSearch, scrapeBingSearch, scrapeDuckDuckGo, scrapeEcosia, scrapeVanMossel, scrapeLouwman, scrapeWensink, scrapeBroekhuis, scrapeHerwers, scrapePonCenter, scrapeZeeuwZeeuw, scrapeTerwolde, scrapeStam, scrapeMulder, scrapeHartgerink, scrapeLeasePlan, scrapeAthlon, scrapeArval, scrapeAlphabet, scrapeAutoTraderNL, scrapeAutoFirstNL, scrapeBoschCarService, scrapeAutoScout24FR, scrapeAutoTraderUK, buildSearchUrls, med, validate } = scrapers
 const pricing = require("../lib/pricing")
@@ -682,6 +682,44 @@ async function backgroundCrawl() {
           const seenP = new Set()
           listings = listings.filter(l => { const k = l.price + '-' + l.source; if (seenP.has(k)) return false; seenP.add(k); return true }).slice(0, 30)
           if (listings.length > 0) console.log('  [CRAWLER] Converted', listings.length, 'prices to listings for', item.make, item.model, item.year)
+        }
+
+        // ── DETAIL ENRICHMENT: Autowereld detail pages voor opties/specs ──
+        const awListings = listings.filter(l => l.url && l.url.includes('autowereld.nl') && l.url.includes('details.html'))
+        if (awListings.length > 0) {
+          const toEnrich = awListings.slice(0, 5) // Max 5 detail pages per model
+          for (const l of toEnrich) {
+            try {
+              await new Promise(r => setTimeout(r, 1500 + Math.random() * 2000)) // Stealth delay
+              const detail = await scrapeAutowereldDetail(l.url)
+              if (detail) {
+                if (detail.options) l.options = detail.options
+                if (detail.km && !l.km) l.km = detail.km
+                if (detail.transmission) l.transmission = detail.transmission
+                if (detail.fuel) l.fuel = detail.fuel
+                if (detail.body) l.body = detail.body
+                if (detail.dealer) l.dealer = detail.dealer.slice(0, 60)
+                if (detail.mainPhoto) l.image_url = detail.mainPhoto
+                if (detail.description) l.description = (detail.description || '').slice(0, 500)
+                if (detail.kenteken) l.kenteken = detail.kenteken
+                if (detail.powerLabel) l.powerLabel = detail.powerLabel
+              }
+            } catch(de) {}
+          }
+          // Direct DB update voor detail data
+          const crypto2 = require('crypto')
+          for (const el of toEnrich) {
+            if (el.options || el.description || el.transmission || el.fuel) {
+              const elHash = crypto2.createHash('md5').update((el.title||'').slice(0,40).toLowerCase() + '-' + el.price + '-' + (el.source||'').toLowerCase()).digest('hex').slice(0,16)
+              try {
+                if (el.options) run("UPDATE market_listings SET options=? WHERE hash=? AND (options IS NULL OR options='')", [el.options, elHash])
+                if (el.description) run("UPDATE market_listings SET description=? WHERE hash=? AND (description IS NULL OR description='')", [el.description.slice(0,500), elHash])
+                if (el.transmission) run("UPDATE market_listings SET transmission=? WHERE hash=? AND (transmission IS NULL OR transmission='')", [el.transmission.toLowerCase(), elHash])
+                if (el.fuel) run("UPDATE market_listings SET fuel=? WHERE hash=? AND (fuel IS NULL OR fuel='')", [el.fuel.toLowerCase(), elHash])
+              } catch(ue) {}
+            }
+          }
+          console.log('  [DETAIL] Enriched ' + toEnrich.length + ' Autowereld listings for ' + item.make + ' ' + item.model)
         }
 
         // Store
