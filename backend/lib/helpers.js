@@ -58,7 +58,7 @@ function parsePrice(t) {
 
 // ── Safe fetch ──
 async function safeFetch(url){
-  try{const{data}=await axios.get(url,{headers:{"User-Agent":ua(),"Accept-Language":"nl-NL,nl;q=0.9,en;q=0.3","Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Accept-Encoding":"gzip, deflate","Connection":"keep-alive","Cache-Control":"no-cache","Pragma":"no-cache"},timeout:TIMEOUT,maxRedirects:5,validateStatus:s=>s<400});return data}
+  try{const{data}=await axios.get(url,{headers:{"User-Agent":ua(),"Accept-Language":"nl-NL,nl;q=0.9,en;q=0.3","Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Cookie":"authId=anonymous; didomi_token=consent_true","Accept-Encoding":"gzip, deflate","Connection":"keep-alive","Cache-Control":"no-cache","Pragma":"no-cache"},timeout:TIMEOUT,maxRedirects:5,validateStatus:s=>s<400});return data}
   catch(e){return null}
 }
 
