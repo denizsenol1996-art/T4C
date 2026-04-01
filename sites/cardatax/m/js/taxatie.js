@@ -36,7 +36,7 @@ async function doTax(){
     ldStep(4);
     last={v,m,r,plate:fmtP(p),km:Number(km)||0,damageCost:0,damageCount:0,intel:null};
     recent=recent.filter(x=>x.plate!==last.plate);
-    recent.unshift({plate:fmtP(p),make:v.make,model:v.model,year:v.year,bod:r.handelswaarde||r.t4cBod||((r.inkoopLow&&r.inkoopHigh)?Math.round((r.inkoopLow+r.inkoopHigh)/2):0),ts:Date.now()});
+    recent.unshift({plate:fmtP(p),make:v.make,model:v.model,year:v.year,km:Number(km)||0,bod:r.handelswaarde||r.t4cBod||((r.inkoopLow&&r.inkoopHigh)?Math.round((r.inkoopLow+r.inkoopHigh)/2):0),ts:Date.now()});
     if(recent.length>20)recent=recent.slice(0,20);
     try{localStorage.setItem('t4c_rec',JSON.stringify(recent))}catch{}
 
@@ -1517,7 +1517,7 @@ function renderRecent(){
   countEl.textContent=recent.length+' taxatie'+(recent.length>1?'s':'');
   el.innerHTML=recent.map(r=>{
     const ago=r.ts?timeAgo(r.ts):'';
-    return `<div class="ri" onclick="document.getElementById('mp').value='${r.plate.replace(/-/g,'')}';go('taxatie')"><div class="ri-left"><div class="ri-plate">${fmtP(r.plate)}</div><div class="ri-car">${r.make||''} ${r.model||''} ${r.year||''}</div>${ago?'<div class="ri-time">'+ago+'</div>':''}</div><div class="ri-price">${r.bod?E(r.bod):''}</div></div>`;
+    return `<div class="ri" onclick="document.getElementById('mp').value='${r.plate.replace(/-/g,'')}';go('taxatie')"><div class="ri-left"><div class="ri-plate">${fmtP(r.plate)}</div><div class="ri-car">${r.make||''} ${r.model||''} ${r.year||''}${r.km?' · '+Math.round(r.km/1000)+'k km':''}</div>${ago?'<div class="ri-time">'+ago+'</div>':''}</div><div class="ri-price">${r.bod?E(r.bod):''}</div></div>`;
   }).join('');
 }
 
