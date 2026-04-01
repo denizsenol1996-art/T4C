@@ -317,25 +317,73 @@ router.get("/api/vehicle/enriched", async (req, res) => {
     const cached = getCached(ck)
     if (cached) return res.json(cached)
 
+    // DB-PERSISTENT CACHE: statische data ophalen, alleen dynamische RDW live
+    const _dbCached = queryOne("SELECT static_data, gpt_data, finnik_data FROM vehicle_cache WHERE kenteken=?", [plate])
+    let _useDbCache = false
+    let _staticRdw = null, _gptCached = null, _finnikCached = null
+    if (_dbCached) {
+      try {
+        _staticRdw = JSON.parse(_dbCached.static_data || 'null')
+        _gptCached = JSON.parse(_dbCached.gpt_data || 'null')
+        _finnikCached = JSON.parse(_dbCached.finnik_data || 'null')
+        if (_staticRdw && _staticRdw.mainA && _staticRdw.mainA.length > 0) {
+          _useDbCache = true
+          console.log('[VEHICLE] DB cache hit:', plate)
+        }
+      } catch(pe) { _useDbCache = false }
+    }
+
+
     const B = "https://opendata.rdw.nl/resource"
     const rdw = async (u) => { try { const r = await axios.get(u, { timeout: 5000 }); return Array.isArray(r.data) ? r.data : [] } catch { return [] } }
-    const [mainA, catA, bodyA, fuelA, apkA, recallA, defectA, objectA, meldA, eigenaarA, milieuA, handelsA, brandstofSpecA, typeA, oviA] = await Promise.all([
-      rdw(B+"/m9d7-ebf2.json?kenteken="+plate),
-      rdw(B+"/8ys7-d773.json?kenteken="+plate),
-      rdw(B+"/vezc-m2t6.json?kenteken="+plate),
-      rdw(B+"/a34c-35wb.json?kenteken="+plate),
+    // RDW calls: dynamic altijd live, static uit DB cache of live
+    const _t0 = Date.now()
+    let mainA, catA, bodyA, fuelA, objectA, handelsA, brandstofSpecA, typeA, oviA
+
+    // Dynamic RDW (altijd live: APK, recalls, gebreken, meldingen, eigenaar, milieu)
+    const _dynPromise = Promise.all([
       rdw(B+"/vkij-7mwc.json?kenteken="+plate+"&$limit=100&$order=vervaldatum_keuring DESC"),
       rdw(B+"/t49b-isb7.json?kenteken="+plate),
       rdw(B+"/2u8a-sfar.json?kenteken="+plate+"&$limit=200"),
-      rdw(B+"/sghb-dzxx.json?kenteken="+plate),
       rdw(B+"/sgfe-77wx.json?kenteken="+plate+"&$limit=100&$order=meld_datum_door_keuringsinstantie_dt DESC"),
       rdw(B+"/stcx-yhbq.json?kenteken="+plate+"&$limit=50&$order=datum_tenaamstelling DESC"),
       rdw(B+"/242p-gehg.json?kenteken="+plate),
-      rdw(B+"/jhie-znh9.json?kenteken="+plate),
-      rdw(B+"/55kv-xf7m.json?kenteken="+plate),
-      rdw(B+"/mu2w-cjg5.json?kenteken="+plate),
-      rdw(B+"/3huj-srit.json?kenteken="+plate)  // OVI: voertuigidentificatienummer (chassis)
     ])
+
+    // Static RDW (uit DB cache of live)
+    let _statPromise
+    if (_useDbCache) {
+      mainA = _staticRdw.mainA; catA = _staticRdw.catA; bodyA = _staticRdw.bodyA
+      fuelA = _staticRdw.fuelA; objectA = _staticRdw.objectA; handelsA = _staticRdw.handelsA
+      brandstofSpecA = _staticRdw.brandstofSpecA; typeA = _staticRdw.typeA; oviA = _staticRdw.oviA
+      _statPromise = Promise.resolve(null)
+      console.log('[VEHICLE] Static RDW: DB cache')
+    } else {
+      _statPromise = Promise.all([
+        rdw(B+"/m9d7-ebf2.json?kenteken="+plate),
+        rdw(B+"/8ys7-d773.json?kenteken="+plate),
+        rdw(B+"/vezc-m2t6.json?kenteken="+plate),
+        rdw(B+"/a34c-35wb.json?kenteken="+plate),
+        rdw(B+"/sghb-dzxx.json?kenteken="+plate),
+        rdw(B+"/jhie-znh9.json?kenteken="+plate),
+        rdw(B+"/55kv-xf7m.json?kenteken="+plate),
+        rdw(B+"/mu2w-cjg5.json?kenteken="+plate),
+        rdw(B+"/3huj-srit.json?kenteken="+plate),
+      ])
+    }
+
+    // Run dynamic + static + finnik ALL PARALLEL
+    const [_dynResult, _statResult] = await Promise.all([_dynPromise, _statPromise])
+
+    // Unpack dynamic
+    const [apkA, recallA, defectA, meldA, eigenaarA, milieuA] = _dynResult
+
+    // Unpack static (als niet uit cache)
+    if (_statResult) {
+      ;[mainA, catA, bodyA, fuelA, objectA, handelsA, brandstofSpecA, typeA, oviA] = _statResult
+      console.log('[VEHICLE] Static RDW: live fetch')
+    }
+    console.log('[VEHICLE] RDW total:', (Date.now()-_t0) + 'ms (' + (_useDbCache ? 'cached' : 'live') + ')')
     const d = mainA[0]; if(!d) return res.status(404).json({error:"Kenteken niet gevonden bij RDW"})
     const c = catA[0]||{}, b = bodyA[0]||{}
     const s = v => v ? String(v).trim() : ""
@@ -462,7 +510,7 @@ router.get("/api/vehicle/enriched", async (req, res) => {
     try {
       const plate = req.query.plate || req.query.kenteken || ''
       if (plate) {
-        finnikData = await fetchFinnikData(plate)
+        finnikData = _finnikCached || await fetchFinnikData(plate)
         if (finnikData) {
           finnikSource = true
           if (!catalogPrice && finnikData.catalogPrice) {
@@ -489,8 +537,8 @@ router.get("/api/vehicle/enriched", async (req, res) => {
     const hasTypeCodes = rdwType || rdwVariant || rdwUitvoering
     
     if (hasMakeModel && (hasTypeCodes || vin)) {
-      const vinCk = "vin3_" + (vin || plate) + "_" + (km||0)
-      const vinCached = getCached(vinCk, 86400000) // 24h cache
+      const vinCk = "vin4_" + s(d.merk) + "_" + rdwType + "_" + rdwVariant + "_" + rdwUitvoering + "_" + year  // Cache op type codes, niet per kenteken
+      const vinCached = getCached(vinCk, 86400000) || (_gptCached ? _gptCached : null)  // In-memory of DB cache
       if (vinCached) {
         vinData = vinCached
         console.log('[VIN] Cached:', vin, vinData.transmission)
@@ -695,7 +743,18 @@ Antwoord ALLEEN in JSON:
     // GPT pricing + market call verwijderd (frontend doet dit al via /api/dealer/price)
 
     
-    setCache(ck, result); res.json(result)
+    setCache(ck, result)
+    // Sla statische data op in DB voor volgende keer
+    if (!_useDbCache) {
+      try {
+        const _sRdw = JSON.stringify({ mainA, catA, bodyA, fuelA, objectA, handelsA, brandstofSpecA, typeA, oviA })
+        const _sGpt = vinData ? JSON.stringify(vinData) : null
+        const _sFin = finnikData ? JSON.stringify(finnikData) : null
+        run("INSERT OR REPLACE INTO vehicle_cache (kenteken, static_data, gpt_data, finnik_data, created_at) VALUES (?, ?, ?, ?, datetime('now'))", [plate, _sRdw, _sGpt, _sFin])
+        console.log('[VEHICLE] Saved to DB cache:', plate)
+      } catch(ce) { console.log('[VEHICLE] DB cache save error:', ce.message) }
+    }
+    res.json(result)
   } catch(e){ console.error("[API] vehicle/enriched error:",e.message); res.status(500).json({error:"RDW ophalen mislukt: "+e.message}) }
 })
 
