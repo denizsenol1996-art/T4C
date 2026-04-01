@@ -713,8 +713,7 @@ async function updateCrawlerStatus() {
   } catch(e) {
     grid.innerHTML = '<div style="color:var(--red);font-size:11px">Stats error: ' + e.message + '</div>';
   }
-    </div>`).join('');
-  document.getElementById('crawler-last-update').textContent = 'Bijgewerkt: ' + new Date().toLocaleTimeString('nl-NL');
+
 }
 
 // Users
