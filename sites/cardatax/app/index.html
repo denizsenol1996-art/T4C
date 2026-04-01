@@ -470,10 +470,22 @@ function renderChips(){
   el.innerHTML=recent.slice(0,5).map(r=>`<button class="recent-chip" onclick="document.getElementById('mp').value='${r.plate.replace(/-/g,'')}';document.getElementById('mp').dispatchEvent(new Event('input'))">${fmtP(r.plate)}</button>`).join('');
 }
 function reloadTax(plate){
-  document.getElementById('mp').value=plate.replace(/-/g,'');
-  document.getElementById('mp').dispatchEvent(new Event('input'));
-  const r=recent.find(x=>x.plate===plate||x.plate===fmtP(plate));
-  if(r&&r.km)document.getElementById('mk').value=r.km.toLocaleString('nl-NL');
+  const clean=plate.replace(/-/g,'').toUpperCase();
+  // Check cache
+  try{
+    const cached=JSON.parse(localStorage.getItem('t4c_tax_'+clean));
+    if(cached&&cached.r&&cached.r.verkoopadviees){
+      last=cached;
+      renderResult();
+      showPanel('result');
+      renderSidebar();
+      return;
+    }
+  }catch(e){}
+  // Geen cache — doe volle taxatie
+  document.getElementById('mp').value=clean;
+  const rec=recent.find(x=>x.plate===plate||x.plate===fmtP(plate));
+  if(rec&&rec.km)document.getElementById('mk').value=rec.km.toLocaleString('nl-NL');
   showPanel('taxatie');
   setTimeout(()=>doTax(),300);
 }
@@ -569,6 +581,7 @@ async function doTax(){
     recent.unshift({plate:fmtP(p),make:v.make,model:v.model,year:v.year,km:Number(km)||0,bod:r.handelswaarde||r.t4cBod||0,ts:Date.now()});
     if(recent.length>20)recent=recent.slice(0,20);
     try{localStorage.setItem('t4c_rec',JSON.stringify(recent))}catch{}
+    try{localStorage.setItem('t4c_tax_'+fmtP(p).replace(/-/g,''),JSON.stringify(last))}catch{}
     // Auto-save
     fetch('/api/taxatie/save',{method:'POST',headers:_authH(),body:JSON.stringify({kenteken:last.plate,make:v.make,model:v.model,year:v.year,fuel:v.fuel,km:last.km,power_kw:v.powerKw,power_hp:v.powerHp,engine_label:v.engineLabel,verkoopadviees:r.verkoopadviees,handelswaarde:r.handelswaarde,inkoop_low:r.inkoopLow,inkoop_high:r.inkoopHigh,internet_prijs:r.internetPrijs,market_count:m?.count,p25:m?.p25,p50:m?.median,p75:m?.p75,status:'concept'})}).catch(()=>{});
     renderResult();showPanel('result');renderSidebar();
