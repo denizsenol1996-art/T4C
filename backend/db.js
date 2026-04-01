@@ -7,6 +7,7 @@
 const path = require("path")
 const fs = require("fs")
 const initSqlJs = require("sql.js")
+const { parseTitle } = require('./lib/title-parser')
 
 // ── DATA DIRECTORY ── lives OUTSIDE backend/ so updates don't touch it
 const DATA_DIR = process.env.T4C_DATA_DIR || path.join(__dirname, "..", "data")
