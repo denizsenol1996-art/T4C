@@ -38,6 +38,50 @@ router.get("/api/market",authMiddleware,async(req,res)=>{
   const cc=getCached(ck, 7200000);if(cc)return res.json(cc)
   const cap=maxPrice(yr,mk)
 
+  // DB-FIRST: check of we genoeg data hebben zonder live scrape
+  const DB_MIN = 15
+  try {
+    const _dbMl = _crawlerMl || ml
+    let dbPrices = queryAll(
+      "SELECT price FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND status='active' AND price > 0 AND price <= ? ORDER BY price ASC",
+      [mk, _dbMl + '%', yr - 2, yr + 2, cap]
+    ).map(r => r.price)
+    if (dbPrices.length < DB_MIN && ml.includes(' ')) {
+      const firstWord = ml.split(' ')[0]
+      dbPrices = queryAll(
+        "SELECT price FROM market_listings WHERE make=? AND (model LIKE ? OR model LIKE ?) AND year BETWEEN ? AND ? AND status='active' AND price > 0 AND price <= ? ORDER BY price ASC",
+        [mk, firstWord + '%', firstWord + ' %', yr - 2, yr + 2, cap]
+      ).map(r => r.price)
+    }
+    if (dbPrices.length >= DB_MIN) {
+      const _med = arr => { const s=[...arr].sort((a,b)=>a-b); const m=Math.floor(s.length/2); return s.length%2?s[m]:Math.round((s[m-1]+s[m])/2) }
+      const _pct = (arr, p) => arr[Math.floor(arr.length * p)] || 0
+      const _sum = dbPrices.reduce((a,b) => a+b, 0)
+      const dbResult = {
+        avg: Math.round(_sum / dbPrices.length),
+        median: _med(dbPrices),
+        low: dbPrices[0],
+        high: dbPrices[dbPrices.length - 1],
+        count: dbPrices.length,
+        prices: dbPrices,
+        p10: _pct(dbPrices, 0.10),
+        p25: _pct(dbPrices, 0.25),
+        p75: _pct(dbPrices, 0.75),
+        p90: _pct(dbPrices, 0.90),
+        maxPriceCap: cap,
+        sources: { db: dbPrices.length },
+        dbOnly: true
+      }
+      console.log('[MARKET-DB] ' + mk + ' ' + ml + ' ' + yr + ': ' + dbPrices.length + ' listings uit DB (skip live scrape)')
+      setCache(ck, dbResult)
+      return res.json(dbResult)
+    }
+    console.log('[MARKET-LIVE] ' + mk + ' ' + ml + ' ' + yr + ': ' + dbPrices.length + ' in DB < ' + DB_MIN + ' -> live scrape')
+  } catch(dbErr) {
+    console.log('[MARKET-DB-ERR]', dbErr.message)
+  }
+
+
   // ══ MULTI-TIER SEARCH STRATEGY — NEDERLAND ONLY ══
   const scraperDefs = [
     // Tier 1: NL Primary (grote platforms)
