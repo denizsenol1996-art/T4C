@@ -876,12 +876,12 @@ function addCrawlerLine(msg, type='info', src='CRAWL') {
 
 async function loadCrawler() {
   const cards = document.getElementById('crawler-cards');
-  cards.innerHTML = CRAWLERS.map(name => `
+  cards.innerHTML = CRAWLERS.map(cr => `
     <div class="crawler-card">
-      <div class="crawler-indicator idle" id="cci-${name.replace(/\s/g,'_')}"></div>
+      <div class="crawler-indicator idle" id="cci-${cr.id}"></div>
       <div>
-        <div class="crawler-name">${name}</div>
-        <div class="crawler-stat" id="ccs-${name.replace(/\s/g,'_')}">Wachten...</div>
+        <div class="crawler-name">${cr.icon} ${cr.name}</div>
+        <div class="crawler-stat" id="ccs-${cr.id}">Wachten...</div>
       </div>
     </div>`).join('');
 
@@ -903,10 +903,10 @@ async function pollCrawlerStatus() {
           addCrawlerLine(l.trim().slice(0,120), type, 'LOG');
         });
         // Update crawler cards based on log activity
-        CRAWLERS.forEach(name => {
-          const found = lines.some(l => l.toLowerCase().includes(name.toLowerCase().split(' ')[0]));
-          const ind = document.getElementById('cci-' + name.replace(/\s/g,'_'));
-          const stat = document.getElementById('ccs-' + name.replace(/\s/g,'_'));
+        CRAWLERS.forEach(cr => {
+          const found = lines.some(l => l.toLowerCase().includes(cr.name.toLowerCase().split(' ')[0]));
+          const ind = document.getElementById('cci-' + cr.id);
+          const stat = document.getElementById('ccs-' + cr.id);
           if (ind && found) { ind.className = 'crawler-indicator ok'; if(stat) stat.textContent = 'Actief'; }
         });
       } else {
