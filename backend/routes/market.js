@@ -531,7 +531,7 @@ function storeListingsForHistory(mk, ml, yr, listings, trans) {
     const hash = listingHash(l.title, l.price, l.source)
     activeHashes.push(hash)
     try {
-      const result = stmts.upsertListing.run(hash, mk, ml, yr, l.title, l.price, l.km||null, trans||'', l.source, l.url||'', l.dealer||'', l.image_url||'')
+      const result = stmts.upsertListing.run(hash, mk, ml, yr, l.title, l.price, l.km||null, trans||'', l.source, l.url||'', l.dealer||'', l.image_url||'', l.options||'')
       if (result === 'new') newCount++
       else updCount++
     } catch {}
@@ -642,6 +642,8 @@ async function backgroundCrawl() {
         const sources = [
           { name: "Marktplaats", base: `https://www.marktplaats.nl/q/${item.make}+${item.model}+${item.year}/`, pageFn: p => `p/${p}/` },
           { name: "AutoScout24", base: `https://www.autoscout24.nl/lst/${item.make}/${item.model}?fregfrom=${item.year}&fregto=${item.year+1}&cy=NL`, pageFn: p => `&page=${p}` },
+          { name: "AutoScout24.de", base: `https://www.autoscout24.de/lst/${item.make}/${item.model}?fregfrom=${item.year}&fregto=${item.year+1}&sort=price&desc=0`, pageFn: p => `&page=${p}` },
+          { name: "AutoScout24.be", base: `https://www.autoscout24.be/nl/lst/${item.make}/${item.model}?fregfrom=${item.year}&fregto=${item.year+1}`, pageFn: p => `&page=${p}` },
           { name: "AutoTrack", base: `https://www.autotrack.nl/aanbod?merk=${item.make}&model=${item.model}&bouwjaar_van=${item.year}&bouwjaar_tot=${item.year}`, pageFn: p => `&pagina=${p}` },
           { name: "Gaspedaal", base: `https://www.gaspedaal.nl/${item.make}-${item.model}/jaar-${item.year}`, pageFn: p => `?page=${p}` },
           { name: "Autowereld", base: `https://www.autowereld.nl/${item.make}/${item.make}-${item.model}/b_${item.year}`, pageFn: p => `/p_${p}` },

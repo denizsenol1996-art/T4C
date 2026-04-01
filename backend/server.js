@@ -258,12 +258,14 @@ app.get("/app/*", (req, res) => {
               const km = parseInt(String(kmRaw).replace(/[^\d]/g, ''), 10) || 0
               const trans = r.powertrain?.transmission?.type?.display_value || ''
               const dealer = (r.advertiser?.name || '').slice(0, 60)
+              const options = (g.type?.supplement || '').slice(0, 500)
+              const fuel = r.powertrain?.engine?.energy?.type?.category?.display_value || r.powertrain?.engine?.energy?.type?.code?.display_value || ''
               if (!mk || !ml || !yr || price < 500 || price > 500000) continue
               if (km < 1000 || km > 500000) continue
               const hash = crypto.createHash('md5').update('nlmarket|' + mk + '|' + ml + '|' + yr + '|' + price + '|' + km + '|' + title.slice(0,30)).digest('hex')
               const ex = queryOne('SELECT id FROM market_listings WHERE hash=?', [hash])
-              if (ex) { run("UPDATE market_listings SET price=?, km=?, last_seen=datetime('now'), status='active', dealer=? WHERE hash=?", [price, km, dealer, hash]); ilsaUpd++ }
-              else { run("INSERT INTO market_listings (hash,make,model,year,title,price,km,transmission,source,url,dealer) VALUES (?,?,?,?,?,?,?,?,?,?,?)", [hash, mk, ml, yr, title, price, km, trans, 'nlmarket', '', dealer]); ilsaNew++ }
+              if (ex) { run("UPDATE market_listings SET price=?, km=?, last_seen=datetime('now'), status='active', dealer=?, options=CASE WHEN ?!='' AND (options IS NULL OR options='') THEN ? ELSE options END, fuel=CASE WHEN ?!='' AND (fuel IS NULL OR fuel='') THEN ? ELSE fuel END WHERE hash=?", [price, km, dealer, options, options, fuel, fuel, hash]); ilsaUpd++ }
+              else { run("INSERT INTO market_listings (hash,make,model,year,title,price,km,transmission,source,url,dealer,options,fuel) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", [hash, mk, ml, yr, title, price, km, trans, 'nlmarket', '', dealer, options, fuel]); ilsaNew++ }
             }
             offset += PAGE
             if (offset >= (data.num_results || 0)) break
