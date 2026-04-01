@@ -227,6 +227,9 @@ function formatComparables(comparables) {
       scoreBand: c.scoreResult?.band || 'ignore',
       reasons: c.scoreResult?.reasons || [],
       dealer: c.dealer || null,
+      options: c.options || null,
+      transmission: c.transmission || null,
+      fuel: c.fuel || null,
     }))
 }
 

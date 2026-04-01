@@ -88,20 +88,20 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
         const mk = (d.make||'').toLowerCase(); let ml = (d.model||'').toLowerCase(); if (ml.startsWith(mk + ' ')) ml = ml.slice(mk.length + 1)
         if (mk && ml) {
           // Smart model matching: probeer exact, dan eerste woord, dan nummer-extractie
-          let dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, ml + '%', (d.year||2015)-2, (d.year||2015)+2])
+          let dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, ml + '%', (d.year||2015)-2, (d.year||2015)+2])
           // Fallback 1: eerste woord (maar niet als het een nummer is dat andere modellen matcht)
           if (dbListings.length < 3 && ml.includes(' ')) {
             const firstWord = ml.split(' ')[0]
             // Voorkom dat "3" matcht met "x3" — gebruik "3 %" ipv "3%"
             const safePattern = /^\d+$/.test(firstWord) ? firstWord + ' %' : firstWord + '%'
-            dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, safePattern, (d.year||2015)-2, (d.year||2015)+2])
+            dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, safePattern, (d.year||2015)-2, (d.year||2015)+2])
             if (dbListings.length > 0) console.log('[MODEL-MATCH] Fallback 1:', mk, ml, '->', safePattern, ':', dbListings.length, 'listings')
           }
           // Fallback 2: zoek in title (RDW zegt "3 SERIE", Marktplaats zegt "320d")
           if (dbListings.length < 3) {
             const numMatch = ml.match(/^(\d+)/)
             if (numMatch) {
-              const altListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market FROM market_listings WHERE make=? AND (model LIKE ? OR model LIKE ? OR title LIKE ?) AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, numMatch[1] + '%', numMatch[1] + ' %', '%' + numMatch[1] + '%', (d.year||2015)-2, (d.year||2015)+2])
+              const altListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND (model LIKE ? OR model LIKE ? OR title LIKE ?) AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, numMatch[1] + '%', numMatch[1] + ' %', '%' + numMatch[1] + '%', (d.year||2015)-2, (d.year||2015)+2])
               // Filter: alleen als het model BEGINT met het nummer (voorkom x3 bij 3 serie)
               const filtered = altListings.filter(l => {
                 const m = (l.model||l.title||'').toLowerCase()

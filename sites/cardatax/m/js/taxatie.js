@@ -332,6 +332,29 @@ function render(){
         <div class="mk-box hl"><div class="mk-lbl">MEDIAAN</div><div class="mk-val">${E(m.median||m.avg)}</div></div>
         <div class="mk-box"><div class="mk-lbl">HOOG (P75)</div><div class="mk-val">${E(m.p75||m.high)}</div></div>
       </div>
+      ${(()=>{
+        const comps = r.compEngine?.comparables?.filter(c=>c.parsedPrice>0).slice(0,8) || []
+        if(!comps.length) return ''
+        return '<div style="margin-top:12px"><div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Top vergelijkbare auto\'s</div>' +
+          comps.map(c => {
+            const opts = c.options ? c.options.split(',').slice(0,4).map(o=>o.trim()).filter(o=>o.length>1) : []
+            const trans = c.transmission || ''
+            const fuel = c.fuel || ''
+            const badges = [...(trans?[trans]:[]), ...(fuel?[fuel]:[]), ...opts]
+            return '<div style="background:var(--bg3,var(--bg2));border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                '<div style="font-size:12px;font-weight:600;color:var(--text1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (c.title||'?') + '</div>' +
+                '<div style="font-size:13px;font-weight:800;color:var(--green);margin-left:8px">' + E(c.parsedPrice) + '</div>' +
+              '</div>' +
+              '<div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap">' +
+                (c.km ? '<span style="font-size:10px;color:var(--text3)">' + Math.round(c.km/1000) + 'k km</span>' : '') +
+                (c.year ? '<span style="font-size:10px;color:var(--text3)">' + c.year + '</span>' : '') +
+                '<span style="font-size:10px;color:var(--text4);border-left:1px solid var(--border);padding-left:6px;margin-left:2px">' + (c.scoreBand==='strong'?'\u2605':'\u2606') + ' ' + Math.round(c.score) + '%</span>' +
+              '</div>' +
+              (badges.length ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px">' + badges.slice(0,6).map(b => '<span style="background:var(--card,var(--bg2));border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:9px;color:var(--text3)">' + b + '</span>').join('') + '</div>' : '') +
+            '</div>'
+          }).join('') + '</div>'
+      })()}
     </div>`;
   }
 
