@@ -875,15 +875,21 @@ function addCrawlerLine(msg, type='info', src='CRAWL') {
 
 async function loadCrawler() {
   const cards = document.getElementById('crawler-cards');
-  cards.innerHTML = CRAWLERS.map(cr => `
-    <div class="crawler-card">
-      <div class="crawler-indicator idle" id="cci-${cr.id}"></div>
-      <div>
-        <div class="crawler-name">${cr.icon} ${cr.name}</div>
-        <div class="crawler-stat" id="ccs-${cr.id}">Wachten...</div>
-      </div>
-    </div>`).join('');
-
+  try {
+    const r = await fetch('/api/admin/crawler-stats', { headers: H() });
+    const d = await r.json();
+    if (d.ok) {
+      const srcMap = {};
+      (d.sources || []).forEach(s => srcMap[s.source] = s);
+      cards.innerHTML = CRAWLERS.map(cr => {
+        const s = srcMap[cr.id] || { total: 0, active: 0, with_fuel: 0, with_options: 0, last_hour: 0, last_activity: null };
+        const status = s.last_hour > 0 ? 'ok' : s.total > 0 ? 'idle' : 'err';
+        const ago = s.last_activity ? timeAgoShort(s.last_activity) : 'nooit';
+        return '<div class="crawler-card"><div class="crawler-indicator ' + status + '" id="cci-' + cr.id + '"></div><div style="flex:1"><div class="crawler-name">' + cr.icon + ' ' + cr.name + '</div><div class="crawler-stat" id="ccs-' + cr.id + '" style="font-size:10px;color:var(--t3);margin-top:2px">' + s.active + ' actief / ' + s.total + ' totaal</div><div style="font-size:9px;color:var(--t4);margin-top:1px">F:' + Math.round(s.with_fuel/(s.total||1)*100) + '% O:' + Math.round(s.with_options/(s.total||1)*100) + '% | +' + s.last_hour + '/uur | ' + ago + '</div></div></div>';
+      }).join('');
+      addCrawlerLine('Stats: ' + d.active + ' actief / ' + d.total + ' listings | Queue: ' + d.queue, 'ok', 'DB');
+    }
+  } catch(e) { cards.innerHTML = '<div style="color:var(--red)">Error: ' + e.message + '</div>'; }
   addCrawlerLine('Crawler monitor gestart', 'ok', 'SYS');
   pollCrawlerStatus();
 }
