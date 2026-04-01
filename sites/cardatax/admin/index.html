@@ -657,17 +657,62 @@ setTimeout(() => { addFeedLine('Admin panel verbonden', 'ok', 'SYS'); pollActivi
 setInterval(pollActivity, 30000);
 
 // Crawler status
-const CRAWLERS = ['AutoScout24', 'Marktplaats', 'AutoTrack', 'Gaspedaal', 'BAS Trucks', 'CarGurus', 'Autowereld', 'Fincar', 'AutoData', 'ANWB'];
+
+function timeAgoShort(dt) {
+  const s = Math.floor((Date.now() - new Date(dt+'Z').getTime()) / 1000);
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s/60) + 'm';
+  if (s < 86400) return Math.floor(s/3600) + 'u';
+  return Math.floor(s/86400) + 'd';
+}
+const CRAWLERS = [
+  { id: 'src_a', name: 'AutoScout24 NL', icon: '🇳🇱' },
+  { id: 'src_b', name: 'Marktplaats', icon: '🇳🇱' },
+  { id: 'nlmarket', name: 'ILSA/Autoofy', icon: '🇳🇱' },
+  { id: 'src_g', name: 'Autowereld', icon: '🇳🇱' },
+  { id: 'src_d', name: 'AutoScout24 DE', icon: '🇩🇪' },
+  { id: 'src_c', name: 'AutoScout24 BE', icon: '🇧🇪' },
+  { id: 'nlretail', name: 'Autohero', icon: '🇳🇱' },
+];
 async function updateCrawlerStatus() {
   const grid = document.getElementById('crawler-status-grid');
   if (!grid) return;
-  grid.innerHTML = CRAWLERS.map(name => `
-    <div class="crawler-card">
-      <div class="crawler-indicator idle" id="ci-${name.replace(/\s/g,'_')}"></div>
-      <div>
-        <div class="crawler-name">${name}</div>
-        <div class="crawler-stat" id="cs-${name.replace(/\s/g,'_')}">Idle</div>
-      </div>
+  try {
+    const r = await fetch('/api/admin/crawler-stats', { headers: H() });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error);
+    const srcMap = {};
+    (d.sources || []).forEach(s => srcMap[s.source] = s);
+    grid.innerHTML = CRAWLERS.map(cr => {
+      const s = srcMap[cr.id] || { total: 0, active: 0, with_fuel: 0, with_options: 0, last_hour: 0, last_activity: null };
+      const isActive = s.last_hour > 0;
+      const status = isActive ? 'ok' : s.total > 0 ? 'idle' : 'err';
+      const ago = s.last_activity ? timeAgoShort(s.last_activity) : 'nooit';
+      return '<div class="crawler-card">' +
+        '<div class="crawler-indicator ' + status + '"></div>' +
+        '<div style="flex:1">' +
+          '<div class="crawler-name">' + cr.icon + ' ' + cr.name + '</div>' +
+          '<div style="font-size:10px;color:var(--t3);margin-top:2px">' +
+            s.active + ' actief / ' + s.total + ' totaal' +
+          '</div>' +
+          '<div style="font-size:9px;color:var(--t4);margin-top:1px">' +
+            'F:' + Math.round(s.with_fuel/(s.total||1)*100) + '% ' +
+            'O:' + Math.round(s.with_options/(s.total||1)*100) + '% ' +
+            '| +' + s.last_hour + '/uur | ' + ago +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('') +
+    '<div class="crawler-card" style="border-color:var(--green);border-style:dashed">' +
+      '<div style="flex:1;text-align:center">' +
+        '<div style="font-size:11px;font-weight:700;color:var(--green)">TOTAAL</div>' +
+        '<div style="font-size:10px;color:var(--t2)">' + d.active + ' actief / ' + d.total + ' listings</div>' +
+        '<div style="font-size:9px;color:var(--t4)">Queue: ' + d.queue + ' | Cache: ' + d.vehicle_cache + '</div>' +
+      '</div>' +
+    '</div>';
+  } catch(e) {
+    grid.innerHTML = '<div style="color:var(--red);font-size:11px">Stats error: ' + e.message + '</div>';
+  }
     </div>`).join('');
   document.getElementById('crawler-last-update').textContent = 'Bijgewerkt: ' + new Date().toLocaleTimeString('nl-NL');
 }

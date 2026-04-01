@@ -572,4 +572,30 @@ router.get("/api/feedback/stats", authMiddleware, (req, res) => {
   } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
 })
 
+
+// ── Live crawler stats per bron ──
+router.get("/api/admin/crawler-stats", authMiddleware, adminOnly, (req, res) => {
+  try {
+    const sources = queryAll(`
+      SELECT source,
+        COUNT(*) as total,
+        SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) as active,
+        SUM(CASE WHEN fuel IS NOT NULL AND fuel != '' THEN 1 ELSE 0 END) as with_fuel,
+        SUM(CASE WHEN transmission IS NOT NULL AND transmission != '' THEN 1 ELSE 0 END) as with_trans,
+        SUM(CASE WHEN options IS NOT NULL AND options != '' THEN 1 ELSE 0 END) as with_options,
+        MAX(last_seen) as last_activity,
+        SUM(CASE WHEN last_seen > datetime('now', '-1 hour') THEN 1 ELSE 0 END) as last_hour,
+        ROUND(AVG(price), 0) as avg_price
+      FROM market_listings
+      GROUP BY source
+      ORDER BY total DESC
+    `)
+    const queue = queryOne("SELECT COUNT(*) as c FROM crawl_queue")?.c || 0
+    const total = queryOne("SELECT COUNT(*) as c FROM market_listings")?.c || 0
+    const active = queryOne("SELECT COUNT(*) as c FROM market_listings WHERE status='active'")?.c || 0
+    const vehicle_cache = queryOne("SELECT COUNT(*) as c FROM vehicle_cache")?.c || 0
+    res.json({ ok: true, sources, queue, total, active, vehicle_cache })
+  } catch(e) { res.json({ ok: false, error: e.message }) }
+})
+
 module.exports = router
