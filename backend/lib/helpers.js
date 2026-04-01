@@ -169,6 +169,43 @@ function extractListings(html, cap, sourceUrl, sourceName) {
     if (listings.length >= 20) return listings.slice(0, 50)
   }
 
+  // Method 1b: AutoScout24 specific (article cards met data-testid)
+  if (sourceName === 'AutoScout24' || sourceName === 'AutoScout24.de' || sourceName === 'AutoScout24.be' || (sourceUrl && sourceUrl.includes('autoscout24'))) {
+    $('article').each((_, card) => {
+      if (listings.length >= 100) return false
+      const $c = $(card)
+      const titleEl = $c.find('h2, [data-testid="listing-title"]').first()
+      const title = (titleEl.text().trim() || $c.find('a').first().attr('title') || '').slice(0, 80)
+      if (!title || title.length < 5) return
+      const priceText = $c.find('[data-testid="regular-price"]').first().text().replace(/[^\d]/g, '')
+      const price = parseInt(priceText, 10) || 0
+      if (!price || price < MIN_PRICE || price > cap) return
+      const kmText = $c.find('[data-testid="VehicleDetails-mileage_odometer"]').first().text().replace(/[^\d]/g, '')
+      const km = parseInt(kmText, 10) || null
+      if (km && (km < 500 || km > 900000)) return
+      const fuel = $c.find('[data-testid="VehicleDetails-gas_pump"]').first().text().trim().toLowerCase() || ''
+      const powerText = $c.find('[data-testid="VehicleDetails-speedometer"]').first().text().trim() || ''
+      const dateText = $c.find('[data-testid="VehicleDetails-calendar"]').first().text().trim() || ''
+      const dealer = $c.find('[data-testid="dealer-company-name"]').first().text().trim().slice(0, 60)
+      const dealerAddr = $c.find('[data-testid="dealer-address"]').first().text().trim()
+      let year = null
+      if (dateText) {
+        const yrM = dateText.match(/(\d{4})/)
+        if (yrM) year = parseInt(yrM[1], 10)
+      }
+      const href = $c.find('a[href*="/aanbod/"], a[href*="/angebot/"]').first().attr('href') || ''
+      const url = href.startsWith('http') ? href : (sourceUrl ? new URL(sourceUrl).origin + href : href)
+      const img = $c.find('img').first()
+      const image_url = (img.attr('src') || img.attr('data-src') || '').slice(0, 200)
+      const key = price + '-' + title.slice(0, 20)
+      if (!seen.has(key)) {
+        seen.add(key)
+        listings.push({ title, price, km, year, url, source: sourceName, dealer, image_url, fuel, power: powerText, transmission: '' })
+      }
+    })
+    if (listings.length >= 5) return listings.slice(0, 100)
+  }
+
   // Method 1c: Autowereld specific (article.item cards)
   if (sourceName === 'Autowereld' || (sourceUrl && sourceUrl.includes('autowereld'))) {
     $('article.item').each((_, card) => {

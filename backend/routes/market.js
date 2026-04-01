@@ -532,6 +532,7 @@ function storeListingsForHistory(mk, ml, yr, listings, trans) {
     activeHashes.push(hash)
     try {
       const result = stmts.upsertListing.run(hash, mk, ml, yr, l.title, l.price, l.km||null, l.transmission||trans||'', l.source, l.url||'', l.dealer||'', l.image_url||'', l.options||'')
+          if (l.fuel && result !== 'rejected_price' && result !== 'rejected_no_km' && result !== 'rejected_km_range') { try { run("UPDATE market_listings SET fuel=CASE WHEN ?!='' THEN ? ELSE fuel END WHERE hash=?", [l.fuel, l.fuel, hash]) } catch(uf) {} }
       if (result === 'new') newCount++
       else updCount++
     } catch {}
