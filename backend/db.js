@@ -852,7 +852,7 @@ const stmts = {
 
   // Crawl Queue
   addToCrawlQueue: { run: (mk,ml,yr,trans) => { try { run("INSERT OR IGNORE INTO crawl_queue (make,model,year,transmission) VALUES (?,?,?,?)", [mk,ml,yr,trans]) } catch {} } },
-  getCrawlQueue: { all: (limit) => queryAll("SELECT * FROM crawl_queue ORDER BY last_crawled_at ASC LIMIT ?", [limit]) },
+  getCrawlQueue: { all: (limit) => queryAll("SELECT q.*, COALESCE(m.cnt, 0) as popularity FROM crawl_queue q LEFT JOIN (SELECT make, model, COUNT(*) as cnt FROM market_listings WHERE status='active' GROUP BY make, model) m ON q.make=m.make AND q.model=m.model ORDER BY CASE WHEN q.last_crawled_at IS NULL THEN 0 WHEN q.last_crawled_at < datetime('now', '-24 hours') THEN 1 ELSE 2 END, COALESCE(m.cnt, 0) DESC, q.last_crawled_at ASC LIMIT ?", [limit]) },
   updateCrawlTime: { run: (mk,ml,yr,trans) => run("UPDATE crawl_queue SET last_crawled_at=? WHERE make=? AND model=? AND year=?", [Math.floor(Date.now()/1000), mk, ml, yr]) },
 
   // Price Trends
