@@ -480,6 +480,8 @@ function reloadTax(plate){
       showPanel('result');
       renderSidebar();
       generateCarImages();
+    // Feedback sectie alleen voor admin/Jurgen
+    try{const u=JSON.parse(localStorage.getItem('t4c_user')||'{}');if(u.role==='admin'||u.name==='Jurgen'||u.username==='Jurgen'){const fs=document.getElementById('feedback-section');if(fs)fs.style.display='block'}}catch(e){}
       return;
     }
   }catch(e){}
