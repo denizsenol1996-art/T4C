@@ -860,7 +860,7 @@ function sendFeedback(){
   if(!last||!last.r)return;
   const data={kenteken:last.plate,make:last.v.make,model:last.v.model,year:last.v.year,km:last.km,
     segment:window._t4c?.segment||'midden',onze_inkoop_high:last.r.inkoopHigh||0,onze_verkoop:0,
-    eigen_bod:bod,status:'gekocht'};
+    eigen_bod:bod,status:'gekocht',notitie:(document.getElementById('eigen-reden')||{}).value||''};
   _api('/api/feedback',{method:'POST',headers:_authH(),body:JSON.stringify(data)})
     .then(r=>r.json()).then(d=>{
       if(d.ok){
