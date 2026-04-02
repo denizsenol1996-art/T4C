@@ -355,7 +355,19 @@ if(urlId){
     h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">';
     var specs=[['Bouwjaar',v.bouwjaar],['KM stand',v.km?v.km.toLocaleString('nl-NL')+' km':'?'],['Brandstof',fuel],['Transmissie',trans],['Vermogen',(v.vermogen_pk||'?')+' pk'],['Carrosserie',v.carrosserie||''],['Kleur',v.basiskleur||v.kleur||''],['Deuren',v.aantal_deuren||''],['Kenteken',v.kenteken||'']];
     specs.forEach(function(s){if(s[1])h+='<div style="padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px"><div style="font-size:11px;color:var(--text3);margin-bottom:2px">'+s[0]+'</div><div style="font-weight:600;font-size:14px">'+s[1]+'</div></div>'});
-    h+='</div></div>';
+    h+='</div>';
+    // Beschrijving
+    if(v.opmerkingen){h+='<div style="margin-bottom:24px"><h3 style="font-size:16px;font-weight:700;margin-bottom:8px">Beschrijving</h3><div style="color:var(--text2);font-size:14px;line-height:1.7;white-space:pre-line">'+v.opmerkingen.replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'')+'</div></div>';}
+    // Opties
+    var opties=[];try{opties=typeof v.accessoires==='string'?JSON.parse(v.accessoires):v.accessoires||[]}catch(e){}
+    if(opties.length){h+='<div style="margin-bottom:24px"><h3 style="font-size:16px;font-weight:700;margin-bottom:8px">Opties & Accessoires ('+opties.length+')</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">'+opties.map(function(o){return '<div style="font-size:13px;color:var(--text2);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+o+'</div>'}).join('')+'</div></div>';}
+    // APK + NAP
+    var extra=[];
+    if(v.apk_tot)extra.push('APK tot '+v.apk_tot);
+    if(v.nap_weblabel==='j')extra.push('NAP logisch');
+    if(v.energielabel)extra.push('Energielabel '+v.energielabel);
+    if(extra.length){h+='<div style="margin-bottom:24px;display:flex;gap:8px;flex-wrap:wrap">'+extra.map(function(e){return '<span style="padding:6px 12px;background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:6px;font-size:12px;color:var(--green);font-weight:600">'+e+'</span>'}).join('')+'</div>';}
+    h+='</div>';
     h+='<div><div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;position:sticky;top:80px">';
     h+='<div style="font-size:32px;font-weight:800;color:var(--green);margin-bottom:4px">'+(prijs?'\u20ac '+prijs.toLocaleString('nl-NL'):'Prijs op aanvraag')+'</div>';
     h+='<a href="tel:+31687997168" style="display:block;padding:14px;background:var(--green);color:#000;text-align:center;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none;margin-bottom:8px">Bel +31 6 87 99 71 68</a>';
