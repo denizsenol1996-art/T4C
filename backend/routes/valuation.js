@@ -816,7 +816,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
             _blendedVerkoop = Math.round((compVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
             console.log('[PRICING-COMP]', d.make, d.model, ':', compResult.cleanCount, 'clean comps, compMedian', compResult.marketMedian, '-> compVP', compVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
           }
-          if (!_useCompEngine) { _dataWeight = _filteredCount >= 15 ? 0.50 : _filteredCount >= 8 ? 0.35 : _filteredCount >= 3 ? 0.20 : 0.0  // Data weight naar listing count
+          if (!_useCompEngine) { _dataWeight = 0.0  // DISABLED — blend trekt prijzen omhoog door ongefiltered km-data  // Data weight naar listing count
             _blendedVerkoop = Math.round((_filteredVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
             console.log('[PRICING-BLEND]', d.make, d.model, ':', _filteredCount, 'listings (van', _dbCount, 'raw), mediaan', _filteredMedian, '-> VP', _filteredVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
           } else {
