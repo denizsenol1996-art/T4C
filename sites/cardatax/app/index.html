@@ -669,11 +669,15 @@ function renderResult(){
           <div class="bod-val" id="live-bod">${E(calc.bod)}</div>
           <div class="bod-breakdown" id="live-breakdown">VP ${E(vp)} · ${r.pricingL3?.source==="comp_engine"?r.pricingL3.breakdown?.compClean+" vergelijkbare autos":"AI prijsindicatie"} · marge ${r.pricingL3?.dealerMargin||calc.margePctUsed}%</div>
           <button class="bod-btn" onclick="copyBod()">Kopieer bod</button>
-          <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-            <input type="text" id="eigen-bod" placeholder="Eigen bod €" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text1);font-size:16px;font-family:var(--mono)" inputmode="numeric">
-            <button class="bod-btn" style="background:var(--blue,#3b82f6);white-space:nowrap" onclick="sendFeedback()">Opslaan</button>
+          <div id="feedback-section" style="margin-top:12px;display:none">
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="eigen-bod" placeholder="Eigen bod €" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text1);font-size:16px;font-family:var(--mono)" inputmode="numeric">
+              <button class="bod-btn" style="background:var(--blue,#3b82f6);white-space:nowrap" onclick="sendFeedback()">Opslaan</button>
+            </div>
+            <div style="margin-top:6px"><button onclick="var w=document.getElementById('notitie-wrap');w.style.display=w.style.display==='none'?'block':'none';this.textContent=this.textContent.includes('+')?'- Notitie verbergen':'+ Notitie toevoegen'" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:0;text-decoration:underline">+ Notitie toevoegen</button></div>
+            <div id="notitie-wrap" style="display:none;margin-top:6px"><textarea id="eigen-reden" placeholder="Waarom dit bod? (bv: motor tikt, veel roest, schade, export, topstaat...)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text1);font-size:12px;min-height:50px;resize:vertical;font-family:inherit"></textarea></div>
+            <div id="feedback-msg" style="margin-top:6px;font-size:12px;color:var(--text3)"></div>
           </div>
-          <div id="feedback-msg" style="margin-top:8px;font-size:12px;color:var(--text3)"></div>
         </div>
 
         <!-- TURNTABLE -->
