@@ -555,6 +555,38 @@ router.post("/api/feedback", authMiddleware, (req, res) => {
       const correctionPct = avgOnze > 0 ? Math.round(avgVerschil / avgOnze * 1000) / 10 : 0
       
       console.log("[FEEDBACK]", make, model, ": eigen EUR" + eigen_bod, "vs onze EUR" + onze_inkoop_high, "| verschil EUR" + (eigen_bod - onze_inkoop_high), "| correctie:", correctionPct + "% (" + segFeedbacks.length + " feedbacks)")
+      
+      // GPT leerregel genereren als er een notitie bij zit
+      if (notitie && notitie.length > 5) {
+        try {
+          const axios = require("axios")
+          const { getApiKey } = require("../lib/ai")
+          const aiKey = getApiKey("OPENAI_API_KEY")
+          if (aiKey) {
+            const verschil = eigen_bod - (onze_inkoop_high || 0)
+            const richting = verschil > 0 ? 'HOGER' : verschil < 0 ? 'LAGER' : 'GELIJK'
+            axios.post("https://api.openai.com/v1/chat/completions", {
+              model: "gpt-5.4", temperature: 0, max_completion_tokens: 200,
+              messages: [{
+                role: "system",
+                content: "Je bent een pricing coach voor autohandelaren. Maak een korte, bruikbare leerregel (1-2 zinnen) op basis van feedback van een ervaren inkoper. De regel moet toepasbaar zijn op vergelijkbare auto\'s in de toekomst. Antwoord ALLEEN met de regel, geen uitleg."
+              }, {
+                role: "user",
+                content: make + " " + model + " " + (year||"") + " " + (km||"") + "km | Systeem zei: EUR " + (onze_inkoop_high||0) + " | Inkoper bood: EUR " + eigen_bod + " (" + richting + " " + Math.abs(verschil) + ") | Reden inkoper: " + notitie
+              }]
+            }, { headers: { "Authorization": "Bearer " + aiKey, "Content-Type": "application/json" }, timeout: 10000 })
+            .then(resp => {
+              const rule = (resp.data?.choices?.[0]?.message?.content || "").trim()
+              if (rule && rule.length > 10) {
+                run("INSERT INTO pricing_lessons (make, model, segment, rule, source_feedback_id) VALUES (?, ?, ?, ?, last_insert_rowid())",
+                  [(make||"").toLowerCase(), (model||"").toLowerCase(), seg, rule])
+                console.log("[LEARNING] Nieuwe regel:", make, model, "→", rule)
+              }
+            }).catch(e => console.log("[LEARNING] GPT error:", e.message))
+          }
+        } catch(le) { console.log("[LEARNING] Error:", le.message) }
+      }
+      
       res.json({ ok: true, correction: correctionPct, feedbackCount: segFeedbacks.length, avgVerschil })
     } else {
       console.log("[FEEDBACK]", make, model, ": eigen EUR" + eigen_bod, "| nog", (3 - segFeedbacks.length), "nodig")

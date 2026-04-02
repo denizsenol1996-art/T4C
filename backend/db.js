@@ -104,6 +104,9 @@ async function initDB() {
   `)
   db.run("CREATE INDEX IF NOT EXISTS idx_taxaties_kenteken ON taxaties(kenteken)")
   db.run("CREATE INDEX IF NOT EXISTS idx_taxaties_created ON taxaties(created_at)")
+  
+  db.run("CREATE TABLE IF NOT EXISTS pricing_lessons (id INTEGER PRIMARY KEY AUTOINCREMENT, make TEXT, model TEXT, segment TEXT, rule TEXT NOT NULL, source_feedback_id INTEGER, confidence REAL DEFAULT 0.5, times_applied INTEGER DEFAULT 0, created_at DATETIME DEFAULT (datetime('now')))")
+  db.run("CREATE INDEX IF NOT EXISTS idx_lessons_make_model ON pricing_lessons(make, model)")
   db.run("CREATE TABLE IF NOT EXISTS vehicle_cache (kenteken TEXT PRIMARY KEY, static_data TEXT, gpt_data TEXT, finnik_data TEXT, created_at DATETIME DEFAULT (datetime('now')))")
 
 
