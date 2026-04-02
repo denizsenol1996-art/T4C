@@ -605,12 +605,7 @@ function setupDVWebhookRoutes(app, { run: runFn, queryAll: queryAllFn, queryOne:
         const elapsed = Date.now() - startTime
         console.log(`[DV-WEBHOOK] Processed ${results.length} vehicle(s) in ${elapsed}ms from ${ip}`)
         
-        return res.status(200).json({ 
-          success: true, 
-          processed: results.length,
-          results,
-          elapsed_ms: elapsed
-        })
+        return res.status(200).send("OK")
         
       } catch (parseErr) {
         logWebhook(runFn, ip, "POST", "parse_error", "", 500, parseErr.message)
