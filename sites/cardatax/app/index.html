@@ -853,7 +853,7 @@ function buildTT(images){
 function ttGo(i){ttIdx=i;document.getElementById('tt-track').style.transform='translateX(-'+i*100+'%)';document.querySelectorAll('.tdot').forEach((d,j)=>d.classList.toggle('active',j===i))}
 
 // ── Copy & PDF ──
-function checkFeedbackAccess(){try{const u=JSON.parse(localStorage.getItem('t4c_user')||'{}');const fs=document.getElementById('feedback-section');if(fs&&u.role!=='admin'&&u.name!=='Jurgen'&&u.username!=='Jurgen')fs.style.display='none'}catch(e){}}
+function checkFeedbackAccess(){try{const u=JSON.parse(localStorage.getItem('t4c_user')||'{}');const fs=document.getElementById('feedback-section');const nt=document.getElementById('notitie-toggle');if(!fs)return;if(u.role==='admin'||u.name==='Jurgen'||u.username==='Jurgen'){fs.style.display='block'}else if(u.role==='inkoper'){fs.style.display='block';if(nt)nt.style.display='none'}else{fs.style.display='none'}}catch(e){}}
 checkFeedbackAccess();
 function sendFeedback(){
   const inp=document.getElementById('eigen-bod');const msg=document.getElementById('feedback-msg');
