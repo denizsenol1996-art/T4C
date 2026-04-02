@@ -15,7 +15,42 @@ try { brandPhoto = require("./branding").brandPhoto } catch(e) {}
 
 router.get("/api/public/voorraad", (req, res) => {
   try {
-    const cars = stmts.getVoorraad.all()
+    // Lees van dv_vehicles (echte DV/GO data) ipv voorraad tabel
+    const dvCars = queryAll("SELECT * FROM dv_vehicles WHERE status='active' ORDER BY updated_at DESC")
+    const cars = dvCars.map(d => {
+      let fotos = []
+      try { fotos = JSON.parse(d.afbeeldingen || '[]') } catch(e) {}
+      let opties = []
+      try { opties = JSON.parse(d.accessoires || '[]') } catch(e) {}
+      return {
+        id: d.id,
+        hexon_id: d.hexon_id,
+        kenteken: d.kenteken,
+        make: d.merk,
+        model: d.model,
+        model_variant: d.type || '',
+        year: d.bouwjaar,
+        fuel: d.brandstof === 'B' ? 'Benzine' : d.brandstof === 'D' ? 'Diesel' : d.brandstof === 'E' ? 'Elektrisch' : d.brandstof === 'L' ? 'LPG' : d.brandstof === 'H' ? 'Hybride' : d.brandstof || '',
+        km: d.tellerstand,
+        color: d.kleur || '',
+        body: d.carrosserie || '',
+        power_hp: d.vermogen_pk,
+        transmission: d.transmissie === 'A' ? 'Automaat' : d.transmissie === 'H' ? 'Handgeschakeld' : '',
+        vraag_prijs: Number(d.prijs) || Number(d.meeneemprijs) || 0,
+        beschrijving: d.opmerkingen || '',
+        apk_until: d.apk_tot || '',
+        status: 'te_koop',
+        cover_photo: fotos.length > 0 ? fotos[0].url : '',
+        photos: JSON.stringify(fotos.map(f => f.url)),
+        options: opties.length > 0 ? JSON.stringify(opties) : '',
+        doors: d.deuren,
+        seats: d.zitplaatsen,
+        btw_type: d.btw_marge || '',
+        bron: 'dv',
+        created_at: d.created_at,
+        updated_at: d.updated_at
+      }
+    })
     res.json({ ok: true, cars, count: cars.length })
   } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
 })
@@ -23,9 +58,30 @@ router.get("/api/public/voorraad", (req, res) => {
 // Public: single car detail
 router.get("/api/public/voorraad/:id", (req, res) => {
   try {
-    const car = stmts.getVoorraadById.get(parseInt(req.params.id))
-    if (!car) return res.status(404).json({ ok: false, error: "Auto niet gevonden" })
-    const photos = stmts.getVoorraadPhotos.all(car.id)
+    const d = queryOne("SELECT * FROM dv_vehicles WHERE id=?", [parseInt(req.params.id)])
+    if (!d) return res.status(404).json({ ok: false, error: "Auto niet gevonden" })
+    let fotos = []
+    try { fotos = JSON.parse(d.afbeeldingen || '[]') } catch(e) {}
+    let opties = []
+    try { opties = JSON.parse(d.accessoires || '[]') } catch(e) {}
+    const car = {
+      id: d.id, hexon_id: d.hexon_id, kenteken: d.kenteken,
+      make: d.merk, model: d.model, model_variant: d.type || '',
+      year: d.bouwjaar,
+      fuel: d.brandstof === 'B' ? 'Benzine' : d.brandstof === 'D' ? 'Diesel' : d.brandstof === 'E' ? 'Elektrisch' : d.brandstof === 'L' ? 'LPG' : d.brandstof === 'H' ? 'Hybride' : d.brandstof || '',
+      km: d.tellerstand, color: d.kleur || '', body: d.carrosserie || '',
+      power_hp: d.vermogen_pk,
+      transmission: d.transmissie === 'A' ? 'Automaat' : d.transmissie === 'H' ? 'Handgeschakeld' : '',
+      vraag_prijs: Number(d.prijs) || Number(d.meeneemprijs) || 0,
+      beschrijving: d.opmerkingen || '',
+      apk_until: d.apk_tot || '',
+      status: 'te_koop',
+      cover_photo: fotos.length > 0 ? fotos[0].url : '',
+      photos: JSON.stringify(fotos.map(f => f.url)),
+      options: opties.length > 0 ? JSON.stringify(opties) : '',
+      doors: d.deuren, seats: d.zitplaatsen, btw_type: d.btw_marge || ''
+    }
+    const photos = fotos.map((f, i) => ({ id: i+1, filename: f.url, sort_order: i, is_cover: i === 0 ? 1 : 0 }))
     res.json({ ok: true, car, photos })
   } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
 })
