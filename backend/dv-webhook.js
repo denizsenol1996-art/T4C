@@ -773,6 +773,49 @@ function setupDVWebhookRoutes(app, { run: runFn, queryAll: queryAllFn, queryOne:
   console.log("  POST /api/dv/webhook      — DV.nl XML mutations (Basic Auth)")
   console.log("  GET  /api/dv/webhook       — Health check")
   console.log("  GET  /api/dv/vehicles      — Admin: all vehicles")
+  // ─── AUTO CLEANUP: check broken images dagelijks ───
+  app.get("/api/dv/cleanup", async (req, res) => {
+    const axios = require("axios")
+    const active = queryAllFn("SELECT id, hexon_id, kenteken, merk, model, afbeeldingen FROM dv_vehicles WHERE status='active'")
+    let sold = 0, ok = 0
+    for (const d of active) {
+      let fotos = []
+      try { fotos = JSON.parse(d.afbeeldingen || '[]') } catch(e) {}
+      if (fotos.length === 0) { runFn("UPDATE dv_vehicles SET status='sold' WHERE id=?", [d.id]); sold++; continue }
+      try {
+        const r = await axios.head(fotos[0].url, { timeout: 5000, validateStatus: () => true })
+        if (r.status !== 200) {
+          runFn("UPDATE dv_vehicles SET status='sold' WHERE id=?", [d.id])
+          sold++
+          console.log("[DV-CLEANUP] SOLD:", d.kenteken, d.merk, d.model)
+        } else { ok++ }
+      } catch(e) {
+        runFn("UPDATE dv_vehicles SET status='sold' WHERE id=?", [d.id])
+        sold++
+      }
+    }
+    scheduleSaveFn()
+    console.log("[DV-CLEANUP] Done:", ok, "ok,", sold, "sold")
+    res.json({ ok: true, active: ok, sold })
+  })
+
+  // Schedule daily cleanup at 6:00 AM
+  function scheduleDVCleanup() {
+    const now = new Date()
+    const next = new Date(now)
+    next.setHours(6, 0, 0, 0)
+    if (next <= now) next.setDate(next.getDate() + 1)
+    const delay = next - now
+    setTimeout(() => {
+      const axios = require("axios")
+      axios.get("http://localhost:3000/api/dv/cleanup").catch(() => {})
+      scheduleDVCleanup()
+    }, delay)
+    console.log("[DV-CLEANUP] Scheduled at 6:00 AM (" + Math.round(delay/3600000) + "h)")
+  }
+  scheduleDVCleanup()
+
+
   console.log("  GET  /api/dv/vehicles/:id   — Admin: single vehicle")
   console.log("  GET  /api/dv/logs          — Admin: webhook logs")
   console.log("  GET  /api/dv/voorraad         — Public: vehicle listing")
