@@ -362,11 +362,12 @@ if(urlId){
     var opties=[];try{opties=typeof v.accessoires==='string'?JSON.parse(v.accessoires):v.accessoires||[]}catch(e){}
     if(opties.length){h+='<div style="margin-bottom:24px"><h3 style="font-size:16px;font-weight:700;margin-bottom:8px">Opties & Accessoires ('+opties.length+')</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">'+opties.map(function(o){return '<div style="font-size:13px;color:var(--text2);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+o+'</div>'}).join('')+'</div></div>';}
     // APK + NAP
-    var extra=[];
-    if(v.apk_tot)extra.push('APK tot '+v.apk_tot);
-    if(v.nap_weblabel==='j')extra.push('NAP logisch');
-    if(v.energielabel)extra.push('Energielabel '+v.energielabel);
-    if(extra.length){h+='<div style="margin-bottom:24px;display:flex;gap:8px;flex-wrap:wrap">'+extra.map(function(e){return '<span style="padding:6px 12px;background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:6px;font-size:12px;color:var(--green);font-weight:600">'+e+'</span>'}).join('')+'</div>';}
+    var badges='';
+    if(v.apk_tot)badges+='<span style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:8px;font-size:12px;color:var(--green);font-weight:600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>APK tot '+v.apk_tot+'</span>';
+    if(v.nap_weblabel==='j')badges+='<span style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(0,136,255,.08);border:1px solid rgba(0,136,255,.2);border-radius:8px;font-size:12px;color:#0088ff;font-weight:600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>NAP logisch</span>';
+    if(v.energielabel)badges+='<span style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(0,255,200,.08);border:1px solid rgba(0,255,200,.2);border-radius:8px;font-size:12px;color:#00ffc8;font-weight:600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Energie '+v.energielabel+'</span>';
+    if(v.schadevoertuig==='n')badges+='<span style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:8px;font-size:12px;color:var(--green);font-weight:600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Geen schadevoertuig</span>';
+    if(badges)h+='<div style="margin-bottom:24px;display:flex;gap:8px;flex-wrap:wrap">'+badges+'</div>';
     h+='</div>';
     h+='<div><div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;position:sticky;top:80px">';
     h+='<div style="font-size:32px;font-weight:800;color:var(--green);margin-bottom:4px">'+(prijs?'\u20ac '+prijs.toLocaleString('nl-NL'):'Prijs op aanvraag')+'</div>';
