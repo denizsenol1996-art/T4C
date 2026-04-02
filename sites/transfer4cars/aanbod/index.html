@@ -363,7 +363,7 @@ if(urlId){
     // Thumbnail strip
     if(fotos.length>1){
       h+='<div style="display:flex;gap:4px;overflow-x:auto;margin-bottom:20px;padding-bottom:4px;scrollbar-width:none;-ms-overflow-style:none" id="thumbStrip">';
-      fotos.forEach(function(f,i){h+='<img src="'+f+'" data-idx="'+i+'" style="width:88px;height:62px;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;border:2px solid '+(i===0?'var(--green)':'transparent')+';opacity:'+(i===0?'1':'0.7')+';transition:all .2s+'" onclick="showImg('+i+')">'});
+      fotos.forEach(function(f,i){h+='<img src="'+f+'" data-idx="'+i+'" style="width:88px;height:62px;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;border:2px solid '+(i===0?'var(--green)':'transparent')+';opacity:'+(i===0?'1':'0.7')+';transition:all .2s" onclick="showImg('+i+')">'});
       h+='</div>';
     }
 
