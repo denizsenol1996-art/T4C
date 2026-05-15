@@ -1,6 +1,6 @@
 // T4C Auth Middleware
 const jwt = require("jsonwebtoken")
-let JWT_SECRET = "1928690036a064ea5e2ea86f306b5e4109f52c17b44ae555788636b45dade24e437c09cb59f7b3382b488efbe4025aff"
+let JWT_SECRET = "3e9cd9895784e75d87d1e9e2d4954ef47f76f06dfc470ee88cebab62b99bd129ff1778a4b0aacb797727672bc28eac83"
 
 
 function setSecret(s) { JWT_SECRET = s }

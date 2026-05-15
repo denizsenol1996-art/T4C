@@ -276,7 +276,7 @@ function calculateVergelijkScore(v, r) {
   const details = []
 
   // Hoeveel vergelijkingsdata
-  const mCount = v?.marktCount || 0
+  const mCount = r?.marktCount || v?.marktCount || 0
   if (mCount >= 20) { score += 2.0; details.push({ factor: mCount + ' vergelijkbare auto\'s', impact: +2.0, type: 'pos' }) }
   else if (mCount >= 10) { score += 1.5; details.push({ factor: mCount + ' vergelijkbare auto\'s', impact: +1.5, type: 'pos' }) }
   else if (mCount >= 5) { score += 1.0; details.push({ factor: mCount + ' listings', impact: +1.0, type: 'pos' }) }

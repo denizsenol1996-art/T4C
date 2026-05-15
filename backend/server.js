@@ -24,6 +24,48 @@ const PORT = process.env.PORT || 3000
 const CRASH_DIR = process.env.T4C_LOG_DIR || path.join(__dirname, "..", "logs")
 if (!fs.existsSync(CRASH_DIR)) fs.mkdirSync(CRASH_DIR, { recursive: true })
 
+// ══════════════════════════════════════════════
+// SINGLE-INSTANCE LOCK FILE (15 mei 2026 — DB race prevention)
+// ══════════════════════════════════════════════
+// Voorkomt tweede t4c-server instance. Bij race tussen twee processen
+// die dezelfde DATA_DIR delen flikkert /opt/t4c/data/t4c.db tussen
+// in-memory states (zie incident 15 mei 2026 — t4c-test).
+const LOCK_PATH = path.join(__dirname, "..", "data", ".t4c-server.lock")
+function releaseLock() {
+  try {
+    if (!fs.existsSync(LOCK_PATH)) return
+    const pid = parseInt(fs.readFileSync(LOCK_PATH, 'utf8').trim(), 10)
+    if (pid === process.pid) fs.unlinkSync(LOCK_PATH)
+  } catch(e) {}
+}
+;(function acquireLockOrDie() {
+  if (fs.existsSync(LOCK_PATH)) {
+    let existingPid = 0
+    try { existingPid = parseInt(fs.readFileSync(LOCK_PATH, 'utf8').trim(), 10) } catch {}
+    if (existingPid && existingPid !== process.pid) {
+      let alive = false
+      try { process.kill(existingPid, 0); alive = true } catch {}
+      if (alive) {
+        const msg = `[LOCK] FATAL: t4c-server al actief als PID ${existingPid} (lock: ${LOCK_PATH}). Refuse tweede instance — voorkomt DB race condition.`
+        console.error(msg)
+        try { writeLog("errors.log", msg) } catch {}
+        try { fs.writeFileSync(path.join(CRASH_DIR, "CRASH.txt"), `${new Date().toISOString()}\n${msg}\n`) } catch {}
+        process.exit(1)
+      } else {
+        console.warn(`[LOCK] Stale lock (PID ${existingPid} bestaat niet) — overschrijven`)
+      }
+    }
+  }
+  try {
+    fs.writeFileSync(LOCK_PATH, String(process.pid))
+    console.log(`[LOCK] Acquired ${LOCK_PATH} for PID ${process.pid}`)
+  } catch(e) {
+    console.error(`[LOCK] Cannot write lock file: ${e.message} — refuse to start`)
+    process.exit(1)
+  }
+})()
+process.on("exit", releaseLock)
+
 process.on("uncaughtException", (err) => {
   const msg = `[FATAL] Uncaught: ${err.message}\n${err.stack}`
   console.error(msg)
@@ -166,6 +208,7 @@ app.use(require("./routes/inspectie"))
 
 // Veilingen
 app.use(require("./routes/veilingen"))
+app.use(require("./routes/extended-taxatie"))
 
 // Markt
 app.use(require("./routes/market"))
@@ -222,19 +265,23 @@ app.get("/app/*", (req, res) => {
       console.log("[CRAWLER] backgroundCrawl not available from market module")
     }
 
-    // Email queue processor
+    // Email queue processor — elke 60s
     try {
       const { processEmailQueue } = require("./lib/mailer")
-      setInterval(() => { try { processEmailQueue() } catch(e) {}
+      setInterval(() => { try { processEmailQueue() } catch(e) {} }, 60000)
+    } catch(e) {}
 
-    // ── Daily scrapers: ILSA + Autohero (elke 24 uur, gespreid) ──
+    // ── Daily scrapers: ILSA + Autohero (1× per 24u rond 03:00, random 0-60min spread) ──
+    let _dailyRunning = false
     const runDailyScrapers = async () => {
+      if (_dailyRunning) { console.log('[DAILY] Skipped — vorige run nog bezig'); return }
+      _dailyRunning = true
       try {
         console.log('[DAILY] Starting ILSA scraper...')
         const axios = require('axios')
         const crypto = require('crypto')
         const _srcMap = {'autoofy':'nlmarket','autohero':'nlretail'}
-        
+
         // ILSA (Autoofy) — 7400+ listings
         try {
           const ILSA_URL = 'https://api-nl.ilsa.cloud/crRvy1uXUuuT/searchresults'
@@ -308,11 +355,18 @@ app.get("/app/*", (req, res) => {
           console.log('[DAILY] Autohero done: ' + ahNew + ' new, ' + ahUpd + ' updated')
         } catch(e) { console.log('[DAILY] Autohero error:', e.message) }
 
+        // Marker: vandaag is gerund (voor skip-recovery bij PM2 restart)
+        try {
+          const today = new Date().toISOString().slice(0, 10)
+          run("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('last_daily_scraper_run', ?, datetime('now'))", [today])
+        } catch(e) { console.error('[DAILY] Marker write failed:', e.message) }
+
         forceSave()
       } catch(e) { console.error('[DAILY] Fatal:', e.message) }
+      finally { _dailyRunning = false }
     }
 
-    // Run dagelijks om ~3:00 's nachts (random offset 0-60 min)
+    // Schedule dagelijks om ~3:00 's nachts (random offset 0-60 min)
     const msUntil3AM = () => {
       const now = new Date()
       const target = new Date(now)
@@ -325,8 +379,17 @@ app.get("/app/*", (req, res) => {
       setInterval(runDailyScrapers, 24 * 60 * 60 * 1000)
     }, msUntil3AM())
     console.log('[DAILY] Scrapers scheduled for ~3:00 AM')
- }, 60000)
-    } catch(e) {}
+
+    // Skip-recovery: na 03:00 starten zonder run vandaag? Inhalen.
+    try {
+      const lastRun = queryOne("SELECT value FROM settings WHERE key='last_daily_scraper_run'")
+      const today = new Date().toISOString().slice(0, 10)
+      const nowHour = new Date().getHours()
+      if (nowHour >= 3 && (!lastRun || lastRun.value !== today)) {
+        console.log('[DAILY] Inhalen — run vandaag nog niet gehad (last:', lastRun?.value || 'nooit', ')')
+        setTimeout(runDailyScrapers, 5000)
+      }
+    } catch(e) { console.error('[DAILY] Skip-recovery check failed:', e.message) }
 
     app.listen(PORT, () => {
       const hasAI = hasApiKey("OPENAI_API_KEY")

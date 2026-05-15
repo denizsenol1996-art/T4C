@@ -25,7 +25,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
       try {
         // Direct cache lookup — no HTTP roundtrip (same process, shared cache)
         const _ck = "vehicle_" + d.plate.replace(/[\s-]/g, "").toUpperCase()
-        let e = getCached(_ck, 14400000)
+        let e = getCached(_ck, 14400000)  // 4 uur cache voor enrichment
         if (!e) {
           // Cache miss — call enrichment via HTTP (fills cache for next time)
           const enrichResp = await axios.get("http://localhost:3000/api/vehicle/enriched?plate=" + encodeURIComponent(d.plate) + "&km=" + (d.km || 0), {timeout: 30000})
@@ -50,6 +50,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
           motorCode: d.motorCode || e.motorCode,
           drivetrain: d.drivetrain || e.drivetrain,
           body: d.body || e.body,
+          doors: d.doors || e.doors || null,
           color: d.color || e.color,
           ownerCount: d.ownerCount || e.ownerCount,
           apkUntil: d.apkUntil || e.apkUntil,
@@ -196,7 +197,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
     // Market alignment
     const mAvg = d.marketAvg || 0
     const mMedian = d.marketMedian || 0
-    const mCount = d.marketCount || 0
+    const mCount = (compResult ? compResult.cleanCount : 0) || (Array.isArray(d.marketListings) ? d.marketListings.length : 0) || d.marketCount || 0
     const mCenter = mMedian > 0 ? mMedian : mAvg
     const p25 = d.marketP25 || 0
     const p75 = d.marketP75 || 0
@@ -276,6 +277,38 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
 
     // Not WAM insured = standing vehicle
     if (d.wamInsured === false) base *= 0.95
+
+    // ═══ AUTO-DETECTIE CORRECTIES (uit 323 feedback entries) ═══
+    const _autoCorr = []
+    
+    // 3-deurs: minder courant, -7%
+    const doorCount = parseInt(d.doors || d.aantal_deuren || 0)
+    if (doorCount === 2 || doorCount === 3) {
+      const bodyLow = (d.body || d.inrichting || '').toLowerCase()
+      if (!bodyLow.includes('cabrio') && !bodyLow.includes('coupe') && !bodyLow.includes('sport')) {
+        base *= 0.93
+        _autoCorr.push('3-deurs uitvoering — minder courant [-7%]')
+      }
+    }
+
+    // Veel aanbod: drukt de prijs
+    const _listCount = Array.isArray(d.marketListings) ? d.marketListings.length : 0
+    if (_listCount >= 40) {
+      base *= 0.95
+      _autoCorr.push('Veel aanbod (' + _listCount + ' listings) — drukt de prijs [-5%]')
+    }
+
+    // Kale uitvoering: lage catalogusprijs tov segment gemiddelde
+    const catPrice = d.catalogPrice || 0
+    if (catPrice > 0 && catPrice < 18000 && (segment === 'C' || segment === 'P')) {
+      base *= 0.95
+      _autoCorr.push('Relatief kale uitvoering — minder opties [-5%]')
+    }
+
+    // Veel eigenaren (5+)
+    if (ownCount >= 6) {
+      _autoCorr.push(ownCount + ' eigenaren — extra risico')
+    }
 
     // Low emission class = future risk
     if (d.emissieKlasse && String(d.emissieKlasse).match(/euro\s*[0-3]/i)) base *= 0.95
@@ -416,6 +449,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
 
     // Smart summary — dynamic analysis text
     const smartSummary = []
+    if (_autoCorr) _autoCorr.forEach(s => smartSummary.push(s))
     if (mCount >= 10) smartSummary.push(`Sterke marktdata: ${mCount} vergelijkbare auto's gevonden — prijsberekening betrouwbaar`)
     else if (mCount >= 3) smartSummary.push(`Beperkte marktdata (${mCount} listings) — prijs indicatief, verifieer handmatig`)
     else if (mCount === 0 && popularBrands.includes(makeU)) smartSummary.push(`Geen live marktdata gevonden, maar ${d.make} is een courant merk — prijs gebaseerd op restwaarde-model`)
@@ -458,7 +492,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
 
         // ── Build rich vehicle description ──
         const _variant = [d.subModel, d.engineLabel, d.trimLevel].filter(Boolean).join(' / ')
-        const carDesc = (d.make||'?') + ' ' + (d.model||'?') + (_variant ? ' [' + _variant + ']' : '') + ' (' + year + '), ' + km.toLocaleString('nl-NL') + ' km, ' + (d.fuel||'?') + ', segment ' + segment + ', ' + age + ' jaar oud'
+        const carDesc = (d.plate ? '[Kenteken: ' + d.plate + '] ' : '') + (d.make||'?') + ' ' + (d.model||'?') + (_variant ? ' [' + _variant + ']' : '') + ' (' + year + '), ' + km.toLocaleString('nl-NL') + ' km, ' + (d.fuel||'?') + ', segment ' + segment + ', ' + age + ' jaar oud'
         const specDesc = [
           d.transmissionType ? 'Transmissie: ' + d.transmissionType + (d.transmissionDetail ? ' (' + d.transmissionDetail + ')' : '') + (d.transmissionType === 'Automaat' ? ' [AUTOMAAT = MEER WAARD]' : ' [HANDGESCHAKELD = MINDER WAARD]') : null,
           d.motorCode ? 'Motor: ' + d.motorCode : null,
@@ -663,6 +697,15 @@ CLASSIFICATIE:
 - Type C = uitzonderlijk, zeldzaam, niche of dunne markt. Generieke modeldata is onbetrouwbaar — alleen als zwakke referentie gebruiken
 Bij twijfel tussen B en C: kies C alleen wanneer de markt aantoonbaar dun is of generieke data misleidend zou zijn.
 
+MODEL-VERIFICATIE (CRUCIAAL):
+- Controleer of de combinatie model + carrosserie + motor + catalogusprijs LOGISCH is
+- Een Golf GTE bestaat ALLEEN als hatchback, NOOIT als Variant/stationwagen. Als RDW 'stationwagen' zegt maar het is een GTE: corrigeer naar hatchback
+- Een Toyota Corolla met catalogusprijs >€35.000 is waarschijnlijk een Corolla CROSS, niet een gewone Corolla
+- Een Kia Picanto met catalogusprijs >€20.000 of sportbumpers is waarschijnlijk een Picanto GT of GT-Line
+- Een Seat Leon met catalogusprijs >€28.000 is waarschijnlijk een FR of Cupra uitvoering
+- Als de catalogusprijs NIET past bij het basismodel, zoek online wat het WERKELIJK is
+- RDW inrichting (stationwagen/hatchback) kan FOUT zijn bij import of speciale modellen — verifieer altijd
+- Als je een correctie doet, vermeld dit expliciet in je reasoning
 KERNREGELS:
 - Exacte variant gaat ALTIJD boven generiek modelgemiddelde
 - Meng NIET: sedan/coupé, benzine/diesel, 4-cil/V6, basis/AMG-GTI-M-Sport
@@ -773,7 +816,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
           // Data = vraagprijzen uit DB (x0.93 = geschatte verkoopprijs)
           // GPT = AI schatting op basis van kennis + context
           // Gewogen blend: meer data = meer vertrouwen op data
-          const _clampListings = queryAll('SELECT price FROM market_listings WHERE UPPER(make)=? AND UPPER(model) LIKE ? AND year BETWEEN ? AND ? AND status=\'active\' AND price > 0', [d.make.toUpperCase(), d.model.toUpperCase().split(' ')[0]+'%', (year||2015)-2, (year||2015)+2])
+          const _clampListings = queryAll('SELECT price FROM market_listings WHERE UPPER(make)=? AND UPPER(model) LIKE ? AND year BETWEEN ? AND ? AND status=\'active\' AND price > 0', [(d.make||'').toUpperCase(), (d.model||'').toUpperCase().split(' ')[0]+'%', (year||2015)-2, (year||2015)+2])
           const _dbPrices = _clampListings.map(l=>l.price).sort((a,b)=>a-b)
           const _dbMedian = _dbPrices.length > 0 ? _dbPrices[Math.floor(_dbPrices.length/2)] : 0
           const _dbCount = _dbPrices.length

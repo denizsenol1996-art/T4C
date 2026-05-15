@@ -789,7 +789,7 @@ function setupDVWebhookRoutes(app, { run: runFn, queryAll: queryAllFn, queryOne:
         sold++
       }
     }
-    scheduleSaveFn()
+    if (scheduleSave) scheduleSave()
     console.log("[DV-CLEANUP] Done:", ok, "ok,", sold, "sold")
     res.json({ ok: true, active: ok, sold })
   })

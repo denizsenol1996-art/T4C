@@ -20,6 +20,70 @@ if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true })
 console.log(`[DB] Data directory: ${DATA_DIR}`)
 console.log(`[DB] Database path: ${DB_PATH}`)
 
+// Auto-restore: zoek meest recente werkende backup
+// 15 mei 2026: rewrite — alfabetisch sort vervangen door:
+//   1. SAFE-*.db in DATA_DIR (handmatig gezet, expliciet betrouwbaar) — mtime desc
+//   2. t4c-backup-{ISO-ts}.db in BACKUP_DIR (auto-backups) — mtime desc
+// Skip pre-*/fix-*/uncommitted-*/PRE-* namen (kunnen oudere staat hebben → data verlies).
+function autoRestore(SQL) {
+  try {
+    const candidates = []
+
+    // 1. SAFE snapshots in DATA_DIR (chmod 444 read-only, buiten rotation)
+    try {
+      const safes = fs.readdirSync(DATA_DIR)
+        .filter(f => /^SAFE-.*\.db$/.test(f))
+        .map(f => {
+          const p = path.join(DATA_DIR, f)
+          return { name: f, path: p, mtime: fs.statSync(p).mtimeMs }
+        })
+        .sort((a, b) => b.mtime - a.mtime)
+      candidates.push(...safes)
+    } catch(e) { /* DATA_DIR scan failure niet fataal */ }
+
+    // 2. Auto-backups in BACKUP_DIR met strict naam-pattern t4c-backup-YYYY-MM-DDTHH-MM-SS.db
+    try {
+      const autos = fs.readdirSync(BACKUP_DIR)
+        .filter(f => /^t4c-backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.db$/.test(f))
+        .map(f => {
+          const p = path.join(BACKUP_DIR, f)
+          return { name: f, path: p, mtime: fs.statSync(p).mtimeMs }
+        })
+        .sort((a, b) => b.mtime - a.mtime)
+      candidates.push(...autos)
+    } catch(e) { /* BACKUP_DIR scan failure niet fataal */ }
+
+    if (candidates.length === 0) {
+      console.error("[DB] GEEN BACKUP KANDIDATEN GEVONDEN (SAFE-*.db of t4c-backup-{ISO}.db)")
+      return false
+    }
+
+    for (const c of candidates) {
+      try {
+        const buf = fs.readFileSync(c.path)
+        if (buf.length < 10000 || buf.slice(0,6).toString() !== 'SQLite') continue
+        const testDb = new SQL.Database(buf)
+        testDb.run("SELECT count(*) FROM sqlite_master")
+        // Backup is goed — gebruik het
+        db = testDb
+        // Overschrijf corrupte DB
+        fs.writeFileSync(DB_PATH, buf)
+        const mtimeISO = new Date(c.mtime).toISOString()
+        console.log("[DB] AUTO-RESTORE SUCCESS from:", c.name, "mtime=" + mtimeISO, "(" + Math.round(buf.length/1024/1024) + "MB)")
+        return true
+      } catch(e) {
+        console.log("[DB] Backup corrupt, skip:", c.name, "—", e.message)
+        continue
+      }
+    }
+    console.error("[DB] GEEN WERKENDE BACKUP GEVONDEN (" + candidates.length + " kandidaten geprobeerd)")
+    return false
+  } catch(e) {
+    console.error("[DB] Auto-restore error:", e.message)
+    return false
+  }
+}
+
 // ══════════════════════════════════════════════
 // DB INSTANCE — initialized async, then sync
 // ══════════════════════════════════════════════
@@ -28,25 +92,36 @@ let db = null
 let _saveTimer = null
 
 function scheduleSave() {
-  // Debounced write — saves at most every 2 seconds
   if (_saveTimer) return
   _saveTimer = setTimeout(() => {
     _saveTimer = null
     if (db) {
       try {
         const data = db.export()
-        fs.writeFileSync(DB_PATH, Buffer.from(data))
+        if (data.length < 10000) { console.error("[DB] scheduleSave: export te klein (" + data.length + " bytes) — GEWEIGERD"); return }
+        const tmpPath = DB_PATH + ".tmp"
+        fs.writeFileSync(tmpPath, Buffer.from(data))
+        fs.renameSync(tmpPath, DB_PATH)
       } catch (e) { console.error("[DB] Save error:", e.message) }
     }
-  }, 2000)
+  }, 5000)
 }
 
 function forceSave() {
   if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null }
   if (db) {
     try {
+      // Integrity check voor save — NOOIT een corrupte DB wegschrijven
+      try { db.run("PRAGMA integrity_check") } catch(intErr) {
+        console.error("[DB] INTEGRITY CHECK FAILED — save GEWEIGERD:", intErr.message)
+        return
+      }
       const data = db.export()
-      fs.writeFileSync(DB_PATH, Buffer.from(data))
+      if (data.length < 1000) { console.error("[DB] Export too small (" + data.length + " bytes) — save GEWEIGERD"); return }
+      // Schrijf naar temp bestand eerst, dan rename (atomic)
+      const tmpPath = DB_PATH + ".tmp"
+      fs.writeFileSync(tmpPath, Buffer.from(data))
+      fs.renameSync(tmpPath, DB_PATH)
     } catch (e) { console.error("[DB] Force save error:", e.message) }
   }
 }
@@ -58,8 +133,28 @@ async function initDB() {
   // Load existing DB or create new
   if (fs.existsSync(DB_PATH)) {
     const buffer = fs.readFileSync(DB_PATH)
-    db = new SQL.Database(buffer)
-    console.log("[DB] Loaded existing database")
+    // Check SQLite header
+    if (buffer.length < 100 || buffer.slice(0,6).toString() !== 'SQLite') {
+      console.error("[DB] CORRUPT HEADER — attempting backup restore")
+      const restored = autoRestore(SQL)
+      if (!restored) { db = new SQL.Database(); console.log("[DB] Created fresh database after failed restore") }
+    } else {
+      try {
+        db = new SQL.Database(buffer)
+        // Quick integrity check
+        try { db.run("SELECT count(*) FROM sqlite_master") } catch(intErr) {
+          console.error("[DB] CORRUPT TABLES — attempting backup restore")
+          db.close()
+          const restored = autoRestore(SQL)
+          if (!restored) { db = new SQL.Database(); console.log("[DB] Created fresh database after failed restore") }
+        }
+        if (db) console.log("[DB] Loaded existing database — integrity OK")
+      } catch(loadErr) {
+        console.error("[DB] LOAD FAILED:", loadErr.message, "— attempting backup restore")
+        const restored = autoRestore(SQL)
+        if (!restored) { db = new SQL.Database(); console.log("[DB] Created fresh database after failed restore") }
+      }
+    }
   } else {
     db = new SQL.Database()
     console.log("[DB] Created new database")
@@ -67,6 +162,26 @@ async function initDB() {
 
   // Enable WAL-like behavior and foreign keys
   db.run("PRAGMA foreign_keys = ON")
+
+  // Periodieke backup elke 6 uur
+  setInterval(() => {
+    if (db) {
+      try {
+        const data = db.export()
+        if (data.length < 10000) return
+        const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19)
+        const bpPath = path.join(BACKUP_DIR, "t4c-backup-" + ts + ".db")
+        fs.writeFileSync(bpPath, Buffer.from(data))
+        console.log("[DB] Periodic backup:", bpPath, Math.round(data.length/1024/1024) + "MB")
+        // Cleanup: max 20 backups bewaren
+        const old = fs.readdirSync(BACKUP_DIR).filter(f=>f.startsWith('t4c-backup-') && f.endsWith('.db')).sort()
+        while (old.length > 20) {
+          const del = path.join(BACKUP_DIR, old.shift())
+          try { if (!fs.statSync(del).mode.toString(8).endsWith('444')) fs.unlinkSync(del) } catch(e){}
+        }
+      } catch(e) { console.error("[DB] Backup error:", e.message) }
+    }
+  }, 6 * 60 * 60 * 1000)
 
   // ── SCHEMA ──
   db.run(`
@@ -620,8 +735,8 @@ async function initDB() {
   // Save initial state
   forceSave()
 
-  // Auto-save every 30 seconds
-  setInterval(forceSave, 120000)
+  // Auto-save every 30 seconds (was 120000=2min — verlaagd 15 mei 2026 voor lagere data-loss window bij crash)
+  setInterval(forceSave, 30000)
 
   // Save on process exit
   process.on("exit", forceSave)

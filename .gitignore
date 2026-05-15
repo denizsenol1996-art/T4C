@@ -25,3 +25,11 @@ dashboard.js
 package.json
 package-lock.json
 .env
+
+# Stabilisatie cleanup 15 mei 2026
+backend-test-full.ARCHIVE-*/
+backend-test/
+150k
+check.js
+backend/test-*.js
+*.PRE-*-20260515*

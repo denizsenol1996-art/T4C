@@ -3,6 +3,9 @@ const router = require("express").Router()
 const express = require("express")
 const { authMiddleware, staffOnly } = require("../lib/auth")
 const { fmtE } = require("../lib/helpers")
+const PDFDocument = require("pdfkit")
+const path = require("path")
+const fs = require("fs")
 
 router.post("/api/pdf", authMiddleware, staffOnly, express.json({limit:"2mb"}), async (req, res) => {
   const data = req.body
@@ -387,6 +390,136 @@ router.post("/api/pdf", authMiddleware, staffOnly, express.json({limit:"2mb"}), 
       // Disclaimer
       doc.fontSize(7).fill(TXT3).text("Intelligence data is gebaseerd op geautomatiseerde marktanalyse. Resultaten zijn indicatief.",40,790,{width:PW,lineBreak:true})
 
+      footer(doc)
+    }
+
+    // ════════════════════════════════════════
+    // PAGE 3: SCHADE-CORRECTIE (alleen bij extended taxatie)
+    // ════════════════════════════════════════
+    const ext = data.extended
+    if (ext) {
+      doc.addPage({size:"A4",margin:40})
+      doc.rect(0,0,595,842).fill(DARK)
+      
+      // Logo + header bar
+      const logoLg = path.join(__dirname,"..","sites","cardatax","m","logo-sidebar.png")
+      try { doc.image(logoLg,40,28,{height:28}) } catch(e){ try { doc.image(logoPath,40,30,{height:18}) } catch(e2){} }
+      doc.fontSize(10).fill(TXT3).text("SCHADE-INSPECTIE",440,35,{width:115,align:"right"})
+      doc.save().strokeOpacity(0.15).moveTo(40,62).lineTo(40+PW,62).strokeColor(ACCENT).stroke().restore()
+      
+      // Kenteken + auto info
+      doc.roundedRect(40,70,PW,42,6).fill(SURFACE)
+      doc.fontSize(18).fill(TXT).text(v.plate||"",52,76,{lineBreak:false})
+      const fModel2 = (v.model||"").replace(new RegExp("^"+String(v.make||"")+"\\s+","i"),"").trim()
+      doc.fontSize(10).fill(TXT2).text((v.make||"")+" "+(fModel2||""),250,78,{lineBreak:false})
+      doc.fontSize(9).fill(TXT3).text((v.year||"")+" \u2022 "+fN(km)+" km \u2022 "+(v.fuel||""),250,92,{lineBreak:false})
+      doc.fontSize(9).fill(TXT3).text(today,40,92,{width:PW-10,align:"right",lineBreak:false})
+      
+      let yi = 124
+      
+      // ── PRIJSCORRECTIE ──
+      doc.roundedRect(40,yi,PW,65,6).fill(SURFACE)
+      doc.save().roundedRect(40,yi,PW,18,6).fill("#111520").restore()
+      doc.fontSize(8).fill(ACCENT).text("PRIJSCORRECTIE",52,yi+5)
+      
+      // 3 kolommen
+      const colW = Math.floor(PW/3)
+      doc.fontSize(8).fill(TXT3).text("Basis verkoopprijs",52,yi+24)
+      doc.fontSize(14).fill(TXT2).text(fE(ext.basisVP),52,yi+36,{lineBreak:false})
+      
+      doc.fontSize(8).fill(TXT3).text("Gecorrigeerde prijs",52+colW,yi+24)
+      doc.fontSize(14).fill(GREEN).text(fE(ext.gecorrigeerdVP),52+colW,yi+36,{lineBreak:false})
+      
+      doc.fontSize(8).fill(TXT3).text("Totale correctie",52+colW*2,yi+24)
+      doc.fontSize(14).fill("#f59e0b").text((ext.correctiePct||0)+"%  ("+fE(ext.correctieBedrag)+")",52+colW*2,yi+36,{lineBreak:false})
+      
+      yi += 76
+      
+      // ── CORRECTIE ITEMS ──
+      if (ext.correctieItems && ext.correctieItems.length > 0) {
+        const itemH = 16 + ext.correctieItems.length * 20
+        doc.roundedRect(40,yi,PW,itemH,6).fill(SURFACE)
+        doc.save().roundedRect(40,yi,PW,18,6).fill("#111520").restore()
+        doc.fontSize(8).fill(ACCENT).text("TOEGEPASTE CORRECTIES",52,yi+5)
+        yi += 22
+        for (const item of ext.correctieItems) {
+          doc.fontSize(9).fill(TXT).text(item.label||"",52,yi,{lineBreak:false})
+          doc.fontSize(9).fill(TXT3).text(Math.round(item.pct*100)+"%",350,yi,{lineBreak:false})
+          doc.fontSize(9).fill("#f59e0b").text(fE(item.bedrag),40,yi,{width:PW-10,align:"right",lineBreak:false})
+          yi += 20
+        }
+        yi += 6
+      }
+      
+      // ── AI FOTO-ANALYSE ──
+      const pa = ext.photoAnalysis
+      if (pa && !pa.error) {
+        doc.roundedRect(40,yi,PW,72,6).fill(SURFACE)
+        doc.save().roundedRect(40,yi,PW,18,6).fill("#111520").restore()
+        doc.fontSize(8).fill(ACCENT).text("CARDATAX VISION \u2014 AI FOTO-ANALYSE",52,yi+5)
+        
+        doc.fontSize(9).fill(TXT3).text("Algehele staat",52,yi+24,{lineBreak:false})
+        doc.fontSize(11).fill(pa.algehele_staat==="goed"?GREEN:"#f59e0b").text(pa.algehele_staat||"onbekend",130,yi+23,{lineBreak:false})
+        
+        doc.fontSize(9).fill(TXT3).text("Schade",250,yi+24,{lineBreak:false})
+        doc.fontSize(11).fill(pa.schade==="geen"?GREEN:pa.schade==="licht"?"#f59e0b":RED).text(pa.schade||"onbekend",300,yi+23,{lineBreak:false})
+        
+        if(pa.schade_details) doc.fontSize(8).fill(TXT2).text(pa.schade_details,52,yi+42,{width:PW-30})
+        if(pa.opties_gezien&&pa.opties_gezien.length) doc.fontSize(8).fill(TXT3).text("Herkende opties: "+pa.opties_gezien.join(", "),52,yi+56,{width:PW-30})
+        
+        yi += 82
+      }
+      
+      // ── FOTO'S ──
+      if (ext.photos) {
+        const photoDir = path.join("/opt/t4c/data/photos/inspections", ext.photos)
+        if (fs.existsSync(photoDir)) {
+          const files = fs.readdirSync(photoDir).filter(f=>f.endsWith(".jpg")).sort().slice(0,6)
+          if (files.length > 0) {
+            // Check of foto's nog op deze pagina passen
+            if (yi > 500) {
+              doc.fontSize(7).fill(TXT3).text("Foto-analyse uitgevoerd door CarDatax Vision.",40,790,{width:PW})
+              footer(doc)
+              doc.addPage({size:"A4",margin:40})
+              doc.rect(0,0,595,842).fill(DARK)
+              try { doc.image(logoLg,40,28,{height:28}) } catch(e){}
+              doc.fontSize(10).fill(TXT3).text("INSPECTIE FOTO'S",440,35,{width:115,align:"right"})
+              doc.save().strokeOpacity(0.15).moveTo(40,62).lineTo(40+PW,62).strokeColor(ACCENT).stroke().restore()
+              yi = 75
+            }
+            
+            doc.save().roundedRect(40,yi,PW,18,6).fill("#111520").restore()
+            doc.fontSize(8).fill(ACCENT).text("INSPECTIE FOTO'S ("+files.length+")",52,yi+5)
+            yi += 24
+            
+            const cols = files.length <= 4 ? 2 : 3
+            const gap = 8
+            const imgW = (PW - (cols-1)*gap) / cols
+            const imgH = imgW * 0.65
+            
+            for (let i = 0; i < files.length; i++) {
+              const col = i % cols
+              const row = Math.floor(i / cols)
+              const x = 40 + col * (imgW + gap)
+              const y = yi + row * (imgH + gap)
+              
+              try {
+                const imgPath = path.join(photoDir, files[i])
+                doc.save()
+                doc.roundedRect(x,y,imgW,imgH,4).clip()
+                doc.image(imgPath, x, y, { width: imgW, height: imgH, fit: [imgW, imgH], align: "center", valign: "center" })
+                doc.restore()
+                doc.roundedRect(x,y,imgW,imgH,4).strokeColor(TXT3).strokeOpacity(0.2).stroke()
+                // Label
+                doc.roundedRect(x+4,y+4,28,14,3).fill("rgba(0,0,0,0.6)")
+                doc.fontSize(7).fill("#fff").text((i+1)+"/"+files.length,x+6,y+7,{lineBreak:false})
+              } catch(e) {}
+            }
+          }
+        }
+      }
+      
+      doc.fontSize(7).fill(TXT3).text("Foto-analyse uitgevoerd door CarDatax Vision. Schade-beoordeling is indicatief en vervangt geen fysieke inspectie.",40,790,{width:PW})
       footer(doc)
     }
 

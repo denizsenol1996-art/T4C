@@ -256,6 +256,32 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
   .price-row{grid-template-columns:1fr}
   .pcard.advies{grid-column:span 1}
 }
+/* CarDatax Vision Scanner */
+@keyframes scanLine{0%{top:-3px}100%{top:calc(100% + 3px)}}
+@keyframes scanPulse{0%{opacity:.3}50%{opacity:1}100%{opacity:.3}}
+@keyframes slideIn{0%{opacity:0;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+@keyframes pixelReveal{0%{filter:blur(12px) brightness(.6) saturate(0)}30%{filter:blur(6px) brightness(.8) saturate(.5)}70%{filter:blur(2px) brightness(.95) saturate(.8)}100%{filter:blur(0) brightness(1) saturate(1)}}
+.vision-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(2,6,14,.95);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.vision-title{font-size:13px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:4px;margin-bottom:24px;animation:scanPulse 2s ease-in-out infinite;text-shadow:0 0 20px rgba(0,210,106,.4)}
+.vision-photo-wrap{position:relative;width:560px;height:380px;border-radius:8px;overflow:hidden;border:1px solid rgba(0,210,106,.4);box-shadow:0 0 60px rgba(0,210,106,.1),0 0 120px rgba(0,210,106,.05),inset 0 0 60px rgba(0,0,0,.3)}
+.vision-photo-wrap img{width:100%;height:100%;object-fit:cover;animation:pixelReveal 2s ease-out forwards}
+.vision-scanline{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 5%,rgba(0,210,106,.8) 50%,transparent 95%);box-shadow:0 0 8px var(--green),0 0 20px rgba(0,210,106,.4),0 -8px 20px rgba(0,210,106,.1),0 8px 20px rgba(0,210,106,.1);animation:scanLine 2s ease-in-out infinite;z-index:3}
+.vision-corners{position:absolute;top:0;left:0;right:0;bottom:0;z-index:4}
+.vision-corners::before,.vision-corners::after{content:'';position:absolute;width:40px;height:40px;border-color:var(--green);border-style:solid}
+.vision-corners::before{top:6px;left:6px;border-width:2px 0 0 2px}
+.vision-corners::after{top:6px;right:6px;border-width:2px 2px 0 0}
+.vision-corner-bl,.vision-corner-br{position:absolute;width:40px;height:40px;border-color:var(--green);border-style:solid;z-index:4}
+.vision-corner-bl{bottom:6px;left:6px;border-width:0 0 2px 2px}
+.vision-corner-br{bottom:6px;right:6px;border-width:0 2px 2px 0}
+.vision-info{display:flex;gap:24px;margin-top:24px;font-size:11px;color:var(--text3);letter-spacing:.5px}
+.vision-info span{display:flex;align-items:center;gap:8px}
+.vision-info .dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:scanPulse .8s ease-in-out infinite;box-shadow:0 0 6px var(--green)}
+.vision-counter{margin-top:16px;font-size:14px;color:var(--text1);font-family:var(--mono);font-weight:600}
+.vision-status{margin-top:8px;font-size:11px;color:var(--green);min-height:16px;letter-spacing:1px}
+.vision-logo{margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.vision-logo img{height:32px;filter:drop-shadow(0 0 10px rgba(0,210,106,.3))}
+.vision-progress{width:300px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:12px;overflow:hidden}
+.vision-progress-bar{height:100%;background:var(--green);border-radius:2px;transition:width .3s ease;box-shadow:0 0 8px var(--green)}
 </style>
 </head>
 <body>
@@ -274,6 +300,19 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
 </div>
 
 <!-- ══ APP ══ -->
+<div id="vision-overlay" class="vision-overlay" style="display:none">
+  <div class="vision-logo"><img src="/m/logo-sidebar.png" alt="CarDatax"></div>
+  <div class="vision-title">CarDatax Vision</div>
+  <div class="vision-photo-wrap" id="vision-photo">
+    <div class="vision-scanline"></div>
+    <div class="vision-corners"></div>
+    <div class="vision-corner-bl"></div>
+    <div class="vision-corner-br"></div>
+  </div>
+  <div class="vision-counter" id="vision-counter"></div>
+  <div class="vision-progress"><div class="vision-progress-bar" id="vision-progress" style="width:0"></div></div>
+  <div class="vision-status" id="vision-status"></div>
+</div>
 <div id="app-screen" class="app" style="display:none">
 
   <!-- SIDEBAR -->
@@ -283,11 +322,15 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
       
     </div>
     <div class="sb-nav">
-      <button class="sb-item active" onclick="document.getElementById('mp').value='';document.getElementById('mk').value='';showPanel('taxatie')" id="nav-taxatie">
+      <button class="sb-item active" onclick="document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('mp').value='';document.getElementById('mk').value='';showPanel('taxatie')" id="nav-taxatie">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         Nieuwe Taxatie
       </button>
       <!-- Schade Scanner verborgen op desktop -->
+      <button class="sb-item" onclick="document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));this.classList.add('active');showPanel('extended')" id="nav-extended">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Uitgebreide Taxatie
+      </button>
       <button class="sb-item" onclick="window.open('/admin/')" id="nav-admin">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         Admin Panel
@@ -353,6 +396,107 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
 
       <!-- RESULT PANEL -->
       <div class="panel" id="p-result"></div>
+      <div class="panel" id="p-extended">
+        <!-- STAP 1: INVOER -->
+        <div id="ext-step1">
+          <div class="tax-form">
+            <div class="tax-card" style="background:rgba(8,14,26,.4);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border:1px solid rgba(80,160,255,.18);border-radius:20px;padding:32px 28px 24px;box-shadow:0 40px 100px rgba(0,0,0,.5),0 0 200px rgba(12,60,180,.1),inset 0 1px 0 rgba(255,255,255,.07);position:relative;overflow:visible"><div style="position:absolute;top:-1px;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent)"></div>
+              <div class="plate-wrap">
+                <div class="plate-nl"><div class="plate-nl-stars">&#9733;&#9733;&#9733;</div><div class="plate-nl-code">NL</div></div>
+                <input class="plate-input" id="ext-plate" maxlength="9" placeholder="XX-999-X" autocapitalize="characters" oninput="this.value=fmtP(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('ext-km').focus()}">
+              </div>
+              <div class="km-wrap">
+                <input class="km-input" id="ext-km" type="text" inputmode="numeric" placeholder="Tellerstand" onkeydown="if(event.key==='Enter'){event.preventDefault();extStartTax()}">
+                <span class="km-suf">km</span>
+              </div>
+              <button class="tax-btn" id="ext-start-btn" onclick="extStartTax()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                Uitgebreide taxatie starten
+              </button>
+              <div class="tax-error" id="ext-error"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STAP 2: AUTO INFO + STAAT -->
+        <div id="ext-step2" style="display:none">
+          <!-- Header -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+            <div id="ext-car-header"></div>
+            <button class="tb-btn" onclick="document.getElementById('ext-step2').style.display='none';document.getElementById('ext-step3').style.display='none';document.getElementById('ext-step1').style.display='block';document.getElementById('ext-start-btn').style.display='block'">+ Nieuw</button>
+          </div>
+
+          <!-- 2-kolom: foto's links, checkboxes rechts -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px">
+            <!-- LINKS: Foto upload -->
+            <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px">
+              <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:12px">Foto's (optioneel)</div>
+              <div style="background:var(--card);border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:.2s" onclick="document.getElementById('ext-files').click()" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:28px;margin-bottom:6px">&#128247;</div>
+                <div style="color:var(--text2);font-weight:600;font-size:13px">Klik om foto's te uploaden</div>
+                <div style="color:var(--text4);font-size:11px;margin-top:4px">Max 8 foto's</div>
+                <input type="file" id="ext-files" multiple accept="image/*" style="display:none" onchange="extPreviewPhotos(this.files)">
+              </div>
+              <div id="ext-preview" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px"></div>
+            </div>
+
+            <!-- RECHTS: Checkboxes -->
+            <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px">
+              <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:12px">Staat &amp; correcties</div>
+              <div id="ext-checks" style="display:grid;gap:4px;max-height:400px;overflow-y:auto"></div>
+            </div>
+          </div>
+
+          <!-- 1 knop -->
+          <button class="tax-btn" id="ext-go-btn" onclick="extGoTax()" style="margin-bottom:16px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Scan &amp; Taxeer
+          </button>
+        </div>
+
+        <!-- STAP 3: RESULTAAT -->
+        <div id="ext-step3" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div id="ext-result-header" style="font-size:20px;font-weight:700;color:var(--text1)"></div>
+            <div style="display:flex;gap:8px">
+              <button class="tb-btn" onclick="document.getElementById('ext-step3').style.display='none';document.getElementById('ext-step2').style.display='block'">Aanpassen</button>
+              <button class="tb-btn" onclick="document.getElementById('ext-step2').style.display='none';document.getElementById('ext-step3').style.display='none';document.getElementById('ext-step1').style.display='block';document.getElementById('ext-start-btn').style.display='block'">+ Nieuw</button>
+            </div>
+          </div>
+
+          <!-- Basis prijs -->
+          <div id="ext-basis" style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <span style="color:var(--text3);font-size:12px;font-weight:600;text-transform:uppercase">Basisprijs (goede staat)</span>
+              <span id="ext-source" style="font-size:10px;padding:3px 10px;border-radius:6px;background:var(--green);color:#000;font-weight:700"></span>
+            </div>
+            <div class="price-row" style="grid-template-columns:1fr 1fr 1fr">
+              <div class="pcard" style="padding:12px"><div class="pcard-label">Verkoop</div><div class="pcard-val" id="ext-vp" style="font-size:22px"></div></div>
+              <div class="pcard" style="padding:12px"><div class="pcard-label">Inkoop range</div><div class="pcard-val" id="ext-inkoop" style="font-size:16px"></div></div>
+              <div class="pcard" style="padding:12px"><div class="pcard-label">Betrouwbaarheid</div><div class="pcard-val" id="ext-conf" style="font-size:16px"></div></div>
+            </div>
+            <div id="ext-reasoning" style="margin-top:10px;padding:10px;background:var(--card);border-radius:8px;color:var(--text3);font-size:11px;line-height:1.6"></div>
+          </div>
+
+          <!-- Gecorrigeerde prijs -->
+          <div id="ext-result" style="display:none;background:linear-gradient(135deg,rgba(0,210,106,.08),rgba(0,210,106,.02));border:1px solid rgba(0,210,106,.3);border-radius:12px;padding:16px;margin-bottom:16px">
+            <div style="font-size:12px;font-weight:600;color:var(--green);text-transform:uppercase;margin-bottom:12px">Gecorrigeerde prijs</div>
+            <div class="price-row" style="grid-template-columns:1fr 1fr 1fr">
+              <div class="pcard" style="padding:12px;border-color:rgba(0,210,106,.3)"><div class="pcard-label">Verkoop</div><div class="pcard-val" id="ext-cvp" style="font-size:22px;color:var(--green)"></div></div>
+              <div class="pcard" style="padding:12px;border-color:rgba(0,210,106,.3)"><div class="pcard-label">Inkoop range</div><div class="pcard-val" id="ext-cinkoop" style="font-size:16px"></div></div>
+              <div class="pcard" style="padding:12px;border-color:rgba(0,210,106,.3)"><div class="pcard-label">Correctie</div><div class="pcard-val" id="ext-cpct" style="font-size:18px;color:var(--orange)"></div></div>
+            </div>
+            <div id="ext-breakdown" style="margin-top:12px;padding:12px;background:var(--card);border-radius:8px"></div>
+          </div>
+
+          <!-- Foto analyse resultaat -->
+          <div id="ext-photo-result" style="display:none;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+            <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:12px">AI Foto-analyse</div>
+            <div id="ext-photo-detail"></div>
+          </div>
+        </div>
+
+      </div>
 
     </div>
   </div>
@@ -479,7 +623,7 @@ function reloadTax(plate){
       renderResult();
       showPanel('result');
       renderSidebar();
-      generateCarImages();
+      if(!window._isExtendedTax){generateCarImages()}else{const _ttl=document.getElementById("tt-loading");if(_ttl)_ttl.style.display="none";if(extPhotos&&extPhotos.length>0){const _pc=last.plate.replace(/[^A-Z0-9]/gi,"").toUpperCase();buildTT(extPhotos.map((p,idx)=>({url:"/photos/inspections/"+_pc+"/"+(idx+1)+".jpg",angle:"foto-"+(idx+1)})))}}
     // Feedback sectie alleen voor admin/Jurgen
     try{const u=JSON.parse(localStorage.getItem('t4c_user')||'{}');if(u.role==='admin'||u.name==='Jurgen'||u.username==='Jurgen'){const fs=document.getElementById('feedback-section');if(fs)fs.style.display='block'}}catch(e){}
       return;
@@ -497,7 +641,7 @@ function reloadTax(plate){
 function showPanel(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('p-'+id)?.classList.add('active');
-  const titles={taxatie:'Nieuwe Taxatie',loading:'Bezig...',result:'Taxatie Resultaat'};
+  const titles={taxatie:'Nieuwe Taxatie',loading:'Bezig...',result:'Taxatie Resultaat',extended:'Uitgebreide Taxatie'};
   document.getElementById('tb-title').textContent=titles[id]||id;
 }
 function ldStep(n){for(let i=1;i<=4;i++){const el=document.getElementById('ls'+i);if(!el)continue;el.className=i<n?'ld-step done':i===n?'ld-step active':'ld-step'}}
@@ -559,6 +703,7 @@ function recalcBod(){
 // TAXATIE FLOW
 // ══════════════════════════════════════
 async function doTax(){
+  window._isExtendedTax=false
   const errEl=document.getElementById('tax-error'),btn=document.getElementById('tax-btn');
   errEl.textContent='';
   const p=document.getElementById('mp').value.replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
@@ -589,7 +734,7 @@ async function doTax(){
     fetch('/api/taxatie/save',{method:'POST',headers:_authH(),body:JSON.stringify({kenteken:last.plate,make:v.make,model:v.model,year:v.year,fuel:v.fuel,km:last.km,power_kw:v.powerKw,power_hp:v.powerHp,engine_label:v.engineLabel,verkoopadviees:r.verkoopadviees,handelswaarde:r.handelswaarde,inkoop_low:r.inkoopLow,inkoop_high:r.inkoopHigh,internet_prijs:r.internetPrijs,market_count:m?.count,p25:m?.p25,p50:m?.median,p75:m?.p75,status:'concept'})}).catch(()=>{});
     renderResult();showPanel('result');renderSidebar();
     // Background: images
-    generateCarImages();
+    if(!window._isExtendedTax){generateCarImages()}else{const _ttl=document.getElementById("tt-loading");if(_ttl)_ttl.style.display="none";if(extPhotos&&extPhotos.length>0){const _pc=last.plate.replace(/[^A-Z0-9]/gi,"").toUpperCase();buildTT(extPhotos.map((p,idx)=>({url:"/photos/inspections/"+_pc+"/"+(idx+1)+".jpg",angle:"foto-"+(idx+1)})))}}
   }catch(e){
     showPanel('taxatie');errEl.textContent=e.message;
   }
@@ -822,7 +967,13 @@ function updateLive(){
 let ttIdx=0,ttImgs=[];
 function ttNav(dir){if(!ttImgs.length)return;ttIdx=((ttIdx+dir)%ttImgs.length+ttImgs.length)%ttImgs.length;document.getElementById('tt-track').style.transform='translateX(-'+ttIdx*100+'%)';document.querySelectorAll('.tdot').forEach((d,i)=>d.classList.toggle('active',i===ttIdx))}
 async function generateCarImages(){
-  if(!last)return;const{v,plate}=last;const pc=plate.replace(/[^A-Z0-9]/gi,'').toUpperCase();if(!pc)return;
+  // Bij extended taxatie: toon geüploade foto's ipv AI generatie
+  if(window._isExtendedTax && extPhotos.length>0){
+    const imgs=extPhotos.map((p,i)=>({url:p,angle:'foto-'+(i+1)}))
+    buildTT(imgs)
+    document.getElementById('tt-loading').style.display='none'
+    return
+  }const{v,plate}=last;const pc=plate.replace(/[^A-Z0-9]/gi,'').toUpperCase();if(!pc)return;
   const ld=document.getElementById('tt-loading');
   try{
     const cR=await fetch('/api/car-images/'+pc);const cache=await cR.json();
@@ -881,8 +1032,18 @@ function copyBod(){
 async function exportPdf(){
   if(!last)return;toast('PDF genereren...','info',2000);
   const calc=recalcBod(),c=window._t4c||{};
+  // Voeg schade-correctie data toe als beschikbaar
+  const extInfo=window._isExtendedTax&&extData?{
+    basisVP:extData.basis?.verkoopadviees,
+    gecorrigeerdVP:extData.gecorrigeerd?.verkoopadviees,
+    correctiePct:extData.correctie?.totalePct,
+    correctieBedrag:extData.correctie?.totaleBedrag,
+    correctieItems:extData.correctie?.items||[],
+    photoAnalysis:extData.photoAnalysis,
+    photos:extPhotos.length>0?last.plate.replace(/[^A-Z0-9]/gi,'').toUpperCase():null
+  }:null;
   try{
-    const r=await _api('/api/pdf',{method:'POST',headers:_authH(),body:JSON.stringify({vehicle:{make:last.v.make,model:last.v.model,year:last.v.year,fuel:last.v.fuel,plate:last.plate,body:last.v.body||'',powerHp:last.v.powerHp,powerKw:last.v.powerKw,transmissionType:last.v.transmissionType||'',engineLabel:last.v.engineLabel||'',subModel:last.v.subModel||'',trimLevel:last.v.trimLevel||'',vin:last.v.vin||'',motorCode:last.v.motorCode||'',catalogPrice:last.v.catalogPrice,bpm:last.v.bpm,bpmRest:last.v.bpmRest||0,ownerCount:last.v.ownerCount||0,apkUntil:last.v.apkUntil||'',engineRiskProfile:last.v.engineRiskProfile||'',napOk:last.v.napOk,importFlag:last.v.importFlag,stolenFlag:last.v.stolenFlag,co2:last.v.co2,emissieKlasse:last.v.emissieKlasse,mrb:last.v.mrb},result:{verkoopadviees:last.r.verkoopadviees,handelswaarde:last.r.handelswaarde,inkoopLow:last.r.inkoopLow,inkoopHigh:last.r.inkoopHigh,internetPrijs:last.r.internetPrijs,t4cBod:calc.bod,confidence:last.r.confidence||0,smartSummary:last.r.smartSummary||[]},market:{count:last.m?.count||0,avg:last.m?.avg||0,median:last.m?.median||0,p25:last.m?.p25||0,p75:last.m?.p75||0},km:last.km,bod:calc.bod,atr:last.r.verkoopadviees||last.r.internetPrijs,etr:last.r.handelswaarde,marge:calc.marge,margePct:calc.margePct,breakdown:'VP '+E(c.vp)+' - marge '+calc.margePctUsed+'%'})});
+    const r=await _api('/api/pdf',{method:'POST',headers:_authH(),body:JSON.stringify({vehicle:{make:last.v.make,model:last.v.model,year:last.v.year,fuel:last.v.fuel,plate:last.plate,body:last.v.body||'',powerHp:last.v.powerHp,powerKw:last.v.powerKw,transmissionType:last.v.transmissionType||'',engineLabel:last.v.engineLabel||'',subModel:last.v.subModel||'',trimLevel:last.v.trimLevel||'',vin:last.v.vin||'',motorCode:last.v.motorCode||'',catalogPrice:last.v.catalogPrice,bpm:last.v.bpm,bpmRest:last.v.bpmRest||0,ownerCount:last.v.ownerCount||0,apkUntil:last.v.apkUntil||'',engineRiskProfile:last.v.engineRiskProfile||'',napOk:last.v.napOk,importFlag:last.v.importFlag,stolenFlag:last.v.stolenFlag,co2:last.v.co2,emissieKlasse:last.v.emissieKlasse,mrb:last.v.mrb},result:{verkoopadviees:last.r.verkoopadviees,handelswaarde:last.r.handelswaarde,inkoopLow:last.r.inkoopLow,inkoopHigh:last.r.inkoopHigh,internetPrijs:last.r.internetPrijs,t4cBod:calc.bod,confidence:last.r.confidence||0,smartSummary:last.r.smartSummary||[]},market:{count:last.m?.count||0,avg:last.m?.avg||0,median:last.m?.median||0,p25:last.m?.p25||0,p75:last.m?.p75||0},km:last.km,bod:calc.bod,atr:last.r.verkoopadviees||last.r.internetPrijs,etr:last.r.handelswaarde,marge:calc.marge,margePct:calc.margePct,breakdown:'VP '+E(c.vp)+' - marge '+calc.margePctUsed+'%',extended:extInfo})});
     if(!r.ok)throw new Error('PDF fout');
     const blob=await r.blob();const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download='taxatie-'+last.plate+'.pdf';a.click();URL.revokeObjectURL(url);
@@ -892,6 +1053,361 @@ async function exportPdf(){
 
 // ── KM format ──
 document.getElementById('mk')?.addEventListener('input',function(){const v=this.value.replace(/[^0-9]/g,'');this.value=v?Number(v).toLocaleString('nl-NL'):''});
+
+// ══════════════════════════════════════
+// UITGEBREIDE TAXATIE
+// ══════════════════════════════════════
+const CORR_EXT={
+  lichte_schade:{label:"Lichte schade (krasjes, velgschade)",pct:-0.05},
+  zware_schade:{label:"Zware schade (deuken, lakschade, roest)",pct:-0.15},
+  motorprobleem:{label:"Motorprobleem / storing",pct:-0.15},
+  waarschuwingslampje:{label:"Waarschuwingslampje brandt",pct:-0.07},
+  veel_aanbod:{label:"Veel aanbod / overjaard model",pct:-0.07},
+  drie_deurs:{label:"3-deurs (minder courant)",pct:-0.07},
+  kale_uitvoering:{label:"Kale uitvoering / basis trim",pct:-0.10},
+  import_auto:{label:"Import auto",pct:-0.05},
+  rokers_auto:{label:"Rokers auto",pct:-0.05},
+  apk_verlopen:{label:"APK verlopen",pct:-0.05},
+  veel_eigenaren:{label:"Veel eigenaren (5+)",pct:-0.05},
+  ex_taxi:{label:"Ex-taxi / ex-lease",pct:-0.10}
+}
+let extData = null
+let extVehicle = null
+let extPhotos = []
+
+async function extStartTax(){
+  const p=document.getElementById('ext-plate').value.replace(/[^A-Z0-9]/gi,'')
+  const km=document.getElementById('ext-km').value.replace(/[^0-9]/g,'')
+  if(!p||p.length<5){toast('Voer een geldig kenteken in','error');return}
+  const btn=document.getElementById('ext-start-btn')
+  btn.disabled=true;btn.textContent='Voertuig ophalen...'
+  try{
+    // Stap 1: Alleen voertuigdata ophalen (snel, 2-3 sec)
+    const vR=await fetch('/api/vehicle/enriched?plate='+p+(km?'&km='+km:''))
+    if(!vR.ok)throw new Error('Voertuig niet gevonden')
+    extVehicle=await vR.json()
+    // Toon auto-info
+    document.getElementById('ext-car-header').innerHTML=`
+      <div style="display:flex;gap:16px;align-items:center">
+        <div style="flex:1">
+          <div style="font-size:20px;font-weight:800;font-family:var(--mono);letter-spacing:1px">${fmtP(p)}</div>
+          <div style="font-size:15px;color:var(--text1);margin-top:4px">${extVehicle.make||''} ${extVehicle.subModel||extVehicle.specificModel||extVehicle.model||''}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">${extVehicle.year||''} · ${km?Number(km).toLocaleString('nl-NL')+' km':'?'} · ${extVehicle.fuel||'?'}${extVehicle.transmissionType?' · '+extVehicle.transmissionType:''}${extVehicle.body?' · '+extVehicle.body:''}</div>
+          <div style="font-size:11px;color:var(--text4);margin-top:4px">${extVehicle.engineLabel||''} ${extVehicle.motorCode?'('+extVehicle.motorCode+')':''}${extVehicle.generation?' · '+extVehicle.generation:''}${extVehicle.catalogPrice?' · Nieuwprijs '+E(extVehicle.catalogPrice):''}</div>
+        </div>
+      </div>`
+    document.getElementById('ext-car-header').style.display='block'
+    // keuze nu altijd zichtbaar
+    document.getElementById('ext-step2').style.display='block';document.getElementById('ext-step1').style.display='none';document.getElementById('ext-step3').style.display='none'
+    btn.style.display='none'
+    // recalc btn zit in step3
+    // Bouw checkboxes
+    extBuildChecksLocal()
+  }catch(e){toast('Fout: '+e.message,'error')}
+  finally{btn.disabled=false;btn.textContent='Uitgebreide taxatie starten'}
+}
+
+function extBuildChecksLocal(){
+  const el=document.getElementById('ext-checks')
+  const CORR={
+    lichte_schade:{label:"Lichte schade (krasjes, velgschade)",pct:-0.05},
+    zware_schade:{label:"Zware schade (deuken, lakschade, roest)",pct:-0.15},
+    motorprobleem:{label:"Motorprobleem / storing",pct:-0.15},
+    waarschuwingslampje:{label:"Waarschuwingslampje brandt",pct:-0.07},
+    veel_aanbod:{label:"Veel aanbod / overjaard model",pct:-0.07},
+    drie_deurs:{label:"3-deurs (minder courant)",pct:-0.07},
+    kale_uitvoering:{label:"Kale uitvoering / basis trim",pct:-0.10},
+    import_auto:{label:"Import auto",pct:-0.05},
+    rokers_auto:{label:"Rokers auto",pct:-0.05},
+    apk_verlopen:{label:"APK verlopen",pct:-0.05},
+    veel_eigenaren:{label:"Veel eigenaren (5+)",pct:-0.05},
+    ex_taxi:{label:"Ex-taxi / ex-lease",pct:-0.10}
+  }
+  const cats={
+    'Exterieur':['lichte_schade','zware_schade'],
+    'Technisch':['motorprobleem','waarschuwingslampje'],
+    'Markt':['veel_aanbod','drie_deurs'],
+    'Uitvoering':['kale_uitvoering','import_auto'],
+    'Overig':['rokers_auto','apk_verlopen','veel_eigenaren','ex_taxi']
+  }
+  let html=''
+  for(const [cat,keys] of Object.entries(cats)){
+    html+='<div style="color:var(--text3);font-size:10px;font-weight:600;text-transform:uppercase;margin-top:8px;margin-bottom:4px">'+cat+'</div>'
+    for(const k of keys){
+      const cor=CORR_EXT[k]
+      if(!cor)continue
+      html+='<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--card2);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer">'
+      html+='<input type="checkbox" id="ext-c-'+k+'"  style="width:18px;height:18px;accent-color:var(--green)">'
+      html+='<span style="flex:1;color:var(--text1);font-size:13px">'+cor.label+'</span>'
+      html+='<span style="color:var(--orange);font-size:12px;font-weight:600">'+Math.round(cor.pct*100)+'%</span>'
+      html+='</label>'
+    }
+  }
+  el.innerHTML=html
+  document.getElementById('ext-step2').style.display='block';document.getElementById('ext-step1').style.display='none'
+  // recalc btn zit in step3
+}
+
+function showVisionScanner(photos){
+  const overlay=document.getElementById('vision-overlay')
+  const photoEl=document.getElementById('vision-photo')
+  const counterEl=document.getElementById('vision-counter')
+  const statusEl=document.getElementById('vision-status')
+  const progressEl=document.getElementById('vision-progress')
+  overlay.style.display='flex'
+  
+  const steps=['Foto analyseren...','Schade detecteren...','Model controleren...','Staat bepalen...','Opties herkennen...','Rapport genereren...']
+  let photoIdx=0
+  let loopCount=0
+  const total=photos.length||1
+  window._visionDone=false
+  
+  function showNext(){
+    if(window._visionDone){
+      progressEl.style.width='100%'
+      statusEl.textContent='Analyse compleet'
+      counterEl.textContent=''
+      setTimeout(()=>{overlay.style.display='none'},800)
+      return
+    }
+    
+    const idx=photoIdx%total
+    progressEl.style.width=Math.min(90,Math.round(((loopCount*total+photoIdx)/(total*3))*100))+'%'
+    counterEl.textContent='Foto '+(idx+1)+' van '+total
+    statusEl.textContent=steps[loopCount%steps.length]
+    
+    if(photos[idx]){
+      const img=new Image()
+      img.onload=function(){
+        const existing=photoEl.querySelector('img')
+        if(existing)existing.remove()
+        img.style.cssText='width:100%;height:100%;object-fit:cover;animation:pixelReveal 1.8s ease-out forwards'
+        photoEl.insertBefore(img,photoEl.firstChild)
+      }
+      img.src=photos[idx]
+    }
+    
+    photoIdx++
+    if(photoIdx%total===0)loopCount++
+    setTimeout(showNext,2200)
+  }
+  showNext()
+}
+
+async function extGoTax(){
+  const btn=document.getElementById('ext-go-btn')
+  btn.disabled=true;btn.textContent='Bezig met taxatie...'
+  try{
+    const p=document.getElementById('ext-plate').value.replace(/[^A-Z0-9]/gi,'')
+    const km=document.getElementById('ext-km').value.replace(/[^0-9]/g,'')
+    
+    // Correcties ophalen
+    const corrections={}
+    for(const k of Object.keys(CORR_EXT)){
+      const cb=document.getElementById('ext-c-'+k)
+      if(cb&&cb.checked)corrections[k]=true
+    }
+    
+    if(extPhotos.length===0){toast("Upload eerst foto's van het voertuig","error");btn.disabled=false;btn.textContent="Scan & Taxeer";return}
+    window._isExtendedTax=true
+    // Start scanner + API parallel - scanner loopt tot API klaar is
+    if(extPhotos.length>0){
+      showVisionScanner(extPhotos)
+    }
+    
+    const r=await _api('/api/extended-taxatie',{method:'POST',headers:{..._authH(),'Content-Type':'application/json'},body:JSON.stringify({plate:fmtP(p),km:Number(km)||0,corrections,photos:extPhotos.length?extPhotos:undefined})})
+    
+    // Stop scanner
+    window._visionDone=true
+    await new Promise(r=>setTimeout(r,1000))
+    const d=await r.json()
+    if(d.error){toast(d.error,'error');return}
+    extData=d
+    
+    // Vul last met gecorrigeerde data zodat renderResult() werkt
+    const hasCorrections=d.correctie&&d.correctie.items&&d.correctie.items.length>0
+    const prices=hasCorrections?d.gecorrigeerd:d.basis
+    
+    // Haal ook de volledige pricing response op (zit in de basis call)
+    const fullR=await _api('/api/dealer/price',{method:'POST',headers:{..._authH(),'Content-Type':'application/json'},body:JSON.stringify({plate:fmtP(p),km:Number(km)||0})})
+    const fullData=await fullR.json()
+    
+    // Override prijzen met gecorrigeerde
+    if(hasCorrections){
+      fullData.verkoopadviees=prices.verkoopadviees
+      fullData.handelswaarde=prices.handelswaarde
+      fullData.inkoopLow=prices.inkoopLow
+      fullData.inkoopHigh=prices.inkoopHigh
+    }
+    
+    // Stel last samen
+    last={v:extVehicle,m:null,r:fullData,plate:fmtP(p),km:Number(km)||0}
+    
+    // Render het standaard resultaat
+    renderResult()
+    showPanel('result')
+    renderSidebar()
+    // Verberg AI loading en toon geüploade foto's
+    const _ttl2=document.getElementById('tt-loading');if(_ttl2)_ttl2.style.display='none'
+    if(extPhotos.length>0){
+      const _pc2=fmtP(p).replace(/[^A-Z0-9]/gi,'').toUpperCase()
+      buildTT(extPhotos.map((ph,idx)=>({url:"/photos/inspections/"+_pc2+"/"+(idx+1)+".jpg",angle:"foto-"+(idx+1)})))
+    }
+    
+    // Voeg schade-info toe bovenaan het resultaat
+    if(hasCorrections||d.photoAnalysis){
+      let shtml='<div style="background:linear-gradient(135deg,rgba(255,165,0,.08),rgba(255,165,0,.02));border:1px solid rgba(255,165,0,.3);border-radius:12px;padding:16px;margin-bottom:16px">'
+      shtml+='<div style="font-size:12px;font-weight:600;color:var(--orange);text-transform:uppercase;margin-bottom:10px">Schade-correctie toegepast</div>'
+      if(hasCorrections){
+        shtml+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">'
+        shtml+='<div><span style="color:var(--text3);font-size:11px">Basis VP</span><div style="font-size:16px;color:var(--text2);text-decoration:line-through">'+E(d.basis.verkoopadviees)+'</div></div>'
+        shtml+='<div><span style="color:var(--text3);font-size:11px">Gecorrigeerd VP</span><div style="font-size:18px;font-weight:700;color:var(--green)">'+E(prices.verkoopadviees)+'</div></div>'
+        shtml+='<div><span style="color:var(--text3);font-size:11px">Correctie</span><div style="font-size:18px;font-weight:700;color:var(--orange)">'+d.correctie.totalePct+'%</div></div>'
+        shtml+='</div>'
+        for(const it of d.correctie.items){
+          shtml+='<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:var(--text3)">'+it.label+'</span><span style="color:var(--orange)">'+E(it.bedrag)+'</span></div>'
+        }
+      }
+      if(d.photoAnalysis&&!d.photoAnalysis.error){
+        const pa=d.photoAnalysis
+        shtml+='<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,165,0,.2)">'
+        shtml+='<div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px">AI FOTO-ANALYSE</div>'
+        shtml+='<div style="display:flex;gap:20px;font-size:13px">'
+        shtml+='<span>Staat: <b style="color:var(--text1)">'+pa.algehele_staat+'</b></span>'
+        shtml+='<span>Schade: <b style="color:'+(pa.schade==="geen"?"var(--green)":"var(--orange)")+'">'+pa.schade+'</b></span>'
+        shtml+='</div>'
+        if(pa.schade_details)shtml+='<div style="color:var(--text3);font-size:12px;margin-top:4px">'+pa.schade_details+'</div>'
+        if(pa.opties_gezien&&pa.opties_gezien.length)shtml+='<div style="color:var(--text3);font-size:12px;margin-top:4px">Opties: '+pa.opties_gezien.join(", ")+'</div>'
+        shtml+='</div>'
+      }
+      shtml+='</div>'
+      document.getElementById('p-result').insertAdjacentHTML('afterbegin',shtml)
+    }
+  }catch(e){toast('Fout: '+e.message,'error')}
+  finally{btn.disabled=false;btn.textContent='Scan & Taxeer'}
+}
+
+async function extRecalc(){
+  if(!extVehicle){toast("Voer eerst een kenteken in","error");return}
+  const corrections={}
+  for(const k of Object.keys(CORR_EXT)){
+    const cb=document.getElementById('ext-c-'+k)
+    if(cb&&cb.checked)corrections[k]=true
+  }
+  const p=document.getElementById('ext-plate').value.replace(/[^A-Z0-9]/gi,'')
+  const km=document.getElementById('ext-km').value.replace(/[^0-9]/g,'')
+  const btn=document.getElementById('ext-recalc-btn')||document.getElementById('ext-go-btn')
+  if(btn){btn.disabled=true;btn.textContent='Berekenen...'}
+  try{
+    const r=await _api('/api/extended-taxatie',{method:'POST',headers:{..._authH(),'Content-Type':'application/json'},body:JSON.stringify({plate:fmtP(p),km:Number(km)||0,corrections,photos:extPhotos.length?extPhotos:undefined})})
+    const d=await r.json()
+    if(d.error){toast(d.error,'error');return}
+    extData=d
+    // Update basis
+    document.getElementById('ext-vp').textContent=E(d.basis.verkoopadviees)
+    document.getElementById('ext-inkoop').textContent=E(d.basis.inkoopLow)+' - '+E(d.basis.inkoopHigh)
+    // Toon gecorrigeerd
+    if(d.correctie.items.length>0){
+      document.getElementById('ext-cvp').textContent=E(d.gecorrigeerd.verkoopadviees)
+      document.getElementById('ext-cinkoop').textContent=E(d.gecorrigeerd.inkoopLow)+' - '+E(d.gecorrigeerd.inkoopHigh)
+      document.getElementById('ext-cpct').textContent=d.correctie.totalePct+'%'
+      let bk=''
+      for(const it of d.correctie.items){
+        bk+='<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:var(--text3)">'+it.label+'</span><span style="color:var(--orange)">'+E(it.bedrag)+'</span></div>'
+      }
+      bk+='<div style="display:flex;justify-content:space-between;padding:6px 0 0;margin-top:6px;border-top:1px solid var(--border);font-size:13px;font-weight:600"><span style="color:var(--text1)">Totaal correctie</span><span style="color:var(--orange)">'+d.correctie.totalePct+'% ('+E(d.correctie.totaleBedrag)+')</span></div>'
+      if(d.correctie.cap)bk+='<div style="color:var(--red);font-size:11px;margin-top:6px">⚠ Maximum correctie (-50%) bereikt</div>'
+      document.getElementById('ext-breakdown').innerHTML=bk
+      document.getElementById('ext-result').style.display='block'
+    }else{
+      document.getElementById('ext-result').style.display='none'
+    }
+    // Toon basis prijs
+    document.getElementById('ext-vp').textContent=E(d.basis.verkoopadviees)
+    document.getElementById('ext-inkoop').textContent=E(d.basis.inkoopLow)+' - '+E(d.basis.inkoopHigh)
+    const conf2=d.basis.confidence||0
+    document.getElementById('ext-conf').textContent=conf2+'/100'
+    document.getElementById('ext-conf').style.color=conf2>=75?'var(--green)':conf2>=55?'var(--orange)':'var(--red)'
+    document.getElementById('ext-source').textContent=d.basis.priceSource==='ai'?'GPT':'Formula'
+    document.getElementById('ext-reasoning').textContent=d.basis.reasoning||''
+    document.getElementById('ext-basis').style.display='block'
+
+    // Foto analyse resultaat
+    if(d.photoAnalysis&&!d.photoAnalysis.error){
+      const pa=d.photoAnalysis
+      // Auto-check checkboxes op basis van foto analyse
+      if(pa.schade==='licht'){const cb=document.getElementById('ext-c-lichte_schade');if(cb)cb.checked=true}
+      if(pa.schade==='zwaar'){const cb=document.getElementById('ext-c-zware_schade');if(cb)cb.checked=true}
+      if(pa.rokers_auto){const cb=document.getElementById('ext-c-rokers_auto');if(cb)cb.checked=true}
+      toast('Foto-analyse: '+pa.algehele_staat+' staat'+(pa.schade_details?' — '+pa.schade_details:''),'info',5000)
+      // Toon foto analyse detail
+      let phtml='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+      phtml+='<div><span style="color:var(--text3);font-size:11px">Staat:</span> <b style="color:var(--text1)">'+pa.algehele_staat+'</b></div>'
+      phtml+='<div><span style="color:var(--text3);font-size:11px">Schade:</span> <b style="color:'+(pa.schade==='geen'?'var(--green)':'var(--orange)')+'">'+pa.schade+'</b></div>'
+      if(pa.schade_details)phtml+='<div style="grid-column:1/-1;color:var(--text3);font-size:12px">'+pa.schade_details+'</div>'
+      if(pa.opties_gezien&&pa.opties_gezien.length)phtml+='<div style="grid-column:1/-1;color:var(--text3);font-size:12px">Opties: '+pa.opties_gezien.join(', ')+'</div>'
+      if(pa.model_correctie&&pa.model_correctie!=='geen')phtml+='<div style="grid-column:1/-1;color:var(--orange);font-size:12px;font-weight:600">Model correctie: '+pa.model_correctie+'</div>'
+      phtml+='</div>'
+      document.getElementById('ext-photo-detail').innerHTML=phtml
+      document.getElementById('ext-photo-result').style.display='block'
+    }
+  }catch(e){toast('Fout: '+e.message,'error')}
+  finally{if(btn){btn.disabled=false;btn.textContent='Scan & Taxeer'}}
+}
+
+function extPreviewPhotos(files){
+  const preview=document.getElementById('ext-preview')
+  extPhotos=[]
+  preview.innerHTML=''
+  const maxFiles=Math.min(files.length,8)
+  // Comprimeer foto's naar max 800px breed, 60% kwaliteit
+  function compressImg(file){
+    return new Promise(resolve=>{
+      const img=new Image()
+      img.onload=function(){
+        const canvas=document.createElement('canvas')
+        const maxW=800
+        let w=img.width,h=img.height
+        if(w>maxW){h=Math.round(h*(maxW/w));w=maxW}
+        canvas.width=w;canvas.height=h
+        canvas.getContext('2d').drawImage(img,0,0,w,h)
+        resolve(canvas.toDataURL('image/jpeg',0.6))
+      }
+      img.src=URL.createObjectURL(file)
+    })
+  }
+  // Comprimeer foto's naar max 800px breed, 60% kwaliteit
+  function compressImg(file){
+    return new Promise(resolve=>{
+      const img=new Image()
+      img.onload=function(){
+        const canvas=document.createElement('canvas')
+        const maxW=800
+        let w=img.width,h=img.height
+        if(w>maxW){h=Math.round(h*(maxW/w));w=maxW}
+        canvas.width=w;canvas.height=h
+        canvas.getContext('2d').drawImage(img,0,0,w,h)
+        resolve(canvas.toDataURL('image/jpeg',0.6))
+      }
+      img.src=URL.createObjectURL(file)
+    })
+  }
+  for(let i=0;i<maxFiles;i++){
+    compressImg(files[i]).then(dataUrl=>{
+      extPhotos.push(dataUrl)
+      preview.innerHTML+='<div style="position:relative;border-radius:6px;overflow:hidden;aspect-ratio:1;background:var(--card2)"><img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;padding:2px 6px;border-radius:4px">'+(i+1)+'/'+maxFiles+'</div></div>'
+    })
+  }
+}
+
+async function extAnalyzePhotos(){
+  if(extPhotos.length===0){toast('Upload eerst foto\'s','error');return}
+  const btn=document.getElementById('ext-analyze-btn')
+  btn.disabled=true;btn.textContent='AI analyseert foto\'s...'
+  // Trigger recalc met foto's — backend doet de Vision analyse
+  await extRecalc()
+  btn.disabled=false;btn.textContent='🔍 Opnieuw analyseren'
+}
 
 // ── Boot ──
 initApp();
