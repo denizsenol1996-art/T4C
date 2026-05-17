@@ -1,4 +1,50 @@
-# Session State — Last updated: 2026-05-17 12:50 by Claude
+# Session State — Last updated: 2026-05-17 15:30 by Claude
+
+## 2026-05-17 — Recovery nacht-11-12-mei patches (v10.18.59)
+
+5 pricing-patches uit nacht 11/12 mei teruggeplaatst in productie:
+- TITLE-FILTER safety bij >70% wegfiltering → gebruik ongefilterd
+- km-range filter in SQL comp query (`km BETWEEN 40-160% target`)
+- Comp confidence drempel 25 → 15
+- _dataWeight cap 0.40 → 0.70
+- Fallback blend re-enabled (≥15→0.50, ≥8→0.35, ≥3→0.20)
+- junk-filter.js MODEL-MATCH logica (+217 regels)
+
+Files: `backend/routes/valuation.js` (60247 b) + `backend/lib/comparable-engine/junk-filter.js` (14564 b). Bron: `backend-test-full.ARCHIVE-20260515/` (= test-versie van 11 mei 20:21).
+
+**Test op 80 Jurgen-feedbacks (PROD vs TEST-NIGHTPATCH)**:
+- Gem abs delta: €1174 → €1115 (-5%)
+- Gem signed delta: +€720 → +€481 (-33% overshoot)
+- Binnen 10%: 24% → 29%
+- Win/Loss/Tie: 39/24/17
+
+**Backups**: 
+- `FULL-STATE-BACKUPS/2026-05-17-pre-nightpatch-ship/` met ROLLBACK.sh (node_modules preserved)
+- Eerder vandaag: `FULL-STATE-BACKUPS/2026-05-17-pre-recovery/` (mislukte 4-patch recovery, gerolld)
+
+**Test-omgevingen gearchiveerd** (PM2 delete + dir rename):
+- `backend-test-april.ARCHIVE-20260517/` + `data-test-april.ARCHIVE-20260517/` (+€80 floor test)
+- `backend-test-nightpatch.ARCHIVE-20260517/` + `data-test-nightpatch.ARCHIVE-20260517/` (5 patches test)
+- DO_NOT_START.txt in beide
+
+### Verliescases — root cause analyse (3 grootste verslechtering)
+
+| Plate | Auto | Issue | Patch verantwoordelijk |
+|---|---|---|---|
+| RF-673-H | BMW 420i Cabrio | comp `insufficient_data` (cleanCount=0), fallback blend trekt €23950 GPT → €20500 via 4 onrelevante listings | Fallback blend re-enabled met `<8 sample → 0.20 weight` is te agressief bij insufficient data |
+| 9-SXS-82 | VW Golf 2014 | TWINS-pollution: 742 Seat/Skoda/Audi listings met mediaan €2701 verdunnen GPT €8300 → €7000 | Confidence drempel 25→15 + twins-pool jaar-filter zwak |
+| 31-ZRD-6 | VW Golf 2013 200k | Conf=42 met 26 comps median €1301 (incl. twins) → 63% weight trekt €5500 GPT → €2800 | _dataWeight cap 0.70 te hoog bij twins-vervuilde comps |
+
+### Verfijning-richtingen (open TODO, NIET geïmplementeerd)
+
+1. **Bij `compEngine.status=insufficient_data`**: fallback blend OVERSLAAN → 100% GPT (BMW 420i case)
+2. **TWINS-pool jaar-filter verstrakken**: huidig year±1, mogelijk year exact match voor twins (VW Golf cases)
+3. **_dataWeight cap differentiëren**: 0.55 bij comp-engine vs 0.70 bij fallback (vs huidig altijd 0.70)
+4. **strong/clean ratio in confidence**: 5/26 strong = 19% — lage strong-rate moet confidence verlagen
+5. **TITLE-FILTER SKIP-drempel strikter**: huidig <0.3 → ongefilterd; mogelijk 0.2
+
+---
+
 
 ## Waar zijn we
 
