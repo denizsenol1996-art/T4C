@@ -1,10 +1,50 @@
-# Session State — Last updated: 2026-05-15 20:15 by Claude
+# Session State — Last updated: 2026-05-17 12:50 by Claude
 
 ## Waar zijn we
 
+Snelheidswerk: Jurgen klaagde dat taxatie 30s duurt, doel <10s. Profilering wees uit dat 86-100% van wallclock in de hoofd-GPT-5.4 + web_search call (~9-12s) zit, en cold path daarbovenop nog 5-8s aan RDW/Finnik/VIN-decode. Twee fixes live (v10.18.55, v10.18.56). DB-fundament uit 15 mei staat nog open: better-sqlite3/WAL migratie nog niet gedaan.
+
+## 2026-05-17 — Snelheidssessie (Features D + A+)
+
+### Live sinds 17 mei
+
+- **v10.18.55 — Feature D**: Finnik scrape + VIN-GPT decode parallel via `Promise.allSettled` in `routes/vehicle.js`. Cold path **23s → 19-20s** (3-4s sneller). Pricing bit-identiek bewezen op XR-457-G (VP 15950 vóór = na). Graceful: VIN timeout breekt Finnik niet.
+- **v10.18.56 — Feature A+**: nieuwe `lib/enrich-cache.js` (24h TTL, 5000 entries, LRU). Geïntegreerd vooraan in `/api/vehicle/enriched`. Warm hit **676ms → 13ms** (52× sneller). Geen memory leak (50 calls = 0MB delta). Admin endpoints `GET /api/admin/cache/stats` + `POST /api/admin/cache/invalidate`. dealer/price end-to-end warm 10.7s → 9.6s.
+
+### Snelheidsstatus (na D+A+)
+| Scenario | Voor | Na |
+|---|---|---|
+| `/api/vehicle/enriched` warm | ~700ms | **13ms** |
+| `/api/dealer/price` warm | 10.7s | 9.6s |
+| `/api/dealer/price` cold plate | 23.5s | 19-20s |
+
+### Resterende hoofd-bottleneck
+**GPT-5.4 + web_search call = 9-12s per taxatie** (45-60% van warm-pad). Zit in bevroren pricing-laag — niet aan te raken zonder fundament-overhaul. Caching op make/model/year/km-bucket-niveau zou helpen maar raakt pricing-policy.
+
+### Apart probleem ontdekt
+**VIN-GPT timeout 15s** zeldzaam: historisch 130/133 succes = **97.7%**. Niet structureel, geen patroon naar merk/model — gpt-5.4 latency-variance. Acceptabel.
+
+**Misverstand uitgesloten**: lokale VIN-decoder (`/home/claude/vin-decoder/`) bestond niet op `/opt/t4c` — zoek op disk: geen resultaat. Mogelijk plan uit web-Claude context dat hier nooit is uitgevoerd. NIET verder onderzoeken.
+
+### Volgende winst-richtingen (TODO, geprioriteerd)
+1. **GT Motive integratie** (prio 1) — vervangt VIN-GPT met deterministische decode + levert basis voor damage data. Meeting al gepland 8 mei. Dit ontgrendelt zowel VIN-snelheid (geen 15s GPT) als de damage-correction module.
+2. **Damage correction module** — de échte pricing-fix (overshoot +€659 gem). Wacht op GT Motive basis-data.
+3. **Price-index batch systeem**: 's nachts pre-computed prijzen per make/model/year/km-bucket, lookup <1s bij taxatie. Pakt de hoofd-bottleneck (GPT-5.4 web_search 9-12s) zonder pricing-policy aan te raken.
+4. **better-sqlite3 + WAL migratie** (uit 15 mei TODO) — fundament voor multi-instance + locking.
+5. Vehicle-cache DB-tabel + nieuwe enrichCache overlap heroverwegen na metingen (lage prio).
+
+### Niet (verder) onderzoeken
+- VIN-timeout root cause — pas heropenen als failure rate >5% wordt
+- gpt-4o-mini voor VIN — pricing-risico op courantScore/engineRisk te groot
+- Lokale VIN-decoder bouwen — RDW→commercieel mapping niet vrij beschikbaar; GT Motive is juiste route
+
+---
+
+## Eerdere context (15 mei stabilisatie)
+
 Stabilisatie-sessie na ontdekking van **DB race condition**: dubbele PM2 instances (t4c-server + t4c-test) deelden sinds 11 mei dezelfde `DATA_DIR`. Live `/opt/t4c/data/t4c.db` flikkerde elke 2 min tussen vandaag-state (t4c-server win) en 11-mei state (t4c-test in-memory bevroren op boot). Bij PM2 restart was 50% kans op verlies van alle taxaties + feedback van mei 12–15.
 
-Pricing-werk gepauzeerd (productie klaagt structureel +14% overshoot). Vandaag: fundament-fix. Productie t4c-server (PID 3940995, uptime 4d) **niet herstart** — in-memory data heilig tot we boot-veilig zijn.
+Pricing-werk gepauzeerd (productie klaagt structureel +14% overshoot). Status 15 mei: fundament-fix.
 
 ## 2026-05-15 — Stabilisatie sessie
 
