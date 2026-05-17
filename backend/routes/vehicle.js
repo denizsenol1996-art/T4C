@@ -504,49 +504,37 @@ router.get("/api/vehicle/enriched", async (req, res) => {
     }
     bpmRestPct = bpmNieuw > 0 ? Math.round(bpmRest / bpmNieuw * 100) : 0
 
-    // Finnik data enrichment (nieuwprijs, waarde-indicatie, bijtelling, wegenbelasting)
-    let finnikData = null
-    let finnikSource = false
-    try {
-      const plate = req.query.plate || req.query.kenteken || ''
-      if (plate) {
-        finnikData = _finnikCached || await fetchFinnikData(plate)
-        if (finnikData) {
-          finnikSource = true
-          if (!catalogPrice && finnikData.catalogPrice) {
-            catalogPrice = finnikData.catalogPrice
-            console.log('[FINNIK] Nieuwprijs aangevuld:', catalogPrice)
-          }
-        }
-      }
-    } catch(fe) { console.log('[FINNIK] Skip:', fe.message) }
-
-    // AS24 waardebepaling verwijderd (traag, vaak 404)
-
-
-    // ANWB koerslijst verwijderd (traag, vaak timeout)
-
-
-    // ═══ VIN DECODE — AI-based COMPLETE vehicle intelligence ═══
+    // ═══ PARALLEL: Finnik scrape + VIN decode (independent calls) ═══
+    const _platePF = req.query.plate || req.query.kenteken || ''
     const vin = s(d.voertuig_identificatienummer) || s((oviA[0]||{}).voertuig_identificatienummer) || ""
     const rdwType = s(d.type), rdwVariant = s(d.variant), rdwUitvoering = s(d.uitvoering)
-    let vinData = { transmission: null, transmissionDetail: null, motorCode: null, generation: null, trimLevel: null, drivetrain: null }
-    
-    // Trigger: need at least make+model OR type/variant codes
     const hasMakeModel = s(d.merk) && s(d.handelsbenaming)
     const hasTypeCodes = rdwType || rdwVariant || rdwUitvoering
-    
-    if (hasMakeModel && (hasTypeCodes || vin)) {
-      const vinCk = "vin4_" + s(d.merk) + "_" + rdwType + "_" + rdwVariant + "_" + rdwUitvoering + "_" + year  // Cache op type codes, niet per kenteken
-      const vinCached = getCached(vinCk, 86400000) || (_gptCached ? _gptCached : null)  // In-memory of DB cache
+    const _parT0 = Date.now()
+
+    const finnikPromise = (async () => {
+      if (!_platePF) return null
+      if (_finnikCached) return _finnikCached
+      try { return await fetchFinnikData(_platePF) }
+      catch (fe) { console.log('[FINNIK] Skip:', fe.message); return null }
+    })()
+
+    const vinPromise = (async () => {
+      let vinData = { transmission: null, transmissionDetail: null, motorCode: null, generation: null, trimLevel: null, drivetrain: null }
+      if (!(hasMakeModel && (hasTypeCodes || vin))) return vinData
+      const vinCk = "vin4_" + s(d.merk) + "_" + rdwType + "_" + rdwVariant + "_" + rdwUitvoering + "_" + year
+      const vinCached = getCached(vinCk, 86400000) || (_gptCached ? _gptCached : null)
       if (vinCached) {
-        vinData = vinCached
-        console.log('[VIN] Cached:', vin, vinData.transmission)
-      } else {
-        try {
-          const vinKey = getApiKey("OPENAI_API_KEY")
-          if (vinKey && vinKey !== "sk-...") {
-            console.log(`[VIN] Starting decode: ${s(d.merk)} ${s(d.handelsbenaming)} | Type:${rdwType} Var:${rdwVariant} Uitv:${rdwUitvoering} | VIN:${vin||'n/a'} | Key:${vinKey.slice(0,8)}...`)
+        console.log('[VIN] Cached:', vin, vinCached.transmission)
+        return vinCached
+      }
+      try {
+        const vinKey = getApiKey("OPENAI_API_KEY")
+        if (!vinKey || vinKey === "sk-...") {
+          console.log('[VIN] ✗ No OpenAI API key configured')
+          return vinData
+        }
+        console.log(`[VIN] Starting decode: ${s(d.merk)} ${s(d.handelsbenaming)} | Type:${rdwType} Var:${rdwVariant} Uitv:${rdwUitvoering} | VIN:${vin||'n/a'} | Key:${vinKey.slice(0,8)}...`)
             const vinResp = await axios.post("https://api.openai.com/v1/chat/completions", {
               model: "gpt-5.4", temperature: 0, max_completion_tokens: 1500,
               messages: [{
@@ -645,14 +633,26 @@ Antwoord ALLEEN in JSON:
                 setCache(vinCk, vinData)
               } catch(te) { console.log('[VIN] Transmissie fallback failed:', te.message) }
             }
-          } else {
-            console.log('[VIN] ✗ No OpenAI API key configured')
-          }
-        } catch(ve) {
-          console.error('[VIN] ✗ Decode failed:', ve.message)
-        }
+      } catch(ve) {
+        console.error('[VIN] ✗ Decode failed:', ve.message)
       }
+      return vinData
+    })()
+
+    // ═══ Wait for both parallel calls ═══
+    const [_finRes, _vinRes] = await Promise.allSettled([finnikPromise, vinPromise])
+    console.log('[PARALLEL] Finnik+VIN total: ' + (Date.now()-_parT0) + 'ms')
+
+    let finnikData = _finRes.status === 'fulfilled' ? _finRes.value : null
+    let finnikSource = !!finnikData
+    if (finnikData && !catalogPrice && finnikData.catalogPrice) {
+      catalogPrice = finnikData.catalogPrice
+      console.log('[FINNIK] Nieuwprijs aangevuld:', catalogPrice)
     }
+
+    let vinData = (_vinRes.status === 'fulfilled' && _vinRes.value)
+      ? _vinRes.value
+      : { transmission: null, transmissionDetail: null, motorCode: null, generation: null, trimLevel: null, drivetrain: null }
 
     const isAuto = vinData.transmission?.toLowerCase()?.includes('automaat') || vinData.transmission?.toLowerCase()?.includes('automatic') || false
     const transmissionType = vinData.transmission || null
