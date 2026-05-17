@@ -813,12 +813,24 @@ function renderResult(){
           <div class="bod-label">Berekend bod</div>
           <div class="bod-val" id="live-bod">${E(calc.bod)}</div>
           <div class="bod-breakdown" id="live-breakdown">VP ${E(vp)} · ${r.pricingL3?.source==="comp_engine"?r.pricingL3.breakdown?.compClean+" vergelijkbare autos":"AI prijsindicatie"} · marge ${r.pricingL3?.dealerMargin||calc.margePctUsed}%</div>
+          ${r.modelLifecycle?`<div class="lifecycle-card" style="margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--card2);border-left:4px solid ${r.modelLifecycle.color==='green'?'var(--green,#22c55e)':r.modelLifecycle.color==='yellow'?'#d4a017':r.modelLifecycle.color==='orange'?'#e67e22':r.modelLifecycle.color==='red'?'#c0392b':'#888'}"><div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:${r.modelLifecycle.color==='green'?'var(--green,#22c55e)':r.modelLifecycle.color==='yellow'?'#d4a017':r.modelLifecycle.color==='orange'?'#e67e22':r.modelLifecycle.color==='red'?'#c0392b':'#888'}">${(r.modelLifecycle.status||'').replace(/_/g,' ')}</div><div style="font-size:12px;color:var(--text2);margin-top:3px">${r.modelLifecycle.statusText||''}</div></div>`:''}
           <button class="bod-btn" onclick="copyBod()">Kopieer bod</button>
           <div id="feedback-section" style="margin-top:12px">
             <div style="display:flex;gap:8px;align-items:center">
               <input type="text" id="eigen-bod" placeholder="Eigen bod €" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text1);font-size:16px;font-family:var(--mono)" inputmode="numeric">
               <button class="bod-btn" style="background:var(--blue,#3b82f6);white-space:nowrap" onclick="sendFeedback()">Opslaan</button>
             </div>
+            <div id="feedback-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+              <button type="button" class="fb-chip" data-reason="schade_herstel" onclick="this.classList.toggle('active')">Schade / herstel nodig</button>
+              <button type="button" class="fb-chip" data-reason="zware_schade" onclick="this.classList.toggle('active')">Zware schade / niet rijwaardig</button>
+              <button type="button" class="fb-chip" data-reason="veel_onderhoud" onclick="this.classList.toggle('active')">Veel onderhoud nodig</button>
+              <button type="button" class="fb-chip" data-reason="lange_standtijd" onclick="this.classList.toggle('active')">Lange standtijd verwacht</button>
+              <button type="button" class="fb-chip" data-reason="niche_model" onclick="this.classList.toggle('active')">Niche model / weinig vraag</button>
+              <button type="button" class="fb-chip" data-reason="variant_niet_herkend" onclick="this.classList.toggle('active')">Variant niet herkend</button>
+              <button type="button" class="fb-chip" data-reason="conditie_tegenvallend" onclick="this.classList.toggle('active')">Conditie tegenvallend</button>
+              <button type="button" class="fb-chip" data-reason="import_auto" onclick="this.classList.toggle('active')">Importauto / buitenlands</button>
+            </div>
+            <style>.fb-chip{padding:5px 10px;border-radius:14px;border:1px solid var(--border);background:var(--card2);color:var(--text2);font-size:11px;cursor:pointer;transition:all .15s}.fb-chip:hover{border-color:var(--text3)}.fb-chip.active{background:var(--green,#22c55e);color:#fff;border-color:var(--green,#22c55e)}</style>
             <div style="margin-top:6px"><button onclick="var w=document.getElementById('notitie-wrap');w.style.display=w.style.display==='none'?'block':'none';this.textContent=this.textContent.includes('+')?'- Notitie verbergen':'+ Notitie toevoegen'" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:0;text-decoration:underline">+ Notitie toevoegen</button></div>
             <div id="notitie-wrap" style="display:none;margin-top:6px"><textarea id="eigen-reden" placeholder="Waarom dit bod? (bv: motor tikt, veel roest, schade, export, topstaat...)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text1);font-size:12px;min-height:50px;resize:vertical;font-family:inherit"></textarea></div>
             <div id="feedback-msg" style="margin-top:6px;font-size:12px;color:var(--text3)"></div>
@@ -1011,9 +1023,10 @@ function sendFeedback(){
   const bod=parseInt(inp.value.replace(/[^0-9]/g,''),10);
   if(!bod||bod<100){msg.textContent='Vul een geldig bedrag in';msg.style.color='var(--orange)';return}
   if(!last||!last.r)return;
+  const reasons=[...document.querySelectorAll('#feedback-chips .fb-chip.active')].map(c=>c.dataset.reason);
   const data={kenteken:last.plate,make:last.v.make,model:last.v.model,year:last.v.year,km:last.km,
     segment:window._t4c?.segment||'midden',onze_inkoop_high:last.r.inkoopHigh||0,onze_verkoop:0,
-    eigen_bod:bod,status:'gekocht',notitie:(document.getElementById('eigen-reden')||{}).value||''};
+    eigen_bod:bod,status:'gekocht',notitie:(document.getElementById('eigen-reden')||{}).value||'',reasons:reasons};
   _api('/api/feedback',{method:'POST',headers:_authH(),body:JSON.stringify(data)})
     .then(r=>r.json()).then(d=>{
       if(d.ok){

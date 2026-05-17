@@ -544,7 +544,7 @@ router.post("/api/admin/cleanup-db", (req, res) => {
 router.post("/api/feedback", authMiddleware, (req, res) => {
   try {
     const { run, queryAll } = require("../db")
-    const { kenteken, make, model, year, km, segment, onze_inkoop_high, onze_verkoop, eigen_bod, status, notitie } = req.body
+    const { kenteken, make, model, year, km, segment, onze_inkoop_high, onze_verkoop, eigen_bod, status, notitie, reasons } = req.body
     if (!eigen_bod && status !== 'niet_gekocht') return res.json({ ok: false, error: "eigen_bod is verplicht" })
     // Pak user_id uit auth token als aanwezig
     let userId = req.body.user_id || 0
@@ -560,7 +560,7 @@ router.post("/api/feedback", authMiddleware, (req, res) => {
     
     // Gebruik bestaande tabel met extra velden
     run("INSERT INTO dealer_feedback (make,model,year,our_bod,sold_price,feedback) VALUES (?,?,?,?,?,?)",
-      [make||'', model||'', year||0, onze_inkoop_high||0, eigen_bod||0, JSON.stringify({status:status||'gekocht',km:km||0,kenteken:kenteken||'',segment:segment||'midden',onze_verkoop:onze_verkoop||0,notitie:notitie||'',user_id:userId})])
+      [make||'', model||'', year||0, onze_inkoop_high||0, eigen_bod||0, JSON.stringify({status:status||'gekocht',km:km||0,kenteken:kenteken||'',segment:segment||'midden',onze_verkoop:onze_verkoop||0,notitie:notitie||'',user_id:userId,reasons:Array.isArray(reasons)?reasons:[]})])
     
     // Bereken correctie voor dit segment
     const seg = segment || 'midden'

@@ -13,6 +13,7 @@ const { writeLog } = require("../lib/state")
 const { calculateTradeBid } = require('../lib/trade-engine')
 const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
 const { buildComparableSet } = require("../lib/comparable-engine")
+const { getModelLifecycle } = require("../lib/model-lifecycle")
 router.post("/api/dealer/price", express.json(), async (req, res) => {
   try {
     // Optionele auth: pak user als token meegegeven
@@ -82,6 +83,9 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
       } catch(eErr) { console.log("[DEALER-PRICE] Enrich failed:", eErr.message) }
     }
     const year = d.year || 2015
+
+    // === FEATURE 2: model-lifecycle GPT-call PARALLEL met rest van pricing ===
+    const _lifecyclePromise = getModelLifecycle(d.make, d.model, year).catch(() => null)
 
     // Haal individuele listings op als ze niet in d zitten
     if (!(d.marketListings && d.marketListings.length)) {
@@ -985,8 +989,11 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
     const _scores = { quality: _qualityScore, techniek: _techniekScore, courant: _courantScore, marge: _margeScore, vergelijk: _vergelijkScore, total: _totalScore }
     const _advice = generateDealerAdvice(_scores, d, { marginPct: finalMarginPct, margin: finalVerkoop - finalBod, marktCount: mCount })
 
+    // Await model-lifecycle (al parallel gestart, hier wachten als nog niet klaar)
+    const modelLifecycle = await _lifecyclePromise
 
     res.json({
+      modelLifecycle,
       verkoopadviees: finalVerkoop, handelswaarde: finalHandel,
       inkoopLow: finalInkoopLow, inkoopHigh: finalInkoopHigh,
       internetPrijs: finalInternet, t4cBod: finalBod,
