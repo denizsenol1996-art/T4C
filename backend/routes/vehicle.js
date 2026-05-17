@@ -6,6 +6,7 @@ const { getCached, setCache, safeFetch, ua, maxPrice, MIN_PRICE, TIMEOUT, fmtE }
 const { getApiKey, hasApiKey, callGPT } = require("../lib/ai")
 const { authMiddleware, staffOnly, adminOnly } = require("../lib/auth")
 const { writeLog } = require("../lib/state")
+const enrichCache = require("../lib/enrich-cache")
 
 router.post("/api/plate/validate", async (req, res) => {
   try {
@@ -314,6 +315,8 @@ router.get("/api/vehicle/enriched", async (req, res) => {
     const km = parseInt(req.query.km) || 0
     if (!plate || plate.length < 5) return res.status(400).json({ error: "Ongeldig kenteken" })
     const ck = "vehicle_" + plate
+    const _enrichCached = enrichCache.get(plate)
+    if (_enrichCached) return res.json(_enrichCached)
     const cached = getCached(ck)
     if (cached) return res.json(cached)
 
@@ -744,6 +747,7 @@ Antwoord ALLEEN in JSON:
 
     
     setCache(ck, result)
+    enrichCache.set(plate, result)
     // Sla statische data op in DB voor volgende keer
     if (!_useDbCache) {
       try {

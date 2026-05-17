@@ -412,6 +412,25 @@ router.get("/api/admin/market-stats", authMiddleware, adminOnly, (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }) }
 })
 
+// Cache stats (enrich cache + room for more later)
+router.get("/api/admin/cache/stats", authMiddleware, adminOnly, (req, res) => {
+  try {
+    const enrichCache = require("../lib/enrich-cache")
+    res.json({ ok: true, enrichCache: enrichCache.stats() })
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
+// Invalidate single kenteken in enrich cache (debug/admin)
+router.post("/api/admin/cache/invalidate", authMiddleware, adminOnly, express.json(), (req, res) => {
+  try {
+    const enrichCache = require("../lib/enrich-cache")
+    const kenteken = (req.body && req.body.kenteken) || ""
+    if (!kenteken) return res.status(400).json({ ok: false, error: "kenteken required" })
+    const removed = enrichCache.invalidate(kenteken)
+    res.json({ ok: true, kenteken, removed })
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
 // Force crawl now
 router.post("/api/admin/crawl-now", authMiddleware, adminOnly, async (req, res) => {
   if (getMarket().isCrawlRunning()) return res.json({ ok: false, error: "Crawler draait al" })
