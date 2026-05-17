@@ -592,10 +592,13 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
             }
             return true
           })
+          // SAFETY: >70% weggefilterd? Model-string te abstract (bv "5 Series" matched niet op "535i F11"). Gebruik ongefilterd.
+          const _titleRatio = normalizedListings.length > 0 ? cleanListings.length / normalizedListings.length : 1
+          const _titleSkipped = _titleRatio < 0.3 && normalizedListings.length >= 5
+          const listings = _titleSkipped ? normalizedListings : cleanListings
           if (cleanListings.length < normalizedListings.length) {
-            console.log('[TITLE-FILTER]', d.make, d.model, ':', normalizedListings.length, '->', cleanListings.length, 'listings na title check')
+            console.log('[TITLE-FILTER]', d.make, d.model, ':', normalizedListings.length, '->', cleanListings.length, _titleSkipped ? '(SKIPPED — te strikt, gebruik ongefilterd)' : 'listings na title check')
           }
-          const listings = cleanListings
         const listingsTable = listings.length > 0
           ? listings.map((l, i) => {
               const parts = [`${i+1}. ${l.title || '?'}`, `EUR ${l.price}`]
@@ -816,7 +819,10 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
           // Data = vraagprijzen uit DB (x0.93 = geschatte verkoopprijs)
           // GPT = AI schatting op basis van kennis + context
           // Gewogen blend: meer data = meer vertrouwen op data
-          const _clampListings = queryAll('SELECT price FROM market_listings WHERE UPPER(make)=? AND UPPER(model) LIKE ? AND year BETWEEN ? AND ? AND status=\'active\' AND price > 0', [(d.make||'').toUpperCase(), (d.model||'').toUpperCase().split(' ')[0]+'%', (year||2015)-2, (year||2015)+2])
+          const _kmTarget = km || 100000
+          const _kmLow = Math.round(_kmTarget * 0.4)
+          const _kmHigh = Math.round(_kmTarget * 1.6)
+          const _clampListings = queryAll('SELECT price, km FROM market_listings WHERE UPPER(make)=? AND UPPER(model) LIKE ? AND year BETWEEN ? AND ? AND status=\'active\' AND price > 0 AND (km IS NULL OR (km BETWEEN ? AND ?))', [(d.make||'').toUpperCase(), (d.model||'').toUpperCase().split(' ')[0]+'%', (year||2015)-2, (year||2015)+2, _kmLow, _kmHigh])
           const _dbPrices = _clampListings.map(l=>l.price).sort((a,b)=>a-b)
           const _dbMedian = _dbPrices.length > 0 ? _dbPrices[Math.floor(_dbPrices.length/2)] : 0
           const _dbCount = _dbPrices.length
@@ -851,15 +857,15 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
             // Comp Engine data is schoon — gebruik die als beschikbaar
           let _dataWeight = 0.0
           let _useCompEngine = false
-          if (compResult && compResult.status === 'ok' && compResult.confidenceComparable >= 25 && compResult.marketMedian > 0) {
+          if (compResult && compResult.status === 'ok' && compResult.confidenceComparable >= 15 && compResult.marketMedian > 0) {
             _useCompEngine = true
             // Comp engine levert schone retail mediaan — gebruik als data bron
             const compVerkoop = Math.round(compResult.marketMedian * 0.93 / 50) * 50
-            _dataWeight = Math.min(0.4, compResult.confidenceComparable / 100)
+            _dataWeight = Math.min(0.70, Math.max(0.20, compResult.confidenceComparable / 100 * 1.5))
             _blendedVerkoop = Math.round((compVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
             console.log('[PRICING-COMP]', d.make, d.model, ':', compResult.cleanCount, 'clean comps, compMedian', compResult.marketMedian, '-> compVP', compVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
           }
-          if (!_useCompEngine) { _dataWeight = 0.0  // DISABLED — blend trekt prijzen omhoog door ongefiltered km-data  // Data weight naar listing count
+          if (!_useCompEngine) { _dataWeight = _filteredCount >= 15 ? 0.50 : _filteredCount >= 8 ? 0.35 : _filteredCount >= 3 ? 0.20 : 0.0  // RE-ENABLED — km-filter zit nu in SQL hierboven
             _blendedVerkoop = Math.round((_filteredVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
             console.log('[PRICING-BLEND]', d.make, d.model, ':', _filteredCount, 'listings (van', _dbCount, 'raw), mediaan', _filteredMedian, '-> VP', _filteredVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
           } else {
