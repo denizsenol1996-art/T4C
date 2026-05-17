@@ -322,19 +322,17 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
       
     </div>
     <div class="sb-nav">
-      <button class="sb-item active" onclick="document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('mp').value='';document.getElementById('mk').value='';showPanel('taxatie')" id="nav-taxatie">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      <button class="sb-item active no-icon" onclick="document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('mp').value='';document.getElementById('mk').value='';showPanel('taxatie')" id="nav-taxatie">
         Nieuwe Taxatie
       </button>
       <!-- Schade Scanner verborgen op desktop -->
-      <button class="sb-item" onclick="document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));this.classList.add('active');showPanel('extended')" id="nav-extended">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <button class="sb-item no-icon" onclick="document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));this.classList.add('active');showPanel('extended')" id="nav-extended">
         Uitgebreide Taxatie
       </button>
-      <button class="sb-item" onclick="window.open('/admin/')" id="nav-admin">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <button class="sb-item no-icon" onclick="window.open('/admin/')" id="nav-admin">
         Admin Panel
       </button>
+      <style>.sb-item.no-icon{padding-left:18px}</style>
     </div>
     <div class="sb-divider"></div>
     <div class="sb-label">Recente taxaties</div>
@@ -937,14 +935,15 @@ function renderResult(){
       </div><!-- /content-right -->
     </div><!-- /result-grid -->
 
-    <!-- ACTIONS -->
+    <!-- ACTIONS — alleen voor admin (id=1) en Jurgen (id=3) -->
+    ${(()=>{try{const _u=JSON.parse(localStorage.getItem('t4c_user')||'{}');return (_u.id===1||_u.id===3)?`
     <div class="action-row">
       <button class="action-btn primary" onclick="toast('Voorraad — binnenkort','info')">🟢 Voorraad</button>
       <button class="action-btn blue" onclick="toast('Veiling — binnenkort','info')">⚡ Veiling</button>
       <button class="action-btn" onclick="toast('Inkoop — binnenkort','info')">⟳ Inkoop</button>
       <button class="action-btn" onclick="copyBod()">📋 Kopieer bod</button>
       <button class="action-btn" onclick="exportPdf()">📄 PDF</button>
-    </div>
+    </div>`:''}catch(e){return ''}})()}
   `;
 }
 
@@ -1006,7 +1005,9 @@ function buildTT(images){
   const track=document.getElementById('tt-track');
   const dots=document.getElementById('tt-dots');
   track.innerHTML=imgs.map(img=>'<div class="turntable-slide"><img src="'+img.url+'?t='+Date.now()+'" alt=""><div class="turntable-label">'+(labels[img.angle]||img.angle||'')+'</div></div>').join('');
-  dots.innerHTML=imgs.map((_,i)=>'<span class="tdot'+(i===0?' active':'')+'" onclick="ttGo('+i+')"></span>').join('');
+  dots.innerHTML=imgs.length>1?imgs.map((_,i)=>'<span class="tdot'+(i===0?' active':'')+'" onclick="ttGo('+i+')"></span>').join(''):'';
+  // Verberg ◀ ▶ nav bij 1 foto
+  const _tt=document.getElementById('turntable');if(_tt){_tt.querySelectorAll('.turntable-btn').forEach(b=>b.style.display=imgs.length>1?'':'none')}
   // Touch swipe
   let sx=0,dx=0,sw=false;
   track.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;dx=0;sw=true;track.style.transition='none'},{passive:true});

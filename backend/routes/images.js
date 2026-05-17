@@ -174,8 +174,8 @@ router.post("/api/generate-car-images", express.json(), async (req, res) => {
     const plateClean = (plate || "AUTO").replace(/[^A-Z0-9]/gi, "").toUpperCase() || "UNKNOWN"
     const cacheDir = path.join(GENERATED_DIR, plateClean)
 
-    // Check cache — if all 5 exist, return immediately
-    const angles = ["1-front", "2-right", "3-rear", "4-left"]
+    // Check cache — alleen voorkant (v10.18.61: bandbreedte besparen)
+    const angles = ["1-front"]
     const cached = angles.every(a => fs.existsSync(path.join(cacheDir, a + ".png")))
     if (cached) {
       console.log(`[DALL-E] Cache hit for ${plateClean}`)
@@ -198,13 +198,10 @@ router.post("/api/generate-car-images", express.json(), async (req, res) => {
     const plateText = plate || "XX-999-X"
     const studioBg = "on a round dark showroom turntable platform. Clean neutral grey studio background with soft even lighting and subtle reflections on a polished dark floor. Professional car dealership photography, ultra sharp focus, 8K quality. Small subtle watermark text EXAMPLE IMAGE in bottom left corner."
     const prompts = [
-      { angle: "1-front",  prompt: `Photorealistic studio photograph of a ${carDesc}. Front view, camera at bumper height, showing full front face. Dutch yellow license plate reading "${plateText}" on front bumper. Car is placed ${studioBg}` },
-      { angle: "2-right",  prompt: `Photorealistic studio photograph of a ${carDesc}. Full right side profile view, perfectly level, showing entire passenger side. Dutch yellow license plate "${plateText}" visible. Car is placed ${studioBg}` },
-      { angle: "3-rear",   prompt: `Photorealistic studio photograph of a ${carDesc}. Rear view, camera at bumper height, showing full rear. Dutch yellow license plate reading "${plateText}" on rear bumper. Car is placed ${studioBg}` },
-      { angle: "4-left",   prompt: `Photorealistic studio photograph of a ${carDesc}. Full left side profile view, perfectly level, showing entire driver side. Dutch yellow license plate "${plateText}" visible. Car is placed ${studioBg}` }
+      { angle: "1-front",  prompt: `Photorealistic studio photograph of a ${carDesc}. Front view, camera at bumper height, showing full front face. Dutch yellow license plate reading "${plateText}" on front bumper. Car is placed ${studioBg}` }
     ]
 
-    console.log(`[DALL-E] Generating 4 images for ${make} ${model} (${plateClean})...`)
+    console.log(`[DALL-E] Generating 1 image (front-only) for ${make} ${model} (${plateClean})...`)
 
     // Create cache dir
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
