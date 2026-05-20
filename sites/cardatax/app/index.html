@@ -697,6 +697,13 @@ function showPanel(id){
 
 // ── v10.18.65 SNELLE TAXATIE ──
 let _snelStaat=null, _snelRijdt='JA';
+function verfijnFromQuick(plate, km){
+  document.getElementById('mp').value=plate||'';
+  document.getElementById('mk').value=km||'';
+  showPanel('taxatie');
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('nav-taxatie').classList.add('active');
+}
 function snelStaat(v){_snelStaat=v;document.querySelectorAll('#snel-staat-row .snel-btn').forEach(b=>b.classList.toggle('active', b.dataset.val===v));}
 function snelRijdt(v){_snelRijdt=v;document.querySelectorAll('#snel-rijdt-row .snel-btn').forEach(b=>b.classList.toggle('active', b.dataset.val===v));}
 async function doQuickTax(){
@@ -747,10 +754,13 @@ function renderQuickResult(d){
   const plateVal=document.getElementById('snel-plate').value;
   const kmVal=document.getElementById('snel-km').value;
   html+='<div style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">';
-  html+='<a href="#" onclick="document.getElementById(\'mp\').value='+JSON.stringify(plateVal)+';document.getElementById(\'mk\').value='+JSON.stringify(kmVal)+';showPanel(\'taxatie\');document.querySelectorAll(\'.sb-item\').forEach(b=>b.classList.remove(\'active\'));document.getElementById(\'nav-taxatie\').classList.add(\'active\');return false" style="color:var(--blue);font-size:13px;text-decoration:none">→ Verfijn met inspectie &amp; foto\'s</a>';
+  const _attrEsc=s=>String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  html+='<a href="#" id="snel-verfijn-link" data-plate="'+_attrEsc(plateVal)+'" data-km="'+_attrEsc(kmVal)+'" style="color:var(--blue);font-size:13px;text-decoration:none">→ Verfijn met inspectie &amp; foto\'s</a>';
   html+='<span style="font-size:11px;color:var(--text3)">'+(d._timing_ms||0)+'ms · alleen marktdata'+(d.needsReview?' · needs review':'')+'</span>';
   html+='</div></div>';
   c.innerHTML=html;c.style.display='block';
+  const _vfl=document.getElementById('snel-verfijn-link');
+  if(_vfl)_vfl.addEventListener('click',function(e){e.preventDefault();verfijnFromQuick(this.dataset.plate,this.dataset.km);});
 }
 function ldStep(n){for(let i=1;i<=4;i++){const el=document.getElementById('ls'+i);if(!el)continue;el.className=i<n?'ld-step done':i===n?'ld-step active':'ld-step'}}
 

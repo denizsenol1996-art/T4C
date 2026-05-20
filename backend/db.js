@@ -724,7 +724,7 @@ async function initDB() {
     // ── Auto-migrate voorraad columns ──
     const voorraad_migration = [["inkoop_prijs","REAL"],["reconditie_kosten","REAL DEFAULT 0"],["apk_kosten","REAL DEFAULT 0"],["transport_kosten","REAL DEFAULT 0"],["overige_kosten","REAL DEFAULT 0"],["kosten_notities","TEXT"],["totale_kostprijs","REAL"],["verkoop_prijs","REAL"],["winst","REAL"],["winst_pct","REAL"],["btw_type","TEXT"],["inkoop_datum","TEXT"],["verkoop_datum","TEXT"],["stadagen","INTEGER"],["inkoper","TEXT"],["bron","TEXT"],["taxatie_id","INTEGER"]]
     for (const [c,t] of voorraad_migration) { try { run("ALTER TABLE voorraad ADD COLUMN "+c+" "+t) } catch(e) {} }
-    const taxatie_migration = [["sold_price","REAL"],["sold_date","TEXT"],["days_to_sell","INTEGER"],["dealer_feedback","TEXT"],["gpt_opinion","TEXT"],["gpt_price","REAL"],["gpt_confidence","REAL"],["slider_courant","REAL"],["slider_risico","REAL"],["slider_staat","REAL"],["final_bod","REAL"],["trend_direction","TEXT"],["trend_pct","REAL"],["market_velocity","TEXT"],["market_confidence","TEXT"],["data_weight","REAL"],["comp_status","TEXT"],["comp_count","INTEGER"],["ai_verkoop","REAL"],["blend_verkoop","REAL"],["bod_adjustment_tag","TEXT"],["bod_adjustment_factor","REAL"],["confidence_level","TEXT"],["confidence_reasons","TEXT"],["user_staat","TEXT"],["user_rijdt","TEXT"],["taxatie_type","TEXT"]]
+    const taxatie_migration = [["sold_price","REAL"],["sold_date","TEXT"],["days_to_sell","INTEGER"],["dealer_feedback","TEXT"],["gpt_opinion","TEXT"],["gpt_price","REAL"],["gpt_confidence","REAL"],["slider_courant","REAL"],["slider_risico","REAL"],["slider_staat","REAL"],["final_bod","REAL"],["trend_direction","TEXT"],["trend_pct","REAL"],["market_velocity","TEXT"],["market_confidence","TEXT"],["data_weight","REAL"],["comp_status","TEXT"],["comp_count","INTEGER"],["ai_verkoop","REAL"],["blend_verkoop","REAL"],["bod_adjustment_tag","TEXT"],["bod_adjustment_factor","REAL"],["confidence_level","TEXT"],["confidence_reasons","TEXT"],["user_staat","TEXT"],["user_rijdt","TEXT"],["taxatie_type","TEXT"],["model_platform","TEXT"]]
     for (const [c,t] of taxatie_migration) { try { run("ALTER TABLE taxaties ADD COLUMN "+c+" "+t) } catch(e) {} }
     const ml_migration = [["days_on_market","INTEGER"],["price_changes","INTEGER DEFAULT 0"],["last_price","REAL"],["first_price","REAL"],["dealer","TEXT DEFAULT ''"]]
     for (const [c,t] of ml_migration) { try { run("ALTER TABLE market_listings ADD COLUMN "+c+" "+t) } catch(e) {} }
@@ -896,8 +896,8 @@ const stmts = {
       gpt_opinion,gpt_price,gpt_confidence,
       trend_direction,trend_pct,market_velocity,market_confidence,
       data_weight,comp_status,comp_count,ai_verkoop,blend_verkoop,bod_adjustment_tag,bod_adjustment_factor,
-      confidence_level,confidence_reasons,user_staat,user_rijdt,taxatie_type)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      confidence_level,confidence_reasons,user_staat,user_rijdt,taxatie_type,model_platform)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [d.kenteken,d.make,d.model,d.model_variant,d.year,d.fuel,d.km,d.color,d.body,
        d.power_kw,d.power_hp,d.engine_label,d.transmission,d.catalog_price,d.bpm,d.bpm_rest,
        d.market_avg,d.market_median,d.market_count,d.p25,d.p50,d.p75,
@@ -917,7 +917,8 @@ const stmts = {
        d.confidence_reasons||null,
        d.user_staat||null,
        d.user_rijdt||null,
-       d.taxatie_type||null])
+       d.taxatie_type||null,
+       d.model_platform||null])
   },
   getTaxaties: { all: (limit) => queryAll("SELECT * FROM taxaties ORDER BY created_at DESC LIMIT ?", [limit]) },
   getTaxatieByKenteken: { get: (k) => queryOne("SELECT * FROM taxaties WHERE kenteken = ? ORDER BY created_at DESC LIMIT 1", [k]) },

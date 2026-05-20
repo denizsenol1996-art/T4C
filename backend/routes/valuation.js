@@ -1234,7 +1234,8 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
     try {
       stmts.saveTaxatie.run({
         kenteken, make: v.make||"", model: v.model||"",
-        model_variant: v.subModel || v.trimLevel || "",
+        model_variant: v.trimLevel || "",
+        model_platform: v.subModel || null,
         year: v.year, fuel: v.fuel||"", km,
         color: v.color||"", body: v.body||"",
         power_kw: v.powerKw||null, power_hp: v.powerHp||null,
@@ -1267,7 +1268,8 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
       voertuig: {
         make: v.make, model: v.model, year: v.year,
         transmission: v.transmissionType || "",
-        trim: v.trimLevel || v.subModel || "",
+        trim: v.trimLevel || "",
+        platform: v.subModel || null,
         km
       },
       verkoop: bodFinal !== null ? { low: verkoopLow, mid: verkoopMid, high: verkoopHigh } : null,
