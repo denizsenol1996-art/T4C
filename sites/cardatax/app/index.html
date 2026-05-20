@@ -326,6 +326,9 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
         Nieuwe Taxatie
       </button>
       <!-- Schade Scanner verborgen op desktop -->
+      <button class="sb-item no-icon" onclick="document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));this.classList.add('active');showPanel('snel-taxatie')" id="nav-snel-taxatie">
+        Snelle Taxatie
+      </button>
       <button class="sb-item no-icon" onclick="document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));this.classList.add('active');showPanel('extended')" id="nav-extended">
         Uitgebreide Taxatie
       </button>
@@ -394,6 +397,55 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
 
       <!-- RESULT PANEL -->
       <div class="panel" id="p-result"></div>
+      <!-- SNELLE TAXATIE PANEL (v10.18.65) -->
+      <div class="panel" id="p-snel-taxatie">
+        <div style="max-width:680px;margin:0 auto;padding:24px 16px">
+          <div class="tax-card" style="background:rgba(8,14,26,.4);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border:1px solid rgba(80,160,255,.18);border-radius:20px;padding:28px 24px 22px;box-shadow:0 40px 100px rgba(0,0,0,.5),0 0 200px rgba(12,60,180,.1),inset 0 1px 0 rgba(255,255,255,.07);position:relative">
+            <h2 style="margin:0 0 6px;font-size:22px;font-weight:800;display:flex;align-items:center;gap:10px">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5fb4ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+              Snelle taxatie
+            </h2>
+            <div style="font-size:13px;color:var(--text2);margin-bottom:18px">Alleen marktdata, geen AI-analyse. Resultaat in ~2 seconden.</div>
+            <div class="plate-wrap">
+              <div class="plate-nl"><div class="plate-nl-stars">&#9733;&#9733;&#9733;</div><div class="plate-nl-code">NL</div></div>
+              <input class="plate-input" id="snel-plate" maxlength="9" placeholder="XX-999-X" autocapitalize="characters" oninput="this.value=fmtP(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('snel-km').focus()}">
+            </div>
+            <div class="km-wrap" style="margin-top:12px">
+              <input class="km-input" id="snel-km" type="text" inputmode="numeric" placeholder="Tellerstand" onkeydown="if(event.key==='Enter'){event.preventDefault();doQuickTax()}">
+              <span class="km-suf">km</span>
+            </div>
+            <div style="margin-top:16px">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Staat</div>
+              <div id="snel-staat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+                <button type="button" class="snel-btn" data-val="GOED" onclick="snelStaat('GOED')">Goed</button>
+                <button type="button" class="snel-btn" data-val="NORMAAL" onclick="snelStaat('NORMAAL')">Normaal</button>
+                <button type="button" class="snel-btn" data-val="SLECHT" onclick="snelStaat('SLECHT')">Slecht</button>
+                <button type="button" class="snel-btn" data-val="DEFECT" onclick="snelStaat('DEFECT')">Defect</button>
+              </div>
+            </div>
+            <div style="margin-top:12px">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Rijdt</div>
+              <div id="snel-rijdt-row" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+                <button type="button" class="snel-btn active" data-val="JA" onclick="snelRijdt('JA')">Ja</button>
+                <button type="button" class="snel-btn" data-val="NEE" onclick="snelRijdt('NEE')">Nee</button>
+              </div>
+            </div>
+            <button class="tax-btn" style="margin-top:18px" onclick="doQuickTax()" id="snel-btn">Bereken</button>
+            <div class="tax-error" id="snel-error" style="margin-top:10px"></div>
+          </div>
+          <div id="snel-result" style="display:none;margin-top:18px"></div>
+        </div>
+        <style>
+          .snel-btn{padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+          .snel-btn:hover{border-color:var(--border2)}
+          .snel-btn.active{background:rgba(0,230,138,.15);border-color:var(--green);color:var(--green)}
+          .snel-pcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+          .snel-pcard.accent{border-color:var(--green);background:rgba(0,230,138,.06)}
+          .snel-pcard-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+          .snel-pcard-val{font-size:22px;font-weight:800;font-family:var(--mono)}
+          .snel-pcard.accent .snel-pcard-val{color:var(--green)}
+        </style>
+      </div>
       <div class="panel" id="p-extended">
         <!-- STAP 1: INVOER -->
         <div id="ext-step1">
@@ -639,8 +691,66 @@ function reloadTax(plate){
 function showPanel(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('p-'+id)?.classList.add('active');
-  const titles={taxatie:'Nieuwe Taxatie',loading:'Bezig...',result:'Taxatie Resultaat',extended:'Uitgebreide Taxatie'};
+  const titles={taxatie:'Nieuwe Taxatie',loading:'Bezig...',result:'Taxatie Resultaat',extended:'Uitgebreide Taxatie','snel-taxatie':'Snelle Taxatie'};
   document.getElementById('tb-title').textContent=titles[id]||id;
+}
+
+// ── v10.18.65 SNELLE TAXATIE ──
+let _snelStaat=null, _snelRijdt='JA';
+function snelStaat(v){_snelStaat=v;document.querySelectorAll('#snel-staat-row .snel-btn').forEach(b=>b.classList.toggle('active', b.dataset.val===v));}
+function snelRijdt(v){_snelRijdt=v;document.querySelectorAll('#snel-rijdt-row .snel-btn').forEach(b=>b.classList.toggle('active', b.dataset.val===v));}
+async function doQuickTax(){
+  const plate=document.getElementById('snel-plate').value;
+  const km=parseInt((document.getElementById('snel-km').value||'').replace(/[^\d]/g,''))||0;
+  const err=document.getElementById('snel-error');err.textContent='';
+  const cleanP=(plate||'').replace(/[^A-Za-z0-9]/g,'');
+  if(!cleanP||cleanP.length<5){err.textContent='Vul een geldig kenteken in';return;}
+  const btn=document.getElementById('snel-btn');const old=btn.textContent;btn.disabled=true;btn.textContent='Bezig...';
+  document.getElementById('snel-result').style.display='none';
+  try{
+    const r=await _api('/api/dealer/quick-price',{method:'POST',headers:_authH(),body:JSON.stringify({kenteken:plate,km,staat:_snelStaat,rijdt:_snelRijdt})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Fout '+r.status);
+    renderQuickResult(d);
+  }catch(e){err.textContent=e.message||'Onbekende fout';}
+  finally{btn.disabled=false;btn.textContent=old;}
+}
+function renderQuickResult(d){
+  const c=document.getElementById('snel-result');
+  const v=d.voertuig||{};
+  const dc=d.dataConfidence||{};
+  const adj=d._bodAdjustment||{};
+  const reasons=(dc.reasons||[]).join(', ');
+  let html='<div class="tax-card" style="background:rgba(8,14,26,.4);border:1px solid rgba(80,160,255,.18);border-radius:18px;padding:22px 22px 18px;backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px)">';
+  html+='<div style="font-size:13px;color:var(--text2);margin-bottom:14px"><b>'+(v.make||'?')+' '+(v.model||'')+'</b> · '+(v.year||'')+(v.transmission?' · '+v.transmission:'')+(v.trim?' · '+v.trim:'')+' · '+(v.km?N(v.km):0)+' km</div>';
+  if(dc.level==='low'){
+    html+='<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;background:rgba(255,183,77,.15);color:var(--orange);font-size:12px;font-weight:600;margin-bottom:14px;cursor:pointer" onclick="alert(\'Reden: \'+'+JSON.stringify(reasons)+')" title="'+reasons.replace(/"/g,'&quot;')+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'+(dc.message||'Weinig marktdata')+'</div>';
+  }
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">';
+  if(d.verkoop){
+    html+='<div class="snel-pcard"><div class="snel-pcard-label">Verkoop range</div><div class="snel-pcard-val" style="font-size:18px">'+E(d.verkoop.low)+'–'+E(d.verkoop.high)+'</div><div style="font-size:11px;color:var(--text3);margin-top:4px">mid '+E(d.verkoop.mid)+'</div></div>';
+    html+='<div class="snel-pcard"><div class="snel-pcard-label">Handelswaarde</div><div class="snel-pcard-val">'+E(d.handelswaarde||0)+'</div></div>';
+  }else{
+    html+='<div class="snel-pcard" style="grid-column:1/3;border-color:var(--orange);background:rgba(255,183,77,.06)"><div class="snel-pcard-label">Verkoop / Handel</div><div style="font-size:13px;color:var(--text2);margin-top:4px">Onvoldoende marktdata om te schatten</div></div>';
+  }
+  if(d.bod!==null&&d.bod!==undefined){
+    let tags='';
+    if(adj.tag)tags+='<div style="font-size:10px;color:var(--green);margin-top:4px">+'+Math.round((adj.factor-1)*100)+'% '+adj.tag.replace(/_/g,' ')+'</div>';
+    if(adj.rijdt_correction&&adj.rijdt_correction<1)tags+='<div style="font-size:10px;color:var(--orange);margin-top:2px">−'+Math.round((1-adj.rijdt_correction)*100)+'% rijdt nee</div>';
+    html+='<div class="snel-pcard accent"><div class="snel-pcard-label">Bod</div><div class="snel-pcard-val">'+E(d.bod)+'</div>'+tags+'</div>';
+  }else if(d.bodRange){
+    html+='<div class="snel-pcard" style="border-color:var(--orange);background:rgba(255,183,77,.06)"><div class="snel-pcard-label">Bod-indicatie</div><div class="snel-pcard-val" style="font-size:16px">'+E(d.bodRange.low)+'–'+E(d.bodRange.high)+'</div><div style="font-size:10px;color:var(--orange);margin-top:4px">handmatig verifiëren</div></div>';
+  }else{
+    html+='<div class="snel-pcard"><div class="snel-pcard-label">Bod</div><div style="font-size:13px;color:var(--text2);margin-top:4px">Niet beschikbaar</div></div>';
+  }
+  html+='</div>';
+  const plateVal=document.getElementById('snel-plate').value;
+  const kmVal=document.getElementById('snel-km').value;
+  html+='<div style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">';
+  html+='<a href="#" onclick="document.getElementById(\'mp\').value='+JSON.stringify(plateVal)+';document.getElementById(\'mk\').value='+JSON.stringify(kmVal)+';showPanel(\'taxatie\');document.querySelectorAll(\'.sb-item\').forEach(b=>b.classList.remove(\'active\'));document.getElementById(\'nav-taxatie\').classList.add(\'active\');return false" style="color:var(--blue);font-size:13px;text-decoration:none">→ Verfijn met inspectie &amp; foto\'s</a>';
+  html+='<span style="font-size:11px;color:var(--text3)">'+(d._timing_ms||0)+'ms · alleen marktdata'+(d.needsReview?' · needs review':'')+'</span>';
+  html+='</div></div>';
+  c.innerHTML=html;c.style.display='block';
 }
 function ldStep(n){for(let i=1;i<=4;i++){const el=document.getElementById('ls'+i);if(!el)continue;el.className=i<n?'ld-step done':i===n?'ld-step active':'ld-step'}}
 
@@ -768,6 +878,11 @@ function renderResult(){
   if(v.isExDealer)warns+='<span class="warn-tag warning">⚠ Ex-bedrijf</span>';
   if(v.ownerCount>4)warns+='<span class="warn-tag warning">⚠ '+v.ownerCount+' eigenaren</span>';
   if(km>200000)warns+='<span class="warn-tag warning">⚠ Hoge km</span>';
+  // v10.18.65 — backfill v10.18.64 dataConfidence pill in /app/ (was alleen in /m/)
+  if(r.dataConfidence&&r.dataConfidence.level==='low'){
+    const _dcr=(r.dataConfidence.reasons||[]).join(', ');
+    warns+='<span class="warn-tag warning" title="'+_dcr.replace(/"/g,'&quot;')+'" onclick="alert(\'Reden: \'+'+JSON.stringify(_dcr)+')" style="cursor:pointer">🔍 '+(r.dataConfidence.message||'Weinig marktdata')+'</span>';
+  }
 
   // Advies
   const adv=_sc.advice||{};

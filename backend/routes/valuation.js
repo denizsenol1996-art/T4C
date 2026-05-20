@@ -1110,6 +1110,182 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
 
 
 
+/* ── v10.18.65 SNELLE TAXATIE (no GPT, alleen marktdata) ── */
+router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
+  const _t0 = Date.now()
+  try {
+    let _userId = null
+    try { const { verifyToken } = require("../lib/auth"); const t = (req.headers.authorization||"").replace("Bearer ",""); if (t) { const u = verifyToken(t); _userId = u?.uid || null } } catch{}
+
+    const body = req.body || {}
+    const kentekenRaw = (body.kenteken || "").toString()
+    const kenteken = kentekenRaw.toUpperCase().replace(/[^A-Z0-9]/g, "")
+    const km = parseInt(body.km) || 0
+    const staat = (body.staat || "").toString().toUpperCase()
+    const rijdt = (body.rijdt || "JA").toString().toUpperCase()
+
+    if (!kenteken || kenteken.length < 5) return res.status(400).json({ error: "Ongeldig kenteken" })
+    if (staat && !["GOED","NORMAAL","SLECHT","DEFECT"].includes(staat)) return res.status(400).json({ error: "Ongeldige staat" })
+    if (!["JA","NEE"].includes(rijdt)) return res.status(400).json({ error: "Ongeldige rijdt-waarde" })
+
+    // 1. RDW + Finnik via /api/vehicle/enriched
+    let v
+    try {
+      const enrichResp = await axios.get("http://localhost:3000/api/vehicle/enriched?plate=" + encodeURIComponent(kenteken) + "&km=" + km, { timeout: 30000 })
+      v = enrichResp.data
+    } catch (eErr) {
+      return res.status(502).json({ error: "Enrichment failed: " + eErr.message })
+    }
+    if (!v || !v.make) return res.status(404).json({ error: "Kenteken niet gevonden bij RDW" })
+
+    // 2. Listings + comp-engine (zelfde patroon als /api/dealer/price)
+    const mk = (v.make||"").toLowerCase()
+    let ml = (v.model||"").toLowerCase()
+    if (ml.startsWith(mk + " ")) ml = ml.slice(mk.length + 1)
+    let dbListings = []
+    if (mk && ml) {
+      try {
+        dbListings = queryAll(
+          "SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50",
+          [mk, ml + "%", (v.year||2015)-2, (v.year||2015)+2]
+        )
+      } catch(e) { console.log("[QUICK-PRICE] listings query error:", e.message) }
+    }
+
+    let compResult = null
+    try {
+      if (dbListings.length > 0) {
+        const fuelStr = (v.fuel||"").toLowerCase()
+        const compTarget = {
+          make: v.make||"", model: v.model||"",
+          generation: v.generation||"",
+          trim: v.trimLevel || v.subModel || "",
+          bodyType: v.body||"",
+          fuel: fuelStr.includes("diesel") ? "Diesel" : fuelStr.includes("benzine") ? "Benzine" : fuelStr.includes("elektr") ? "Elektrisch" : v.fuel || "",
+          transmission: "",
+          year: v.year||0, km: km||0,
+          powerHp: v.powerKw ? Math.round(v.powerKw * 1.36) : 0,
+          isEV: /elektr|electric/i.test(v.fuel||"")
+        }
+        compResult = buildComparableSet(compTarget, dbListings)
+        console.log("[QUICK-COMP]", v.make, v.model, ":", compResult.status, "clean=", compResult.cleanCount, "median=EUR", compResult.marketMedian)
+      }
+    } catch(compErr) { console.log("[QUICK-PRICE] comp-engine error:", compErr.message) }
+
+    // 3. Base prices
+    const compMedian = (compResult && compResult.marketMedian) || 0
+    const verkoopMid = compMedian > 0 ? Math.round(compMedian * 0.93 / 50) * 50 : 0
+    let verkoopLow = verkoopMid > 0 ? Math.round(verkoopMid * 0.95 / 50) * 50 : 0
+    let verkoopHigh = verkoopMid > 0 ? Math.round(verkoopMid * 1.05 / 50) * 50 : 0
+    let handelswaarde = verkoopMid > 0 ? Math.round(verkoopMid * 0.85 / 50) * 50 : 0
+    let bod = handelswaarde > 0 ? Math.round(handelswaarde * 0.90 / 50) * 50 : 0
+    const bodBase = bod
+
+    // 4. Export bonus (zelfde rule als v10.18.63 maar zonder config-load — inline want simpel)
+    const _bodAdjustment = { tag: null, factor: 1.0, rijdt_correction: 1.0 }
+    const fuelLow = (v.fuel || "").toLowerCase()
+    const makeUp = (v.make || "").toUpperCase()
+    if (makeUp === "TOYOTA" && fuelLow.includes("hybride") && km >= 100000) {
+      bod = Math.round(bod * 1.10 / 50) * 50
+      _bodAdjustment.tag = "export_toyota_hybride"
+      _bodAdjustment.factor = 1.10
+    }
+
+    // 5. Rijdt-correctie (vermenigvuldigt door alle prijzen)
+    if (rijdt === "NEE") {
+      bod = Math.round(bod * 0.50 / 50) * 50
+      handelswaarde = Math.round(handelswaarde * 0.50 / 50) * 50
+      verkoopLow = Math.round(verkoopLow * 0.50 / 50) * 50
+      verkoopHigh = Math.round(verkoopHigh * 0.50 / 50) * 50
+      _bodAdjustment.rijdt_correction = 0.50
+    }
+
+    // 6. Confidence-tag (zelfde helper als /api/dealer/price)
+    const mCount = compResult ? compResult.cleanCount : 0
+    const dataConfidence = deriveDataConfidence(compResult, mCount)
+
+    // 7. Staat-flag (geen prijswijziging, alleen confidence reason)
+    if (staat === "SLECHT" || staat === "DEFECT") {
+      dataConfidence.reasons.push("user_staat_" + staat.toLowerCase())
+      dataConfidence.level = "low"
+      dataConfidence.message = "Staat " + staat.toLowerCase() + " volgens dealer — controleer bod handmatig"
+    }
+
+    // 8. Fallback bij thin pool — bod=null, range tonen
+    let bodFinal = bod, bodRange = null, needsReview = false
+    const cleanCount = (compResult && compResult.cleanCount) || 0
+    const compStatus = compResult ? compResult.status : null
+    if (!compResult || compStatus !== "ok" || cleanCount < 3) {
+      bodFinal = null
+      if (compMedian > 0) {
+        bodRange = {
+          low: Math.round(compMedian * 0.55 / 50) * 50,
+          high: Math.round(compMedian * 0.75 / 50) * 50
+        }
+      }
+      needsReview = true
+      if (!dataConfidence.reasons.includes("low_comp_count") && !dataConfidence.reasons.some(r => r.startsWith("comp_engine_"))) {
+        dataConfidence.reasons.push("needs_review_thin_pool")
+        dataConfidence.level = "low"
+      }
+    }
+
+    // 9. Save naar taxaties
+    try {
+      stmts.saveTaxatie.run({
+        kenteken, make: v.make||"", model: v.model||"",
+        model_variant: v.subModel || v.trimLevel || "",
+        year: v.year, fuel: v.fuel||"", km,
+        color: v.color||"", body: v.body||"",
+        power_kw: v.powerKw||null, power_hp: v.powerHp||null,
+        engine_label: v.engineLabel||"", transmission: v.transmissionType||"",
+        catalog_price: v.catalogPrice||null, bpm: v.bpm||null, bpm_rest: v.bpmRest||null,
+        market_avg: null, market_median: compMedian||null, market_count: dbListings.length||0,
+        p25: null, p50: compMedian||null, p75: null,
+        verkoopadviees: verkoopMid||null, handelswaarde: handelswaarde||null,
+        inkoop_low: verkoopLow||null, inkoop_high: verkoopHigh||null,
+        internet_prijs: null, reconditie_kosten: 0,
+        import_flag: v.importFlag ? 1 : 0, export_flag: 0,
+        apk_until: v.apkUntil||"", vin: v.vin||"",
+        user_id: _userId, notes: "", status: "auto",
+        final_bod: bodFinal,
+        data_weight: null,
+        comp_status: compStatus,
+        comp_count: cleanCount,
+        ai_verkoop: null, blend_verkoop: null,
+        bod_adjustment_tag: _bodAdjustment.tag,
+        bod_adjustment_factor: _bodAdjustment.factor,
+        confidence_level: dataConfidence.level,
+        confidence_reasons: (dataConfidence.reasons||[]).join(",") || null,
+        user_staat: staat || null,
+        user_rijdt: rijdt || null,
+        taxatie_type: "snel"
+      })
+    } catch(saveErr) { console.log("[QUICK-SAVE] Error:", saveErr.message) }
+
+    res.json({
+      voertuig: {
+        make: v.make, model: v.model, year: v.year,
+        transmission: v.transmissionType || "",
+        trim: v.trimLevel || v.subModel || "",
+        km
+      },
+      verkoop: bodFinal !== null ? { low: verkoopLow, mid: verkoopMid, high: verkoopHigh } : null,
+      handelswaarde: bodFinal !== null ? handelswaarde : null,
+      bod: bodFinal,
+      bodRange,
+      needsReview,
+      dataConfidence,
+      _bodAdjustment,
+      _userInput: { staat: staat || null, rijdt: rijdt || null },
+      _timing_ms: Date.now() - _t0
+    })
+  } catch (e) {
+    console.error("[QUICK-PRICE] Fatal:", e.message)
+    res.status(500).json({ error: e.message || "quick-price failed" })
+  }
+})
+
 /* ── PDF EXPORT (pure Node.js) ── */
 const PDFDocument = require("pdfkit")
 
