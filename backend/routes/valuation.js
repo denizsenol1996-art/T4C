@@ -16,6 +16,26 @@ const { buildComparableSet } = require("../lib/comparable-engine")
 const { getModelLifecycle } = require("../lib/model-lifecycle")
 let _bodAdjustments = { rules: [] }
 try { _bodAdjustments = require("../config/bod-adjustments.json") } catch(e) { console.log("[BOD-ADJ] geen config geladen:", e.message) }
+
+// v10.18.64 — soft confidence-tag voor low-data cases (geen cap, alleen flag)
+function deriveDataConfidence(compResult, marketCount) {
+  const reasons = []
+  if (compResult && compResult.status && compResult.status !== "ok") {
+    reasons.push("comp_engine_" + compResult.status)
+  }
+  const cleanCount = (compResult && (compResult.cleanCount != null ? compResult.cleanCount : compResult.comp_count)) ?? null
+  if (cleanCount !== null && cleanCount < 3) {
+    reasons.push("low_comp_count")
+  } else if (cleanCount === null && (marketCount || 0) < 3) {
+    reasons.push("low_market_count")
+  }
+  return {
+    level: reasons.length > 0 ? "low" : "normal",
+    reasons,
+    message: reasons.length > 0 ? "Weinig marktdata beschikbaar — controleer bod handmatig" : null
+  }
+}
+
 router.post("/api/dealer/price", express.json(), async (req, res) => {
   try {
     // Optionele auth: pak user als token meegegeven
@@ -946,6 +966,12 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       }
     }
 
+    // ═══ v10.18.64 SOFT CONFIDENCE-TAG (geen cap, alleen hint) ═══
+    const _dataConfidence = deriveDataConfidence(compResult, mCount)
+    if (_dataConfidence.level === "low") {
+      console.log("[DATA-CONF]", d.make, d.model, ":", _dataConfidence.reasons.join(","))
+    }
+
     // Finnik waarde cross-check
     const fwLow = d.finnikWaardeLow || 0, fwHigh = d.finnikWaardeHigh || 0
     if (fwLow > 0 && fwHigh > 0 && finalVerkoop > 0) {
@@ -1006,7 +1032,9 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
         ai_verkoop: _auditAiVerkoop,
         blend_verkoop: _auditBlendVerkoop,
         bod_adjustment_tag: _bodAdjustment ? _bodAdjustment.tag : null,
-        bod_adjustment_factor: _bodAdjustment ? _bodAdjustment.factor : null
+        bod_adjustment_factor: _bodAdjustment ? _bodAdjustment.factor : null,
+        confidence_level: _dataConfidence ? _dataConfidence.level : null,
+        confidence_reasons: (_dataConfidence && _dataConfidence.reasons && _dataConfidence.reasons.length) ? _dataConfidence.reasons.join(",") : null
       })
       console.log("[TAXATIE-SAVE]", d.make, d.model, year, "-> saved")
     } catch(saveErr) { console.log("[TAXATIE-SAVE] Error:", saveErr.message) }
@@ -1038,6 +1066,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       inkoopLow: finalInkoopLow, inkoopHigh: finalInkoopHigh,
       internetPrijs: finalInternet, t4cBod: finalBod,
       _bodAdjustment,
+      dataConfidence: _dataConfidence,
       margin: finalMargin, marginPct: finalMarginPct, confidence: conf,
       liquidityScore, marketVelocity, atrScore, etrScore,
       marketUsed: mCount > 0, catalogUsed: catalog > 0,

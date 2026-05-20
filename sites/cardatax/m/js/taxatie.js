@@ -425,6 +425,7 @@ function render(){
 
       <div class="tx-col-right"><!-- ═══ 1. PRICE CARD — Sales first ═══ -->
       <div class="price-card-v2">
+        ${(r.dataConfidence && r.dataConfidence.level === 'low') ? `<div class="conf-pill" title="${(r.dataConfidence.reasons||[]).join(', ')}" onclick="alert('Reden: '+(${JSON.stringify(r.dataConfidence.reasons||[])}).join(', '))" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:10px;background:rgba(255,183,77,.15);color:var(--orange);font-size:11px;font-weight:600;margin-bottom:8px;cursor:pointer">${IC.search}<span>${r.dataConfidence.message||'Weinig marktdata — controleer bod handmatig'}</span></div>` : ''}
         <div class="price-main">
           <div>
             <div class="price-main-label">Voorgesteld bod</div>
