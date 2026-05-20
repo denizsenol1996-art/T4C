@@ -405,7 +405,7 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5fb4ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
               Snelle taxatie
             </h2>
-            <div style="font-size:13px;color:var(--text2);margin-bottom:18px">Alleen marktdata, geen AI-analyse. Resultaat in ~2 seconden.</div>
+            <div style="font-size:13px;color:var(--text2);margin-bottom:18px">Snelle taxatie. Resultaat in ~5 seconden.</div>
             <div class="plate-wrap">
               <div class="plate-nl"><div class="plate-nl-stars">&#9733;&#9733;&#9733;</div><div class="plate-nl-code">NL</div></div>
               <input class="plate-input" id="snel-plate" maxlength="9" placeholder="XX-999-X" autocapitalize="characters" oninput="this.value=fmtP(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('snel-km').focus()}">
@@ -733,6 +733,12 @@ function renderQuickResult(d){
   if(dc.level==='low'){
     html+='<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;background:rgba(255,183,77,.15);color:var(--orange);font-size:12px;font-weight:600;margin-bottom:14px;cursor:pointer" onclick="alert(\'Reden: \'+'+JSON.stringify(reasons)+')" title="'+reasons.replace(/"/g,'&quot;')+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'+(dc.message||'Weinig marktdata')+'</div>';
   }
+  // v10.18.67 — agreement pill bij mismatch tussen comp en expert
+  const _pa=d.priceAgreement;
+  if(_pa&&(_pa.status==='comp_lower'||_pa.status==='comp_higher')&&_pa.expected_bod_range){
+    const _lo=_pa.expected_bod_range.low, _hi=_pa.expected_bod_range.high;
+    html+='<div style="display:block;padding:8px 12px;border-radius:10px;background:rgba(255,183,77,.15);color:var(--orange);font-size:12px;font-weight:600;margin-bottom:14px">⚠ Marktdata is beperkt voor deze auto — verwachte bod-range €'+Number(_lo).toLocaleString('nl-NL')+'-€'+Number(_hi).toLocaleString('nl-NL')+', controleer handmatig</div>';
+  }
   html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">';
   if(d.verkoop){
     html+='<div class="snel-pcard"><div class="snel-pcard-label">Verkoop range</div><div class="snel-pcard-val" style="font-size:18px">'+E(d.verkoop.low)+'–'+E(d.verkoop.high)+'</div><div style="font-size:11px;color:var(--text3);margin-top:4px">mid '+E(d.verkoop.mid)+'</div></div>';
@@ -751,12 +757,16 @@ function renderQuickResult(d){
     html+='<div class="snel-pcard"><div class="snel-pcard-label">Bod</div><div style="font-size:13px;color:var(--text2);margin-top:4px">Niet beschikbaar</div></div>';
   }
   html+='</div>';
+  // v10.18.67 — neutrale sublabel bij expert_fallback (geen amber accent, geen tech-mention)
+  if(d.priceSource==='expert_fallback'){
+    html+='<div style="font-size:11px;color:var(--text3);margin-top:-6px;margin-bottom:10px;font-style:italic">Indicatie op basis van vergelijkbare auto\'s</div>';
+  }
   const plateVal=document.getElementById('snel-plate').value;
   const kmVal=document.getElementById('snel-km').value;
   html+='<div style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">';
   const _attrEsc=s=>String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   html+='<a href="#" id="snel-verfijn-link" data-plate="'+_attrEsc(plateVal)+'" data-km="'+_attrEsc(kmVal)+'" style="color:var(--blue);font-size:13px;text-decoration:none">→ Verfijn met inspectie &amp; foto\'s</a>';
-  html+='<span style="font-size:11px;color:var(--text3)">'+(d._timing_ms||0)+'ms · alleen marktdata'+(d.needsReview?' · needs review':'')+'</span>';
+  html+='<span style="font-size:11px;color:var(--text3)">'+(d._timing_ms||0)+'ms'+(d.needsReview?' · needs review':'')+'</span>';
   html+='</div></div>';
   c.innerHTML=html;c.style.display='block';
   const _vfl=document.getElementById('snel-verfijn-link');
@@ -1467,7 +1477,7 @@ async function extRecalc(){
     const conf2=d.basis.confidence||0
     document.getElementById('ext-conf').textContent=conf2+'/100'
     document.getElementById('ext-conf').style.color=conf2>=75?'var(--green)':conf2>=55?'var(--orange)':'var(--red)'
-    document.getElementById('ext-source').textContent=d.basis.priceSource==='ai'?'GPT':'Formula'
+    document.getElementById('ext-source').textContent=d.basis.priceSource==='ai'?'Expert':'Formule'
     document.getElementById('ext-reasoning').textContent=d.basis.reasoning||''
     document.getElementById('ext-basis').style.display='block'
 

@@ -13,6 +13,7 @@ const { writeLog } = require("../lib/state")
 const { calculateTradeBid } = require('../lib/trade-engine')
 const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
 const { buildComparableSet } = require("../lib/comparable-engine")
+const { getExpertPriceEstimate } = require("../lib/quick-price-expert")
 const { getModelLifecycle } = require("../lib/model-lifecycle")
 let _bodAdjustments = { rules: [] }
 try { _bodAdjustments = require("../config/bod-adjustments.json") } catch(e) { console.log("[BOD-ADJ] geen config geladen:", e.message) }
@@ -1138,6 +1139,13 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
     }
     if (!v || !v.make) return res.status(404).json({ error: "Kenteken niet gevonden bij RDW" })
 
+    // v10.18.67 — kick off expert price estimate parallel met comp-pipeline
+    const _expertPromise = getExpertPriceEstimate({
+      make: v.make, model: v.model, year: v.year, km,
+      fuel: v.fuel || "", transmission: v.transmissionType || "",
+      body: v.body || ""
+    }).catch(() => null)
+
     // 2. Listings + comp-engine (zelfde patroon als /api/dealer/price)
     const mk = (v.make||"").toLowerCase()
     let ml = (v.model||"").toLowerCase()
@@ -1211,11 +1219,49 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
       dataConfidence.message = "Staat " + staat.toLowerCase() + " volgens dealer — controleer bod handmatig"
     }
 
-    // 8. Fallback bij thin pool — bod=null, range tonen
+    // v10.18.67 — await expert estimate (parallel met comp-pipeline)
+    const expertEstimate = await _expertPromise
+
+    // Agreement check (alleen wanneer beide aanwezig)
+    let priceAgreement = null
+    if (expertEstimate && bod > 0) {
+      const expertBodMid = (expertEstimate.bod_low + expertEstimate.bod_high) / 2
+      const denom = Math.max(bod, expertBodMid)
+      const delta = denom > 0 ? Math.abs(bod - expertBodMid) / denom : 0
+      if (delta <= 0.30) {
+        priceAgreement = { status: "agree", delta_pct: Math.round(delta * 100) }
+      } else {
+        priceAgreement = {
+          status: bod < expertBodMid ? "comp_lower" : "comp_higher",
+          delta_pct: Math.round(delta * 100),
+          expected_bod_range: { low: expertEstimate.bod_low, high: expertEstimate.bod_high }
+        }
+      }
+    }
+
+    // 8. Fallback bij thin pool — expert override OF bod=null + range
     let bodFinal = bod, bodRange = null, needsReview = false
+    let priceSource = "comp"
     const cleanCount = (compResult && compResult.cleanCount) || 0
     const compStatus = compResult ? compResult.status : null
-    if (!compResult || compStatus !== "ok" || cleanCount < 3) {
+    const thinPool = !compResult || compStatus !== "ok" || cleanCount < 3
+
+    if (thinPool && expertEstimate) {
+      // Override met expert (per spec: geen bonus/rijdt-correctie re-toepassing)
+      const eVerkoopMid = Math.round((expertEstimate.verkoop_low + expertEstimate.verkoop_high) / 2 / 50) * 50
+      verkoopLow = Math.round(expertEstimate.verkoop_low / 50) * 50
+      verkoopHigh = Math.round(expertEstimate.verkoop_high / 50) * 50
+      // Behoud verkoopMid voor save als nieuw mid
+      const eHandel = Math.round(eVerkoopMid * 0.85 / 50) * 50
+      handelswaarde = eHandel
+      bodFinal = Math.round((expertEstimate.bod_low + expertEstimate.bod_high) / 2 / 50) * 50
+      bodRange = null
+      needsReview = false
+      priceSource = "expert_fallback"
+      // verkoopMid moet ook geüpdate worden voor save + response
+      // (heroverschrijven lokaal — was eerder const, dus apart bewaren)
+    } else if (thinPool) {
+      // Geen expert beschikbaar — bestaande cap-fallback (bod=null, range)
       bodFinal = null
       if (compMedian > 0) {
         bodRange = {
@@ -1230,6 +1276,11 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
       }
     }
 
+    // Effectieve verkoopMid voor save/response (kan zijn overschreven door expert)
+    const finalVerkoopMid = priceSource === "expert_fallback"
+      ? Math.round((expertEstimate.verkoop_low + expertEstimate.verkoop_high) / 2 / 50) * 50
+      : verkoopMid
+
     // 9. Save naar taxaties
     try {
       stmts.saveTaxatie.run({
@@ -1243,7 +1294,7 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
         catalog_price: v.catalogPrice||null, bpm: v.bpm||null, bpm_rest: v.bpmRest||null,
         market_avg: null, market_median: compMedian||null, market_count: dbListings.length||0,
         p25: null, p50: compMedian||null, p75: null,
-        verkoopadviees: verkoopMid||null, handelswaarde: handelswaarde||null,
+        verkoopadviees: finalVerkoopMid||null, handelswaarde: handelswaarde||null,
         inkoop_low: verkoopLow||null, inkoop_high: verkoopHigh||null,
         internet_prijs: null, reconditie_kosten: 0,
         import_flag: v.importFlag ? 1 : 0, export_flag: 0,
@@ -1260,7 +1311,15 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
         confidence_reasons: (dataConfidence.reasons||[]).join(",") || null,
         user_staat: staat || null,
         user_rijdt: rijdt || null,
-        taxatie_type: "snel"
+        taxatie_type: "snel",
+        expert_verkoop_low: expertEstimate ? expertEstimate.verkoop_low : null,
+        expert_verkoop_high: expertEstimate ? expertEstimate.verkoop_high : null,
+        expert_bod_low: expertEstimate ? expertEstimate.bod_low : null,
+        expert_bod_high: expertEstimate ? expertEstimate.bod_high : null,
+        expert_reasoning: expertEstimate ? expertEstimate.reasoning : null,
+        price_agreement_status: priceAgreement ? priceAgreement.status : null,
+        price_agreement_delta_pct: priceAgreement ? priceAgreement.delta_pct : null,
+        price_source: priceSource
       })
     } catch(saveErr) { console.log("[QUICK-SAVE] Error:", saveErr.message) }
 
@@ -1272,13 +1331,16 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
         platform: v.subModel || null,
         km
       },
-      verkoop: bodFinal !== null ? { low: verkoopLow, mid: verkoopMid, high: verkoopHigh } : null,
+      verkoop: bodFinal !== null ? { low: verkoopLow, mid: finalVerkoopMid, high: verkoopHigh } : null,
       handelswaarde: bodFinal !== null ? handelswaarde : null,
       bod: bodFinal,
       bodRange,
       needsReview,
       dataConfidence,
       _bodAdjustment,
+      priceSource,
+      priceAgreement,
+      expert_estimate: expertEstimate,
       _userInput: { staat: staat || null, rijdt: rijdt || null },
       _timing_ms: Date.now() - _t0
     })
