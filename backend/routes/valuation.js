@@ -14,6 +14,8 @@ const { calculateTradeBid } = require('../lib/trade-engine')
 const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
 const { buildComparableSet } = require("../lib/comparable-engine")
 const { getModelLifecycle } = require("../lib/model-lifecycle")
+let _bodAdjustments = { rules: [] }
+try { _bodAdjustments = require("../config/bod-adjustments.json") } catch(e) { console.log("[BOD-ADJ] geen config geladen:", e.message) }
 router.post("/api/dealer/price", express.json(), async (req, res) => {
   try {
     // Optionele auth: pak user als token meegegeven
@@ -489,6 +491,8 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
     let finalVerkoop = verkoopadviees, finalHandel = handelswaarde
     let finalInkoopLow = inkoopLow, finalInkoopHigh = inkoopHigh
     let finalInternet = internetPrijs, finalBod = t4cBod
+    let _auditAiVerkoop = null, _auditBlendVerkoop = null, _auditDataWeight = null
+    let _bodAdjustment = null
 
     try {
       const apiKey = getApiKey("OPENAI_API_KEY")
@@ -875,8 +879,11 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
           } else {
           }
             console.log('[PRICING-GPT]', d.make, d.model, ': geen data, 100% GPT:', aiVerkoop)
+            _auditDataWeight = _dataWeight
           }
           // GPT houdt al rekening met km — geen extra km correctie
+          _auditAiVerkoop = aiVerkoop
+          _auditBlendVerkoop = _blendedVerkoop
           finalVerkoop = _blendedVerkoop
           const _kmC = kmCorrection(km)
           if (_kmC.export) { d.exportFlag = true }
@@ -913,6 +920,31 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
     // If AI didn't run or failed, formula prices are already set as defaults
     // BOD = handelswaarde (always)
     finalBod = finalHandel
+
+    // ═══ v10.18.63 BOD-ADJUSTMENTS (export-bonus etc.) ═══
+    {
+      const _bodBase = finalBod
+      const _fuelLow = (d.fuel || "").toLowerCase()
+      const _makeUp = (d.make || "").toUpperCase()
+      const _kmVal = km || 0
+      let _matched = null
+      for (const rule of (_bodAdjustments.rules || [])) {
+        const c = rule.conditions || {}
+        if (c.make && _makeUp !== String(c.make).toUpperCase()) continue
+        if (c.fuel_contains && !_fuelLow.includes(String(c.fuel_contains).toLowerCase())) continue
+        if (c.km_min && _kmVal < c.km_min) continue
+        if (c.km_max && _kmVal > c.km_max) continue
+        _matched = rule
+        break
+      }
+      if (_matched) {
+        finalBod = Math.round(finalBod * _matched.factor / 50) * 50
+        _bodAdjustment = { base: _bodBase, adjusted: finalBod, tag: _matched.tag, factor: _matched.factor }
+        console.log("[BOD-ADJ]", d.make, d.model, ":", _matched.tag, "×", _matched.factor, "→ bod", _bodBase, "→", finalBod)
+      } else {
+        _bodAdjustment = { base: _bodBase, adjusted: finalBod, tag: null, factor: 1.0 }
+      }
+    }
 
     // Finnik waarde cross-check
     const fwLow = d.finnikWaardeLow || 0, fwHigh = d.finnikWaardeHigh || 0
@@ -966,7 +998,15 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
         reconditie_kosten: 0,
         import_flag: d.importFlag ? 1 : 0, export_flag: 0,
         apk_until: d.apkUntil || "", vin: d.vin || "",
-        user_id: _userId, notes: "", status: "auto"
+        user_id: _userId, notes: "", status: "auto",
+        final_bod: finalBod,
+        data_weight: _auditDataWeight,
+        comp_status: compResult ? compResult.status : null,
+        comp_count: compResult ? compResult.cleanCount : null,
+        ai_verkoop: _auditAiVerkoop,
+        blend_verkoop: _auditBlendVerkoop,
+        bod_adjustment_tag: _bodAdjustment ? _bodAdjustment.tag : null,
+        bod_adjustment_factor: _bodAdjustment ? _bodAdjustment.factor : null
       })
       console.log("[TAXATIE-SAVE]", d.make, d.model, year, "-> saved")
     } catch(saveErr) { console.log("[TAXATIE-SAVE] Error:", saveErr.message) }
@@ -997,6 +1037,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       verkoopadviees: finalVerkoop, handelswaarde: finalHandel,
       inkoopLow: finalInkoopLow, inkoopHigh: finalInkoopHigh,
       internetPrijs: finalInternet, t4cBod: finalBod,
+      _bodAdjustment,
       margin: finalMargin, marginPct: finalMarginPct, confidence: conf,
       liquidityScore, marketVelocity, atrScore, etrScore,
       marketUsed: mCount > 0, catalogUsed: catalog > 0,

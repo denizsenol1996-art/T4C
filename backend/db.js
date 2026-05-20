@@ -894,8 +894,9 @@ const stmts = {
       reconditie_kosten,import_flag,export_flag,apk_until,vin,user_id,notes,status,
       slider_courant,slider_risico,slider_staat,final_bod,
       gpt_opinion,gpt_price,gpt_confidence,
-      trend_direction,trend_pct,market_velocity,market_confidence)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      trend_direction,trend_pct,market_velocity,market_confidence,
+      data_weight,comp_status,comp_count,ai_verkoop,blend_verkoop,bod_adjustment_tag,bod_adjustment_factor)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [d.kenteken,d.make,d.model,d.model_variant,d.year,d.fuel,d.km,d.color,d.body,
        d.power_kw,d.power_hp,d.engine_label,d.transmission,d.catalog_price,d.bpm,d.bpm_rest,
        d.market_avg,d.market_median,d.market_count,d.p25,d.p50,d.p75,
@@ -903,7 +904,14 @@ const stmts = {
        d.reconditie_kosten,d.import_flag?1:0,d.export_flag?1:0,d.apk_until,d.vin,d.user_id,d.notes,d.status,
        d.slider_courant||null,d.slider_risico||null,d.slider_staat||null,d.final_bod||null,
        d.gpt_opinion||null,d.gpt_price||null,d.gpt_confidence||null,
-       d.trend_direction||null,d.trend_pct||null,d.market_velocity||null,d.market_confidence||null])
+       d.trend_direction||null,d.trend_pct||null,d.market_velocity||null,d.market_confidence||null,
+       d.data_weight==null?null:d.data_weight,
+       d.comp_status||null,
+       d.comp_count==null?null:d.comp_count,
+       d.ai_verkoop==null?null:d.ai_verkoop,
+       d.blend_verkoop==null?null:d.blend_verkoop,
+       d.bod_adjustment_tag||null,
+       d.bod_adjustment_factor==null?null:d.bod_adjustment_factor])
   },
   getTaxaties: { all: (limit) => queryAll("SELECT * FROM taxaties ORDER BY created_at DESC LIMIT ?", [limit]) },
   getTaxatieByKenteken: { get: (k) => queryOne("SELECT * FROM taxaties WHERE kenteken = ? ORDER BY created_at DESC LIMIT 1", [k]) },

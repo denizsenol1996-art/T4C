@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "fitted_at": "2026-05-20",
+  "source": "BACKTEST-2026-05-20.md — Toyota Hybride export cluster, precision 77% (n=24 cluster hits, 7 FP, h_median 1.19, fp_median 0.90)",
+  "rules": [
+    {
+      "tag": "toyota_hybride_export",
+      "factor": 1.10,
+      "conditions": {
+        "make": "TOYOTA",
+        "fuel_contains": "hybride",
+        "km_min": 100000
+      },
+      "note": "Conservatief 1.10 i.p.v. gefitte 1.14 (precision <80%)"
+    }
+  ]
+}
