@@ -237,6 +237,20 @@ router.post("/api/plate/scan", async (req, res) => {
    Fetches RDW data + enriches server-side
    ═══════════════════════════════════════════════ */
 // ═══ FINNIK DATA FETCH ═══
+function decodeHtmlEntities(str) {
+  if (!str) return str
+  return str
+    .replace(/&#x([0-9A-Fa-f]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&euro;/g, '€')
+    .replace(/&nbsp;/g, ' ')
+}
+
 async function fetchFinnikData(plate) {
   try {
     const cleanPlate = plate.replace(/[\s-]/g, '').toUpperCase()
@@ -297,6 +311,43 @@ async function fetchFinnikData(plate) {
     // Energielabel / emissieklasse from Finnik
     const energieMatch = html.match(/Energielabel[\s\S]*?([A-G]\+{0,3})/i)
     if (energieMatch) result.energielabel = energieMatch[1]
+
+    // Label/value div-pair extractor (Finnik standard layout)
+    const extractLabelValue = (label) => {
+      const esc = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const re = new RegExp(
+        '>\\s*' + esc + '\\s*</div>\\s*<div\\s+class="col-6\\s+col-sm-7\\s+value"\\s*>\\s*([^<]+?)\\s*</div>',
+        'is'
+      )
+      const m = html.match(re)
+      if (!m) return null
+      const v = decodeHtmlEntities(m[1].trim())
+      if (!v || v.includes('•••')) return null   // paywall guard
+      return v
+    }
+
+    // Uitvoering — commerciële trim/variant (rijker dan RDW codes)
+    const uitvoering = extractLabelValue('Uitvoering')
+    if (uitvoering && uitvoering.length > 1 && uitvoering.length < 100) {
+      result.uitvoering = uitvoering
+    }
+
+    // Soort transmissie + normalisatie
+    const transmRaw = extractLabelValue('Soort transmissie')
+    if (transmRaw) {
+      result.transmissieRaw = transmRaw
+      const t = transmRaw.toLowerCase()
+      if (t === 'onbekend') {
+        result.transmissieNormalized = null
+      } else if (t === 'handmatig' || t === 'handgeschakeld') {
+        result.transmissieNormalized = 'Handgeschakeld'
+      } else if (t === 'automatisch' || t === 'continu' || t === 'automaat' ||
+                 t.includes('dsg') || t.includes('cvt') || t.includes('tiptronic')) {
+        result.transmissieNormalized = 'Automaat'
+      } else {
+        result.transmissieNormalized = null   // onbekende waarde → fallback VIN-GPT
+      }
+    }
 
     if (Object.keys(result).length > 0) {
       console.log('[FINNIK] Data:', Object.keys(result).join(', '))
@@ -657,6 +708,16 @@ Antwoord ALLEEN in JSON:
       ? _vinRes.value
       : { transmission: null, transmissionDetail: null, motorCode: null, generation: null, trimLevel: null, drivetrain: null }
 
+    // Finnik wint van VIN-GPT voor commercial trim + transmissie.
+    // Reden: Finnik leest registratie/manufacturer DB; VIN-GPT raadt uit
+    // cryptische RDW codes en heeft bewezen onbetrouwbaar te zijn (28-SJK-6 case).
+    if (finnikData?.uitvoering) {
+      vinData.trimLevel = finnikData.uitvoering
+    }
+    if (finnikData?.transmissieNormalized) {
+      vinData.transmission = finnikData.transmissieNormalized
+    }
+
     const isAuto = vinData.transmission?.toLowerCase()?.includes('automaat') || vinData.transmission?.toLowerCase()?.includes('automatic') || false
     const transmissionType = vinData.transmission || null
     const transmissionDetail = vinData.transmissionDetail || null
@@ -672,6 +733,8 @@ Antwoord ALLEEN in JSON:
       transmissionAuto:isAuto, transmissionType, transmissionDetail,
       vin, motorCode: vinData.motorCode || null, generation: vinData.generation || null,
       trimLevel: vinData.trimLevel || null, drivetrain: vinData.drivetrain || null,
+      _trimSource:         finnikData?.uitvoering            ? 'finnik' : (vinData.trimLevel    ? 'vin_gpt' : null),
+      _transmissionSource: finnikData?.transmissieNormalized ? 'finnik' : (vinData.transmission ? 'vin_gpt' : null),
       gearCount: vinData.gearCount || null,
       // Blok 1: Uitgebreide technische specs
       cylinders: vinData.cylinders || null, turbo: vinData.turbo || null,

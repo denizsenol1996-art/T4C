@@ -185,3 +185,28 @@ dv_vehicles     : 80
 - Backups vandaag: `/opt/t4c/data/backups/*-20260515*`
 - Claude log: `/opt/t4c/data/claude-log/2026-05.md` (incident + alle fix-stappen)
 - Archive: `/opt/t4c/backend-test-full.ARCHIVE-20260515/` (NIET starten)
+
+---
+
+## 2026-05-20 — Operationele update
+
+**15-mei stabilisatie-fixes zijn al actief sinds boot na recovery 17 mei**
+(t4c-server created at 2026-05-17T15:57:06.958Z): `[LOCK] Stale lock (PID X
+bestaat niet) — overschrijven` regels uit 18-mei err log bewijzen dat de
+`server.js` lock-file check live is; tegelijk zijn de `[DB] ENOENT t4c.db.tmp`
+errors uit 15-mei niet terug in 18+19+20-mei logs, dus de `db.js` save+sort
+fixes draaien ook. Beide TODOs uit 15-mei SESSION-STATE ("actief bij volgende
+boot") kunnen worden afgevinkt.
+
+**Recovery-procedure moet `npm install --omit=dev` includen.** 17-18 mei bracht
+44 PM2 restarts, allemaal hetzelfde patroon: `Error: Cannot find module 'express'`
+op `server.js:5`. Root cause: v10.18.59 recovery heeft node_modules overschreven
+zonder reinstall. PM2 backoff-loopte tot iemand handmatig npm install draaide.
+Toegevoegd aan safe-restart.sh.
+
+**Finnik parser uitgebreid (v10.18.62)** — `Uitvoering` (trim) en `Soort
+transmissie` (genormaliseerd: Handgeschakeld/Automaat/null) worden nu uit
+Finnik HTML gehaald. Bij aanwezigheid winnen ze van VIN-GPT output voor
+`trimLevel` en `transmission`. Test: 6/6 trim-extractie, 3/6 transmissie
+(rest Onbekend → fallback VIN-GPT). 28-SJK-6: trim = "Pro Line S" (was null),
+transmissie = "Automaat" (was Handgeschakeld door VIN-GPT fout).
