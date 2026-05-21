@@ -18,6 +18,31 @@ const { getModelLifecycle } = require("../lib/model-lifecycle")
 let _bodAdjustments = { rules: [] }
 try { _bodAdjustments = require("../config/bod-adjustments.json") } catch(e) { console.log("[BOD-ADJ] geen config geladen:", e.message) }
 
+// v10.18.69 — gedeelde matcher (gebruikt door /api/dealer/price en /api/dealer/quick-price)
+// Supports: make, model, fuel_contains, km_gte (alias km_min), km_lte (alias km_max), year_gte, year_lte
+function matchBodAdjustment(vehicle) {
+  const makeUp = (vehicle.make || "").toUpperCase()
+  const modelUp = (vehicle.model || "").toUpperCase()
+  const fuelLow = (vehicle.fuel || "").toLowerCase()
+  const km = parseInt(vehicle.km) || 0
+  const year = parseInt(vehicle.year) || 0
+  for (const rule of (_bodAdjustments.rules || [])) {
+    if (rule.enabled === false) continue
+    const c = rule.conditions || {}
+    if (c.make && makeUp !== String(c.make).toUpperCase()) continue
+    if (c.model && modelUp !== String(c.model).toUpperCase()) continue
+    if (c.fuel_contains && !fuelLow.includes(String(c.fuel_contains).toLowerCase())) continue
+    const kmGte = c.km_gte != null ? c.km_gte : c.km_min
+    const kmLte = c.km_lte != null ? c.km_lte : c.km_max
+    if (kmGte != null && km < kmGte) continue
+    if (kmLte != null && km > kmLte) continue
+    if (c.year_gte != null && year && year < c.year_gte) continue
+    if (c.year_lte != null && year && year > c.year_lte) continue
+    return rule
+  }
+  return null
+}
+
 // v10.18.64 — soft confidence-tag voor low-data cases (geen cap, alleen flag)
 function deriveDataConfidence(compResult, marketCount) {
   const reasons = []
@@ -942,26 +967,15 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
     // BOD = handelswaarde (always)
     finalBod = finalHandel
 
-    // ═══ v10.18.63 BOD-ADJUSTMENTS (export-bonus etc.) ═══
+    // ═══ v10.18.63 BOD-ADJUSTMENTS — config-driven (v10.18.69: model/year_gte/year_lte support) ═══
     {
       const _bodBase = finalBod
-      const _fuelLow = (d.fuel || "").toLowerCase()
-      const _makeUp = (d.make || "").toUpperCase()
-      const _kmVal = km || 0
-      let _matched = null
-      for (const rule of (_bodAdjustments.rules || [])) {
-        const c = rule.conditions || {}
-        if (c.make && _makeUp !== String(c.make).toUpperCase()) continue
-        if (c.fuel_contains && !_fuelLow.includes(String(c.fuel_contains).toLowerCase())) continue
-        if (c.km_min && _kmVal < c.km_min) continue
-        if (c.km_max && _kmVal > c.km_max) continue
-        _matched = rule
-        break
-      }
+      const _matched = matchBodAdjustment({ make: d.make, model: d.model, fuel: d.fuel, km, year: d.year || year })
       if (_matched) {
         finalBod = Math.round(finalBod * _matched.factor / 50) * 50
-        _bodAdjustment = { base: _bodBase, adjusted: finalBod, tag: _matched.tag, factor: _matched.factor }
-        console.log("[BOD-ADJ]", d.make, d.model, ":", _matched.tag, "×", _matched.factor, "→ bod", _bodBase, "→", finalBod)
+        const _tag = _matched.id || _matched.tag
+        _bodAdjustment = { base: _bodBase, adjusted: finalBod, tag: _tag, factor: _matched.factor }
+        console.log("[BOD-ADJ]", d.make, d.model, ":", _tag, "×", _matched.factor, "→ bod", _bodBase, "→", finalBod)
       } else {
         _bodAdjustment = { base: _bodBase, adjusted: finalBod, tag: null, factor: 1.0 }
       }
@@ -1189,14 +1203,16 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
     let bod = handelswaarde > 0 ? Math.round(handelswaarde * 0.90 / 50) * 50 : 0
     const bodBase = bod
 
-    // 4. Export bonus (zelfde rule als v10.18.63 maar zonder config-load — inline want simpel)
+    // 4. Bod-adjustment (v10.18.69: config-driven, was inline Toyota-only in v10.18.65)
     const _bodAdjustment = { tag: null, factor: 1.0, rijdt_correction: 1.0 }
-    const fuelLow = (v.fuel || "").toLowerCase()
-    const makeUp = (v.make || "").toUpperCase()
-    if (makeUp === "TOYOTA" && fuelLow.includes("hybride") && km >= 100000) {
-      bod = Math.round(bod * 1.10 / 50) * 50
-      _bodAdjustment.tag = "export_toyota_hybride"
-      _bodAdjustment.factor = 1.10
+    {
+      const _matched = matchBodAdjustment({ make: v.make, model: v.model, fuel: v.fuel, km, year: v.year })
+      if (_matched) {
+        bod = Math.round(bod * _matched.factor / 50) * 50
+        _bodAdjustment.tag = _matched.id || _matched.tag
+        _bodAdjustment.factor = _matched.factor
+        console.log("[QUICK-BOD-ADJ]", v.make, v.model, ":", _bodAdjustment.tag, "×", _matched.factor)
+      }
     }
 
     // 5. Rijdt-correctie (vermenigvuldigt door alle prijzen)
@@ -1295,6 +1311,13 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
     const finalVerkoopMid = (priceSource === "expert_fallback" || priceSource === "expert_override") && expertEstimate
       ? Math.round((expertEstimate.verkoop_low + expertEstimate.verkoop_high) / 2 / 50) * 50
       : verkoopMid
+
+    // v10.18.69 — bod-adjustment is alleen relevant bij comp-bod; reset wanneer expert overheen ging
+    if (priceSource !== "comp" && _bodAdjustment.tag) {
+      console.log("[QUICK-BOD-ADJ] cleared (priceSource=" + priceSource + "): was " + _bodAdjustment.tag)
+      _bodAdjustment.tag = null
+      _bodAdjustment.factor = 1.0
+    }
 
     // 9. Save naar taxaties
     try {
