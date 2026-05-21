@@ -734,8 +734,9 @@ function renderQuickResult(d){
     html+='<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;background:rgba(255,183,77,.15);color:var(--orange);font-size:12px;font-weight:600;margin-bottom:14px;cursor:pointer" onclick="alert(\'Reden: \'+'+JSON.stringify(reasons)+')" title="'+reasons.replace(/"/g,'&quot;')+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'+(dc.message||'Weinig marktdata')+'</div>';
   }
   // v10.18.67 — agreement pill bij mismatch tussen comp en expert
+  // v10.18.68 — pill verbergen wanneer expert_override (expert is dan hoofdwaarde, geen waarschuwing meer)
   const _pa=d.priceAgreement;
-  if(_pa&&(_pa.status==='comp_lower'||_pa.status==='comp_higher')&&_pa.expected_bod_range){
+  if(d.priceSource!=='expert_override'&&_pa&&(_pa.status==='comp_lower'||_pa.status==='comp_higher')&&_pa.expected_bod_range){
     const _lo=_pa.expected_bod_range.low, _hi=_pa.expected_bod_range.high;
     html+='<div style="display:block;padding:8px 12px;border-radius:10px;background:rgba(255,183,77,.15);color:var(--orange);font-size:12px;font-weight:600;margin-bottom:14px">⚠ Marktdata is beperkt voor deze auto — verwachte bod-range €'+Number(_lo).toLocaleString('nl-NL')+'-€'+Number(_hi).toLocaleString('nl-NL')+', controleer handmatig</div>';
   }
@@ -758,7 +759,7 @@ function renderQuickResult(d){
   }
   html+='</div>';
   // v10.18.67 — neutrale sublabel bij expert_fallback (geen amber accent, geen tech-mention)
-  if(d.priceSource==='expert_fallback'){
+  if(d.priceSource==='expert_fallback'||d.priceSource==='expert_override'){
     html+='<div style="font-size:11px;color:var(--text3);margin-top:-6px;margin-bottom:10px;font-style:italic">Indicatie op basis van vergelijkbare auto\'s</div>';
   }
   const plateVal=document.getElementById('snel-plate').value;

@@ -546,6 +546,20 @@ router.post("/api/feedback", authMiddleware, (req, res) => {
     const { run, queryAll } = require("../db")
     const { kenteken, make, model, year, km, segment, onze_inkoop_high, onze_verkoop, eigen_bod, status, notitie, reasons } = req.body
     if (!eigen_bod && status !== 'niet_gekocht') return res.json({ ok: false, error: "eigen_bod is verplicht" })
+
+    // v10.18.68 — sold_price typo guard (ZT-181-J Tiguan case: €1.6M bij €14k bod)
+    const _bid = parseFloat(onze_inkoop_high || req.body.our_bod) || 0
+    const _sold = parseFloat(eigen_bod || req.body.sold_price) || 0
+    if (_bid > 0 && _sold > 0) {
+      const ratio = _sold / _bid
+      if (ratio > 5.0 || ratio < 0.05) {
+        return res.status(400).json({
+          error: "sold_price_anomaly",
+          message: "Verkoopprijs €" + _sold.toLocaleString("nl-NL") + " lijkt ongebruikelijk t.o.v. bod €" + _bid.toLocaleString("nl-NL") + ". Klopt het bedrag? Verifieer handmatig.",
+          ratio: Math.round(ratio * 100) / 100
+        })
+      }
+    }
     // Pak user_id uit auth token als aanwezig
     let userId = req.body.user_id || 0
     try {

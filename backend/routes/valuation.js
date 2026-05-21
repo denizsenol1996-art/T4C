@@ -1276,8 +1276,23 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
       }
     }
 
+    // v10.18.68 — auto-override naar expert bij delta > 50%
+    // (comp had genoeg data om door cap te komen, maar zit fors af van expert → expert wint)
+    if (priceSource === "comp" && priceAgreement && priceAgreement.delta_pct > 50
+        && expertEstimate && expertEstimate.bod_low > 0) {
+      verkoopLow = Math.round(expertEstimate.verkoop_low / 50) * 50
+      verkoopHigh = Math.round(expertEstimate.verkoop_high / 50) * 50
+      const eVerkoopMid = Math.round((expertEstimate.verkoop_low + expertEstimate.verkoop_high) / 2 / 50) * 50
+      handelswaarde = Math.round(eVerkoopMid * 0.85 / 50) * 50
+      bodFinal = Math.round((expertEstimate.bod_low + expertEstimate.bod_high) / 2 / 50) * 50
+      bodRange = null
+      needsReview = false
+      priceSource = "expert_override"
+      console.log("[QUICK-OVERRIDE]", v.make, v.model, ": comp_bod=" + bod + " expert_bod_mid=" + bodFinal + " delta=" + priceAgreement.delta_pct + "%")
+    }
+
     // Effectieve verkoopMid voor save/response (kan zijn overschreven door expert)
-    const finalVerkoopMid = priceSource === "expert_fallback"
+    const finalVerkoopMid = (priceSource === "expert_fallback" || priceSource === "expert_override") && expertEstimate
       ? Math.round((expertEstimate.verkoop_low + expertEstimate.verkoop_high) / 2 / 50) * 50
       : verkoopMid
 
