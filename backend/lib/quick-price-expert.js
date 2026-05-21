@@ -16,7 +16,8 @@ function _makeKey(v) {
     v.year || 0,
     kmBucket,
     (v.fuel || "").toLowerCase().trim(),
-    (v.transmission || "").toLowerCase().trim()
+    (v.transmission || "").toLowerCase().trim(),
+    (v.staat || "GOED").toUpperCase()
   ].join("|")
 }
 
@@ -55,7 +56,7 @@ async function getExpertPriceEstimate(vehicle) {
   }
 
   const sys = "Je bent een Nederlandse auto-dealer expert met 20+ jaar marktkennis. Geef realistische prijs-ranges voor de NL markt. Antwoord ALLEEN met geldige JSON, geen prose."
-  const usr = "Schat de prijzen voor: " + (vehicle.make || "?") + " " + (vehicle.model || "?") + " " + vehicle.year + ", " + (vehicle.km || 0) + "km, " + (vehicle.fuel || "?") + ", " + (vehicle.transmission || "?") + ", body=" + (vehicle.body || "?") + ".\n\n" +
+  let usr = "Schat de prijzen voor: " + (vehicle.make || "?") + " " + (vehicle.model || "?") + " " + vehicle.year + ", " + (vehicle.km || 0) + "km, " + (vehicle.fuel || "?") + ", " + (vehicle.transmission || "?") + ", body=" + (vehicle.body || "?") + ".\n\n" +
     "Geef JSON met:\n" +
     "{\n" +
     "  \"verkoop_low\": <getal>,\n" +
@@ -65,6 +66,14 @@ async function getExpertPriceEstimate(vehicle) {
     "  \"reasoning\": \"<korte onderbouwing>\"\n" +
     "}\n\n" +
     "Houd rekening met leeftijd, kilometers, marktsegment. Conservatief inschatten."
+  // v10.18.70 — staat-hint
+  const staatUp = (vehicle.staat || "").toUpperCase()
+  const staatHint = staatUp === "SLECHT"
+    ? "De auto is volgens de dealer in slechte staat (zichtbare schade, roest, of vergelijkbaar). Pas de inschatting daarop aan."
+    : staatUp === "DEFECT"
+    ? "De auto is defect of rijdt niet (volgens dealer). Inschatting moet dat reflecteren — restwaarde of sloop-niveau."
+    : ""
+  if (staatHint) usr += "\n\n" + staatHint
 
   try {
     const resp = await axios.post("https://api.openai.com/v1/responses", {

@@ -724,7 +724,7 @@ async function initDB() {
     // ── Auto-migrate voorraad columns ──
     const voorraad_migration = [["inkoop_prijs","REAL"],["reconditie_kosten","REAL DEFAULT 0"],["apk_kosten","REAL DEFAULT 0"],["transport_kosten","REAL DEFAULT 0"],["overige_kosten","REAL DEFAULT 0"],["kosten_notities","TEXT"],["totale_kostprijs","REAL"],["verkoop_prijs","REAL"],["winst","REAL"],["winst_pct","REAL"],["btw_type","TEXT"],["inkoop_datum","TEXT"],["verkoop_datum","TEXT"],["stadagen","INTEGER"],["inkoper","TEXT"],["bron","TEXT"],["taxatie_id","INTEGER"]]
     for (const [c,t] of voorraad_migration) { try { run("ALTER TABLE voorraad ADD COLUMN "+c+" "+t) } catch(e) {} }
-    const taxatie_migration = [["sold_price","REAL"],["sold_date","TEXT"],["days_to_sell","INTEGER"],["dealer_feedback","TEXT"],["gpt_opinion","TEXT"],["gpt_price","REAL"],["gpt_confidence","REAL"],["slider_courant","REAL"],["slider_risico","REAL"],["slider_staat","REAL"],["final_bod","REAL"],["trend_direction","TEXT"],["trend_pct","REAL"],["market_velocity","TEXT"],["market_confidence","TEXT"],["data_weight","REAL"],["comp_status","TEXT"],["comp_count","INTEGER"],["ai_verkoop","REAL"],["blend_verkoop","REAL"],["bod_adjustment_tag","TEXT"],["bod_adjustment_factor","REAL"],["confidence_level","TEXT"],["confidence_reasons","TEXT"],["user_staat","TEXT"],["user_rijdt","TEXT"],["taxatie_type","TEXT"],["model_platform","TEXT"],["expert_verkoop_low","REAL"],["expert_verkoop_high","REAL"],["expert_bod_low","REAL"],["expert_bod_high","REAL"],["expert_reasoning","TEXT"],["price_agreement_status","TEXT"],["price_agreement_delta_pct","INTEGER"],["price_source","TEXT"]]
+    const taxatie_migration = [["sold_price","REAL"],["sold_date","TEXT"],["days_to_sell","INTEGER"],["dealer_feedback","TEXT"],["gpt_opinion","TEXT"],["gpt_price","REAL"],["gpt_confidence","REAL"],["slider_courant","REAL"],["slider_risico","REAL"],["slider_staat","REAL"],["final_bod","REAL"],["trend_direction","TEXT"],["trend_pct","REAL"],["market_velocity","TEXT"],["market_confidence","TEXT"],["data_weight","REAL"],["comp_status","TEXT"],["comp_count","INTEGER"],["ai_verkoop","REAL"],["blend_verkoop","REAL"],["bod_adjustment_tag","TEXT"],["bod_adjustment_factor","REAL"],["confidence_level","TEXT"],["confidence_reasons","TEXT"],["user_staat","TEXT"],["user_rijdt","TEXT"],["taxatie_type","TEXT"],["model_platform","TEXT"],["expert_verkoop_low","REAL"],["expert_verkoop_high","REAL"],["expert_bod_low","REAL"],["expert_bod_high","REAL"],["expert_reasoning","TEXT"],["price_agreement_status","TEXT"],["price_agreement_delta_pct","INTEGER"],["price_source","TEXT"],["staat_factor","REAL"]]
     for (const [c,t] of taxatie_migration) { try { run("ALTER TABLE taxaties ADD COLUMN "+c+" "+t) } catch(e) {} }
     const ml_migration = [["days_on_market","INTEGER"],["price_changes","INTEGER DEFAULT 0"],["last_price","REAL"],["first_price","REAL"],["dealer","TEXT DEFAULT ''"]]
     for (const [c,t] of ml_migration) { try { run("ALTER TABLE market_listings ADD COLUMN "+c+" "+t) } catch(e) {} }
@@ -898,8 +898,8 @@ const stmts = {
       data_weight,comp_status,comp_count,ai_verkoop,blend_verkoop,bod_adjustment_tag,bod_adjustment_factor,
       confidence_level,confidence_reasons,user_staat,user_rijdt,taxatie_type,model_platform,
       expert_verkoop_low,expert_verkoop_high,expert_bod_low,expert_bod_high,expert_reasoning,
-      price_agreement_status,price_agreement_delta_pct,price_source)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      price_agreement_status,price_agreement_delta_pct,price_source,staat_factor)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [d.kenteken,d.make,d.model,d.model_variant,d.year,d.fuel,d.km,d.color,d.body,
        d.power_kw,d.power_hp,d.engine_label,d.transmission,d.catalog_price,d.bpm,d.bpm_rest,
        d.market_avg,d.market_median,d.market_count,d.p25,d.p50,d.p75,
@@ -928,7 +928,8 @@ const stmts = {
        d.expert_reasoning||null,
        d.price_agreement_status||null,
        d.price_agreement_delta_pct==null?null:d.price_agreement_delta_pct,
-       d.price_source||null])
+       d.price_source||null,
+       d.staat_factor==null?null:d.staat_factor])
   },
   getTaxaties: { all: (limit) => queryAll("SELECT * FROM taxaties ORDER BY created_at DESC LIMIT ?", [limit]) },
   getTaxatieByKenteken: { get: (k) => queryOne("SELECT * FROM taxaties WHERE kenteken = ? ORDER BY created_at DESC LIMIT 1", [k]) },

@@ -1154,10 +1154,11 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
     if (!v || !v.make) return res.status(404).json({ error: "Kenteken niet gevonden bij RDW" })
 
     // v10.18.67 — kick off expert price estimate parallel met comp-pipeline
+    // v10.18.70 — staat doorgeven zodat expert SLECHT/DEFECT meeneemt in inschatting
     const _expertPromise = getExpertPriceEstimate({
       make: v.make, model: v.model, year: v.year, km,
       fuel: v.fuel || "", transmission: v.transmissionType || "",
-      body: v.body || ""
+      body: v.body || "", staat
     }).catch(() => null)
 
     // 2. Listings + comp-engine (zelfde patroon als /api/dealer/price)
@@ -1204,7 +1205,7 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
     const bodBase = bod
 
     // 4. Bod-adjustment (v10.18.69: config-driven, was inline Toyota-only in v10.18.65)
-    const _bodAdjustment = { tag: null, factor: 1.0, rijdt_correction: 1.0 }
+    const _bodAdjustment = { tag: null, factor: 1.0, rijdt_correction: 1.0, staat_factor: 1.0 }
     {
       const _matched = matchBodAdjustment({ make: v.make, model: v.model, fuel: v.fuel, km, year: v.year })
       if (_matched) {
@@ -1213,6 +1214,18 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
         _bodAdjustment.factor = _matched.factor
         console.log("[QUICK-BOD-ADJ]", v.make, v.model, ":", _bodAdjustment.tag, "×", _matched.factor)
       }
+    }
+
+    // v10.18.70 — 4b. Staat-multiplier (user input → directe prijsbijstelling)
+    const STAAT_FACTORS = { GOED: 1.00, NORMAAL: 0.95, SLECHT: 0.75, DEFECT: 0.55 }
+    const staatFactor = STAAT_FACTORS[staat] != null ? STAAT_FACTORS[staat] : 1.00
+    _bodAdjustment.staat_factor = staatFactor
+    if (staatFactor !== 1.00) {
+      bod = Math.round(bod * staatFactor / 50) * 50
+      handelswaarde = Math.round(handelswaarde * staatFactor / 50) * 50
+      verkoopLow = Math.round(verkoopLow * staatFactor / 50) * 50
+      verkoopHigh = Math.round(verkoopHigh * staatFactor / 50) * 50
+      console.log("[QUICK-STAAT]", v.make, v.model, ":", staat, "×", staatFactor)
     }
 
     // 5. Rijdt-correctie (vermenigvuldigt door alle prijzen)
@@ -1307,9 +1320,29 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
       console.log("[QUICK-OVERRIDE]", v.make, v.model, ": comp_bod=" + bod + " expert_bod_mid=" + bodFinal + " delta=" + priceAgreement.delta_pct + "%")
     }
 
-    // Effectieve verkoopMid voor save/response (kan zijn overschreven door expert)
+    // v10.18.70 — user-correcties (staat + rijdt) ook op expert-derived numbers.
+    // Spec: "user-correctie die altijd telt, ongeacht welke prijs-bron". Test (e) verwacht
+    // 0.55 × 0.50 = 0.275 wanneer staat=DEFECT en rijdt=NEE, dus beide stacken op expert paden.
+    if ((priceSource === "expert_fallback" || priceSource === "expert_override") && bodFinal !== null) {
+      if (staatFactor !== 1.00) {
+        bodFinal = Math.round(bodFinal * staatFactor / 50) * 50
+        handelswaarde = Math.round(handelswaarde * staatFactor / 50) * 50
+        verkoopLow = Math.round(verkoopLow * staatFactor / 50) * 50
+        verkoopHigh = Math.round(verkoopHigh * staatFactor / 50) * 50
+      }
+      if (rijdt === "NEE") {
+        bodFinal = Math.round(bodFinal * 0.50 / 50) * 50
+        handelswaarde = Math.round(handelswaarde * 0.50 / 50) * 50
+        verkoopLow = Math.round(verkoopLow * 0.50 / 50) * 50
+        verkoopHigh = Math.round(verkoopHigh * 0.50 / 50) * 50
+        _bodAdjustment.rijdt_correction = 0.50
+      }
+    }
+
+    // Effectieve verkoopMid voor save/response (kan zijn overschreven door expert; user-correcties toepassen)
+    const _userCorr = staatFactor * (rijdt === "NEE" ? 0.50 : 1.0)
     const finalVerkoopMid = (priceSource === "expert_fallback" || priceSource === "expert_override") && expertEstimate
-      ? Math.round((expertEstimate.verkoop_low + expertEstimate.verkoop_high) / 2 / 50) * 50
+      ? Math.round((expertEstimate.verkoop_low + expertEstimate.verkoop_high) / 2 * _userCorr / 50) * 50
       : verkoopMid
 
     // v10.18.69 — bod-adjustment is alleen relevant bij comp-bod; reset wanneer expert overheen ging
@@ -1345,6 +1378,7 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
         ai_verkoop: null, blend_verkoop: null,
         bod_adjustment_tag: _bodAdjustment.tag,
         bod_adjustment_factor: _bodAdjustment.factor,
+        staat_factor: staatFactor,
         confidence_level: dataConfidence.level,
         confidence_reasons: (dataConfidence.reasons||[]).join(",") || null,
         user_staat: staat || null,
