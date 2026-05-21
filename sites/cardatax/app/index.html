@@ -444,6 +444,13 @@ input[type=range].sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;he
           .snel-pcard-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
           .snel-pcard-val{font-size:22px;font-weight:800;font-family:var(--mono)}
           .snel-pcard.accent .snel-pcard-val{color:var(--green)}
+          /* v10.19.1 — 3-kaart KPI layout (Inkoop / Verkoop range / Marge) */
+          .snel-kpi-grid{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:12px;margin-bottom:18px}
+          @media (max-width:680px){.snel-kpi-grid{grid-template-columns:1fr}}
+          .snel-kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;justify-content:center}
+          .snel-kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-weight:600}
+          .snel-kpi-val{font-size:28px;font-weight:800;font-family:var(--mono);color:var(--green);letter-spacing:-0.5px;line-height:1.1}
+          .snel-kpi-sub{font-size:11px;color:var(--text3);margin-top:6px}
         </style>
       </div>
       <div class="panel" id="p-extended">
@@ -725,42 +732,26 @@ async function doQuickTax(){
 function renderQuickResult(d){
   const c=document.getElementById('snel-result');
   const v=d.voertuig||{};
-  const dc=d.dataConfidence||{};
-  const adj=d._bodAdjustment||{};
-  const reasons=(dc.reasons||[]).join(', ');
   let html='<div class="tax-card" style="background:rgba(8,14,26,.4);border:1px solid rgba(80,160,255,.18);border-radius:18px;padding:22px 22px 18px;backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px)">';
-  html+='<div style="font-size:13px;color:var(--text2);margin-bottom:14px"><b>'+(v.make||'?')+' '+(v.model||'')+'</b> · '+(v.year||'')+(v.transmission?' · '+v.transmission:'')+(v.trim?' · '+v.trim:'')+' · '+(v.km?N(v.km):0)+' km</div>';
-  if(dc.level==='low'){
-    html+='<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;background:rgba(255,183,77,.15);color:var(--orange);font-size:12px;font-weight:600;margin-bottom:14px;cursor:pointer" onclick="alert(\'Reden: \'+'+JSON.stringify(reasons)+')" title="'+reasons.replace(/"/g,'&quot;')+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'+(dc.message||'Weinig marktdata')+'</div>';
-  }
-  // v10.18.67 — agreement pill bij mismatch tussen comp en expert
-  // v10.18.68 — pill verbergen wanneer expert_override (expert is dan hoofdwaarde, geen waarschuwing meer)
-  const _pa=d.priceAgreement;
-  if(d.priceSource!=='expert_override'&&d.priceSource!=='expert_user_context'&&_pa&&(_pa.status==='comp_lower'||_pa.status==='comp_higher')&&_pa.expected_bod_range){
-    const _lo=_pa.expected_bod_range.low, _hi=_pa.expected_bod_range.high;
-    html+='<div style="display:block;padding:8px 12px;border-radius:10px;background:rgba(255,183,77,.15);color:var(--orange);font-size:12px;font-weight:600;margin-bottom:14px">⚠ Marktdata is beperkt voor deze auto — verwachte bod-range €'+Number(_lo).toLocaleString('nl-NL')+'-€'+Number(_hi).toLocaleString('nl-NL')+', controleer handmatig</div>';
-  }
-  html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">';
-  if(d.verkoop){
-    html+='<div class="snel-pcard"><div class="snel-pcard-label">Verkoop range</div><div class="snel-pcard-val" style="font-size:18px">'+E(d.verkoop.low)+'–'+E(d.verkoop.high)+'</div><div style="font-size:11px;color:var(--text3);margin-top:4px">mid '+E(d.verkoop.mid)+'</div></div>';
-    html+='<div class="snel-pcard"><div class="snel-pcard-label">Handelswaarde</div><div class="snel-pcard-val">'+E(d.handelswaarde||0)+'</div></div>';
-  }else{
-    html+='<div class="snel-pcard" style="grid-column:1/3;border-color:var(--orange);background:rgba(255,183,77,.06)"><div class="snel-pcard-label">Verkoop / Handel</div><div style="font-size:13px;color:var(--text2);margin-top:4px">Onvoldoende marktdata om te schatten</div></div>';
-  }
-  if(d.bod!==null&&d.bod!==undefined){
-    let tags='';
-    if(adj.tag)tags+='<div style="font-size:10px;color:var(--green);margin-top:4px">+'+Math.round((adj.factor-1)*100)+'% '+adj.tag.replace(/_/g,' ')+'</div>';
-    if(adj.rijdt_correction&&adj.rijdt_correction<1)tags+='<div style="font-size:10px;color:var(--orange);margin-top:2px">−'+Math.round((1-adj.rijdt_correction)*100)+'% rijdt nee</div>';
-    html+='<div class="snel-pcard accent"><div class="snel-pcard-label">Bod</div><div class="snel-pcard-val">'+E(d.bod)+'</div>'+tags+'</div>';
-  }else if(d.bodRange){
-    html+='<div class="snel-pcard" style="border-color:var(--orange);background:rgba(255,183,77,.06)"><div class="snel-pcard-label">Bod-indicatie</div><div class="snel-pcard-val" style="font-size:16px">'+E(d.bodRange.low)+'–'+E(d.bodRange.high)+'</div><div style="font-size:10px;color:var(--orange);margin-top:4px">handmatig verifiëren</div></div>';
-  }else{
-    html+='<div class="snel-pcard"><div class="snel-pcard-label">Bod</div><div style="font-size:13px;color:var(--text2);margin-top:4px">Niet beschikbaar</div></div>';
-  }
-  html+='</div>';
-  // v10.18.67 — neutrale sublabel bij expert_fallback (geen amber accent, geen tech-mention)
-  if(d.priceSource==='expert_fallback'||d.priceSource==='expert_override'||d.priceSource==='expert_user_context'){
-    html+='<div style="font-size:11px;color:var(--text3);margin-top:-6px;margin-bottom:10px;font-style:italic">Indicatie op basis van vergelijkbare auto\'s</div>';
+  html+='<div style="font-size:13px;color:var(--text2);margin-bottom:18px"><b>'+(v.make||'?')+' '+(v.model||'')+'</b> · '+(v.year||'')+(v.transmission?' · '+v.transmission:'')+(v.trim?' · '+v.trim:'')+' · '+(v.km?N(v.km):0)+' km</div>';
+  // v10.19.1 — 3-kaart layout: Inkoop / Verkoop range / Marge
+  const inkoop = d.bod
+  const vk = d.verkoop
+  if(inkoop != null && vk && vk.low && vk.high){
+    const marge_eur = vk.low - inkoop
+    const marge_pct = inkoop > 0 ? Math.round(marge_eur / inkoop * 100) : 0
+    html+='<div class="snel-kpi-grid">';
+    html+='<div class="snel-kpi"><div class="snel-kpi-label">Inkoop</div><div class="snel-kpi-val">'+E(inkoop)+'</div><div class="snel-kpi-sub">Wat dealer betaalt</div></div>';
+    html+='<div class="snel-kpi"><div class="snel-kpi-label">Verkoop range</div><div class="snel-kpi-val" style="font-size:24px">'+E(vk.low)+' – '+E(vk.high)+'</div><div class="snel-kpi-sub">Wat dealer kan verkopen voor</div></div>';
+    html+='<div class="snel-kpi"><div class="snel-kpi-label">Marge</div><div class="snel-kpi-val">'+E(marge_eur)+' <span style="font-size:16px;color:var(--text2);font-weight:600">('+marge_pct+'%)</span></div><div class="snel-kpi-sub">Bij onderkant verkoop</div></div>';
+    html+='</div>';
+  } else if(d.bodRange){
+    // cap-fallback: alleen range tonen
+    html+='<div class="snel-kpi-grid">';
+    html+='<div class="snel-kpi" style="grid-column:1/-1;border-color:var(--orange);background:rgba(255,183,77,.06)"><div class="snel-kpi-label">Bod-indicatie</div><div class="snel-kpi-val" style="font-size:24px">'+E(d.bodRange.low)+' – '+E(d.bodRange.high)+'</div><div class="snel-kpi-sub">Marktdata beperkt — verifieer handmatig</div></div>';
+    html+='</div>';
+  } else {
+    html+='<div class="snel-kpi-grid"><div class="snel-kpi" style="grid-column:1/-1"><div class="snel-kpi-label">Geen bod beschikbaar</div><div class="snel-kpi-sub">Onvoldoende marktdata</div></div></div>';
   }
   const plateVal=document.getElementById('snel-plate').value;
   const kmVal=document.getElementById('snel-km').value;

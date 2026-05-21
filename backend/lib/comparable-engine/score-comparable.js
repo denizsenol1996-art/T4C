@@ -24,7 +24,7 @@ function scoreComparable(target, listing) {
   if (tf.fuel && lf.fuel) {
     maxPossible += 10
     if (tf.fuel === lf.fuel) { score += 10; reasons.push('fuel_match') }
-    else { score = Math.min(score, 40); reasons.push('fuel_mismatch') }
+    else { score = Math.max(0, score - 12); reasons.push('fuel_mismatch') }  // v10.19.1: penalty ipv hard cap
   }
 
   // Transmission — only count if listing has it
@@ -38,6 +38,8 @@ function scoreComparable(target, listing) {
     maxPossible += 8
     if (tf.bodyType === lf.bodyType) { score += 8; reasons.push('bodytype_match') }
   }
+  // v10.19.1 — duplicate engine/power blocks verwijderd (waren accidenteel gedupliceerd
+  // wat een dubbele cap-penalty veroorzaakte).
   // Engine size — critical for price differentiation (535i vs 520d)
   if (tf.engineSize && lf.engineSize) {
     maxPossible += 15
@@ -45,7 +47,7 @@ function scoreComparable(target, listing) {
     if (diff < 0.2) { score += 15; reasons.push('engine_exact') }
     else if (diff < 0.5) { score += 8; reasons.push('engine_close') }
     else if (diff < 1.0) { score += 3; reasons.push('engine_far') }
-    else { score = Math.min(score, 35); reasons.push('engine_mismatch') }
+    else { score = Math.max(0, score - 10); reasons.push('engine_mismatch') }  // v10.19.1: penalty ipv hard cap
   }
   // Power class — if we know HP
   if (tf.powerHp && lf.powerHp && tf.powerHp > 0 && lf.powerHp > 0) {
@@ -54,25 +56,7 @@ function scoreComparable(target, listing) {
     if (pDiff < 0.1) { score += 10; reasons.push('power_exact') }
     else if (pDiff < 0.25) { score += 6; reasons.push('power_close') }
     else if (pDiff < 0.5) { score += 2; reasons.push('power_far') }
-    else { score = Math.min(score, 35); reasons.push('power_mismatch') }
-  }
-  // Engine size — critical for price differentiation (535i vs 520d)
-  if (tf.engineSize && lf.engineSize) {
-    maxPossible += 15
-    const diff = Math.abs(tf.engineSize - lf.engineSize)
-    if (diff < 0.2) { score += 15; reasons.push('engine_exact') }
-    else if (diff < 0.5) { score += 8; reasons.push('engine_close') }
-    else if (diff < 1.0) { score += 3; reasons.push('engine_far') }
-    else { score = Math.min(score, 35); reasons.push('engine_mismatch') }
-  }
-  // Power class — if we know HP
-  if (tf.powerHp && lf.powerHp && tf.powerHp > 0 && lf.powerHp > 0) {
-    maxPossible += 10
-    const pDiff = Math.abs(tf.powerHp - lf.powerHp) / tf.powerHp
-    if (pDiff < 0.1) { score += 10; reasons.push('power_exact') }
-    else if (pDiff < 0.25) { score += 6; reasons.push('power_close') }
-    else if (pDiff < 0.5) { score += 2; reasons.push('power_far') }
-    else { score = Math.min(score, 35); reasons.push('power_mismatch') }
+    else { score = Math.max(0, score - 8); reasons.push('power_mismatch') }
   }
 
   // Trim — only count if both have it
@@ -121,10 +105,12 @@ function scoreComparable(target, listing) {
 
   const ns = maxPossible > 0 ? Math.round((score / maxPossible) * 100) : 0
 
+  // v10.19.1 — band thresholds verlaagd (was 70/60/50) zodat meer listings de
+  // 'secondary' floor halen. Combineert met index.js filter score>=45.
   let band
-  if (ns >= 70) band = 'strong'
-  else if (ns >= 60) band = 'usable'
-  else if (ns >= 50) band = 'secondary'
+  if (ns >= 65) band = 'strong'
+  else if (ns >= 55) band = 'usable'
+  else if (ns >= 45) band = 'secondary'
   else band = 'ignore'
 
   return { score: ns, band, reasons }

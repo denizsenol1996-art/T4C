@@ -120,8 +120,8 @@ function buildComparableSet(target, rawListings, options = {}) {
     listing.scoreResult = scoreComparable(target, listing)
   }
 
-  // Filter: only usable comparables (score >= 50)
-  const usable = deduped.filter(x => x.scoreResult.score >= 50)
+  // v10.19.1 — filter floor verlaagd van 50 naar 45 (matcht nieuwe secondary band)
+  const usable = deduped.filter(x => x.scoreResult.score >= 45)
   log(`scored: strong=${usable.filter(x => x.scoreResult.band === 'strong').length} usable=${usable.filter(x => x.scoreResult.band === 'usable').length} secondary=${usable.filter(x => x.scoreResult.band === 'secondary').length} ignored=${deduped.length - usable.length}`)
 
   // ── Step 7: Normalization ──
