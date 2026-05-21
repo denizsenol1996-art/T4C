@@ -17,7 +17,8 @@ function _makeKey(v) {
     kmBucket,
     (v.fuel || "").toLowerCase().trim(),
     (v.transmission || "").toLowerCase().trim(),
-    (v.staat || "GOED").toUpperCase()
+    (v.staat || "GOED").toUpperCase(),
+    (v.rijdt || "JA").toUpperCase()
   ].join("|")
 }
 
@@ -55,7 +56,7 @@ async function getExpertPriceEstimate(vehicle) {
     return null
   }
 
-  const sys = "Je bent een Nederlandse auto-dealer expert met 20+ jaar marktkennis. Geef realistische prijs-ranges voor de NL markt. Antwoord ALLEEN met geldige JSON, geen prose."
+  const sys = "Je bent een Nederlandse auto-dealer expert met 20+ jaar marktkennis. Geef realistische prijs-ranges voor de NL markt. Antwoord ALLEEN met geldige JSON, geen prose. Voor auto's in slechte staat of defect: denk niet alleen aan straatwaarde maar ook aan onderdelen-waarde, export-mogelijkheden en reparatie-marge. Een defecte premium-auto (BMW, Mercedes, Audi) heeft substantieel meer restwaarde dan een budget-auto vanwege onderdelen en export-vraag."
   let usr = "Schat de prijzen voor: " + (vehicle.make || "?") + " " + (vehicle.model || "?") + " " + vehicle.year + ", " + (vehicle.km || 0) + "km, " + (vehicle.fuel || "?") + ", " + (vehicle.transmission || "?") + ", body=" + (vehicle.body || "?") + ".\n\n" +
     "Geef JSON met:\n" +
     "{\n" +
@@ -66,14 +67,22 @@ async function getExpertPriceEstimate(vehicle) {
     "  \"reasoning\": \"<korte onderbouwing>\"\n" +
     "}\n\n" +
     "Houd rekening met leeftijd, kilometers, marktsegment. Conservatief inschatten."
-  // v10.18.70 — staat-hint
+  // v10.18.71 — staat + rijdt context naar expert (geen post-multipliers meer)
   const staatUp = (vehicle.staat || "").toUpperCase()
-  const staatHint = staatUp === "SLECHT"
-    ? "De auto is volgens de dealer in slechte staat (zichtbare schade, roest, of vergelijkbaar). Pas de inschatting daarop aan."
-    : staatUp === "DEFECT"
-    ? "De auto is defect of rijdt niet (volgens dealer). Inschatting moet dat reflecteren — restwaarde of sloop-niveau."
-    : ""
-  if (staatHint) usr += "\n\n" + staatHint
+  const rijdtUp = (vehicle.rijdt || "").toUpperCase()
+  const contextLines = []
+  if (staatUp === "SLECHT") {
+    contextLines.push("De dealer geeft aan dat de auto in SLECHTE staat verkeert: denk aan zichtbare schade, roest, deuken, of beschadigd interieur. Auto rijdt nog wel.")
+  } else if (staatUp === "DEFECT") {
+    contextLines.push("De dealer geeft aan dat de auto DEFECT is: ernstige mechanische of structurele problemen.")
+  }
+  if (rijdtUp === "NEE") {
+    contextLines.push("De auto RIJDT NIET (moet versleept worden). Maak de inschatting op basis van onderdelen-waarde, reparatie-marge voor doorverkoop, en eventuele export-mogelijkheden.")
+  }
+  if (contextLines.length > 0) {
+    usr += "\n\nExtra context:\n- " + contextLines.join("\n- ") +
+      "\n\nBepaal het bod zoals een professionele inkoper dat zou doen: geïntegreerd oordeel rekening houdend met staat, onderdelen-waarde, reparatie-kosten, doorverkoop-marge, en export-mogelijkheden. Geen standaard discount maar realistische marktbenadering."
+  }
 
   try {
     const resp = await axios.post("https://api.openai.com/v1/responses", {

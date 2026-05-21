@@ -1155,10 +1155,11 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
 
     // v10.18.67 — kick off expert price estimate parallel met comp-pipeline
     // v10.18.70 — staat doorgeven zodat expert SLECHT/DEFECT meeneemt in inschatting
+    // v10.18.71 — ook rijdt doorgeven; expert krijgt nu volledige user-context
     const _expertPromise = getExpertPriceEstimate({
       make: v.make, model: v.model, year: v.year, km,
       fuel: v.fuel || "", transmission: v.transmissionType || "",
-      body: v.body || "", staat
+      body: v.body || "", staat, rijdt
     }).catch(() => null)
 
     // 2. Listings + comp-engine (zelfde patroon als /api/dealer/price)
@@ -1216,26 +1217,13 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
       }
     }
 
-    // v10.18.70 — 4b. Staat-multiplier (user input → directe prijsbijstelling)
-    const STAAT_FACTORS = { GOED: 1.00, NORMAAL: 0.95, SLECHT: 0.75, DEFECT: 0.55 }
-    const staatFactor = STAAT_FACTORS[staat] != null ? STAAT_FACTORS[staat] : 1.00
+    // v10.18.71 — STAAT_FACTORS multiplier + rijdt×0.50 multiplier zijn VERWIJDERD.
+    // User-input (staat/rijdt) gaat nu volledig via expert-context (zie prompt in
+    // lib/quick-price-expert.js). Bij SLECHT/DEFECT/NEE forceren we expert_user_context
+    // pad hieronder (DEEL B), dus comp wordt overslagen omdat die geen staat/rijdt kent.
+    // staat_factor blijft als audit-veld voor backwards-compat (altijd 1.0 vanaf v10.18.71).
+    const staatFactor = 1.00
     _bodAdjustment.staat_factor = staatFactor
-    if (staatFactor !== 1.00) {
-      bod = Math.round(bod * staatFactor / 50) * 50
-      handelswaarde = Math.round(handelswaarde * staatFactor / 50) * 50
-      verkoopLow = Math.round(verkoopLow * staatFactor / 50) * 50
-      verkoopHigh = Math.round(verkoopHigh * staatFactor / 50) * 50
-      console.log("[QUICK-STAAT]", v.make, v.model, ":", staat, "×", staatFactor)
-    }
-
-    // 5. Rijdt-correctie (vermenigvuldigt door alle prijzen)
-    if (rijdt === "NEE") {
-      bod = Math.round(bod * 0.50 / 50) * 50
-      handelswaarde = Math.round(handelswaarde * 0.50 / 50) * 50
-      verkoopLow = Math.round(verkoopLow * 0.50 / 50) * 50
-      verkoopHigh = Math.round(verkoopHigh * 0.50 / 50) * 50
-      _bodAdjustment.rijdt_correction = 0.50
-    }
 
     // 6. Confidence-tag (zelfde helper als /api/dealer/price)
     const mCount = compResult ? compResult.cleanCount : 0
@@ -1320,29 +1308,28 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
       console.log("[QUICK-OVERRIDE]", v.make, v.model, ": comp_bod=" + bod + " expert_bod_mid=" + bodFinal + " delta=" + priceAgreement.delta_pct + "%")
     }
 
-    // v10.18.70 — user-correcties (staat + rijdt) ook op expert-derived numbers.
-    // Spec: "user-correctie die altijd telt, ongeacht welke prijs-bron". Test (e) verwacht
-    // 0.55 × 0.50 = 0.275 wanneer staat=DEFECT en rijdt=NEE, dus beide stacken op expert paden.
-    if ((priceSource === "expert_fallback" || priceSource === "expert_override") && bodFinal !== null) {
-      if (staatFactor !== 1.00) {
-        bodFinal = Math.round(bodFinal * staatFactor / 50) * 50
-        handelswaarde = Math.round(handelswaarde * staatFactor / 50) * 50
-        verkoopLow = Math.round(verkoopLow * staatFactor / 50) * 50
-        verkoopHigh = Math.round(verkoopHigh * staatFactor / 50) * 50
-      }
-      if (rijdt === "NEE") {
-        bodFinal = Math.round(bodFinal * 0.50 / 50) * 50
-        handelswaarde = Math.round(handelswaarde * 0.50 / 50) * 50
-        verkoopLow = Math.round(verkoopLow * 0.50 / 50) * 50
-        verkoopHigh = Math.round(verkoopHigh * 0.50 / 50) * 50
-        _bodAdjustment.rijdt_correction = 0.50
-      }
+    // v10.18.71 — Forceer expert-pad bij problematische user-input (staat SLECHT/DEFECT of rijdt NEE).
+    // Comp-engine kent geen staat/rijdt context en slaat grof mis op deze cases. Expert kreeg
+    // wel de volledige context (zie quick-price-expert.js prompt-bouw) → gebruik expert bod direct.
+    const isProblematicInput = staat === "SLECHT" || staat === "DEFECT" || rijdt === "NEE"
+    if (isProblematicInput && expertEstimate && expertEstimate.bod_low > 0) {
+      verkoopLow = Math.round(expertEstimate.verkoop_low / 50) * 50
+      verkoopHigh = Math.round(expertEstimate.verkoop_high / 50) * 50
+      const _eVMid = Math.round((expertEstimate.verkoop_low + expertEstimate.verkoop_high) / 2 / 50) * 50
+      handelswaarde = Math.round(_eVMid * 0.85 / 50) * 50
+      bodFinal = Math.round((expertEstimate.bod_low + expertEstimate.bod_high) / 2 / 50) * 50
+      bodRange = null
+      needsReview = false
+      priceSource = "expert_user_context"
+      console.log("[QUICK-USER-CONTEXT]", v.make, v.model, ":", "staat=" + (staat || "-"), "rijdt=" + (rijdt || "-"), "→ bod=" + bodFinal)
     }
 
-    // Effectieve verkoopMid voor save/response (kan zijn overschreven door expert; user-correcties toepassen)
-    const _userCorr = staatFactor * (rijdt === "NEE" ? 0.50 : 1.0)
-    const finalVerkoopMid = (priceSource === "expert_fallback" || priceSource === "expert_override") && expertEstimate
-      ? Math.round((expertEstimate.verkoop_low + expertEstimate.verkoop_high) / 2 * _userCorr / 50) * 50
+    // Geen post-multipliers meer; expert kreeg al staat+rijdt context.
+    // verkoopLow/High/handel/bodFinal staan na hun bron (comp of expert) direct correct.
+
+    // Effectieve verkoopMid voor save/response
+    const finalVerkoopMid = (priceSource === "expert_fallback" || priceSource === "expert_override" || priceSource === "expert_user_context") && expertEstimate
+      ? Math.round((expertEstimate.verkoop_low + expertEstimate.verkoop_high) / 2 / 50) * 50
       : verkoopMid
 
     // v10.18.69 — bod-adjustment is alleen relevant bij comp-bod; reset wanneer expert overheen ging
