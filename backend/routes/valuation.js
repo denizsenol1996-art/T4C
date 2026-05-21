@@ -13,7 +13,7 @@ const { writeLog } = require("../lib/state")
 const { calculateTradeBid } = require('../lib/trade-engine')
 const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
 const { buildComparableSet } = require("../lib/comparable-engine")
-const { getExpertPriceEstimate } = require("../lib/quick-price-expert")
+const { getExpertPriceEstimate, getHealthStats: getExpertHealth } = require("../lib/quick-price-expert")
 const { getModelLifecycle } = require("../lib/model-lifecycle")
 let _bodAdjustments = { rules: [] }
 try { _bodAdjustments = require("../config/bod-adjustments.json") } catch(e) { console.log("[BOD-ADJ] geen config geladen:", e.message) }
@@ -141,20 +141,20 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
         const mk = (d.make||'').toLowerCase(); let ml = (d.model||'').toLowerCase(); if (ml.startsWith(mk + ' ')) ml = ml.slice(mk.length + 1)
         if (mk && ml) {
           // Smart model matching: probeer exact, dan eerste woord, dan nummer-extractie
-          let dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, ml + '%', (d.year||2015)-2, (d.year||2015)+2])
+          let dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, ml + '%', (d.year||2015)-2, (d.year||2015)+2])
           // Fallback 1: eerste woord (maar niet als het een nummer is dat andere modellen matcht)
           if (dbListings.length < 3 && ml.includes(' ')) {
             const firstWord = ml.split(' ')[0]
             // Voorkom dat "3" matcht met "x3" — gebruik "3 %" ipv "3%"
             const safePattern = /^\d+$/.test(firstWord) ? firstWord + ' %' : firstWord + '%'
-            dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, safePattern, (d.year||2015)-2, (d.year||2015)+2])
+            dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, safePattern, (d.year||2015)-2, (d.year||2015)+2])
             if (dbListings.length > 0) console.log('[MODEL-MATCH] Fallback 1:', mk, ml, '->', safePattern, ':', dbListings.length, 'listings')
           }
           // Fallback 2: zoek in title (RDW zegt "3 SERIE", Marktplaats zegt "320d")
           if (dbListings.length < 3) {
             const numMatch = ml.match(/^(\d+)/)
             if (numMatch) {
-              const altListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND (model LIKE ? OR model LIKE ? OR title LIKE ?) AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, numMatch[1] + '%', numMatch[1] + ' %', '%' + numMatch[1] + '%', (d.year||2015)-2, (d.year||2015)+2])
+              const altListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND (COALESCE(model_normalized, model) LIKE ? OR COALESCE(model_normalized, model) LIKE ? OR title LIKE ?) AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, numMatch[1] + '%', numMatch[1] + ' %', '%' + numMatch[1] + '%', (d.year||2015)-2, (d.year||2015)+2])
               // Filter: alleen als het model BEGINT met het nummer (voorkom x3 bij 3 serie)
               const filtered = altListings.filter(l => {
                 const m = (l.model||l.title||'').toLowerCase()
@@ -876,7 +876,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
           const _kmTarget = km || 100000
           const _kmLow = Math.round(_kmTarget * 0.4)
           const _kmHigh = Math.round(_kmTarget * 1.6)
-          const _clampListings = queryAll('SELECT price, km FROM market_listings WHERE UPPER(make)=? AND UPPER(model) LIKE ? AND year BETWEEN ? AND ? AND status=\'active\' AND price > 0 AND (km IS NULL OR (km BETWEEN ? AND ?))', [(d.make||'').toUpperCase(), (d.model||'').toUpperCase().split(' ')[0]+'%', (year||2015)-2, (year||2015)+2, _kmLow, _kmHigh])
+          const _clampListings = queryAll('SELECT price, km FROM market_listings WHERE UPPER(make)=? AND UPPER(COALESCE(model_normalized, model)) LIKE ? AND year BETWEEN ? AND ? AND status=\'active\' AND price > 0 AND (km IS NULL OR (km BETWEEN ? AND ?))', [(d.make||'').toUpperCase(), (d.model||'').toUpperCase().split(' ')[0]+'%', (year||2015)-2, (year||2015)+2, _kmLow, _kmHigh])
           const _dbPrices = _clampListings.map(l=>l.price).sort((a,b)=>a-b)
           const _dbMedian = _dbPrices.length > 0 ? _dbPrices[Math.floor(_dbPrices.length/2)] : 0
           const _dbCount = _dbPrices.length
@@ -1166,11 +1166,23 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
     const mk = (v.make||"").toLowerCase()
     let ml = (v.model||"").toLowerCase()
     if (ml.startsWith(mk + " ")) ml = ml.slice(mk.length + 1)
+    // v10.19.0 — normaliseer ook de zoekkey: probeer subModel (GPT specificModel) en model
+    //  via dezelfde parser als die op listings draait → consistente canonical naam
+    try {
+      const { parseTitle } = require("../lib/listing-normalizer/parser")
+      const subParsed = parseTitle(mk, v.subModel || "")
+      const modelParsed = parseTitle(mk, v.model || "")
+      const canonical = (subParsed && subParsed.normalized_model) || (modelParsed && modelParsed.normalized_model)
+      if (canonical && canonical !== ml) {
+        console.log("[QUICK-NORMALIZE-KEY]", v.make, v.model, "subModel=" + (v.subModel||"-"), "→ search canonical:", canonical)
+        ml = canonical
+      }
+    } catch(e) { /* parser not available - geen probleem */ }
     let dbListings = []
     if (mk && ml) {
       try {
         dbListings = queryAll(
-          "SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND model LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50",
+          "SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50",
           [mk, ml + "%", (v.year||2015)-2, (v.year||2015)+2]
         )
       } catch(e) { console.log("[QUICK-PRICE] listings query error:", e.message) }
@@ -1339,6 +1351,21 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
       _bodAdjustment.factor = 1.0
     }
 
+    // v10.19.0 — Degraded mode: expert API was nodig maar offline, val terug op formule-bod
+    if (bodFinal === null && !expertEstimate && handelswaarde > 0) {
+      const _health = getExpertHealth()
+      if (_health.last_3_consecutive_failures || _health.success_rate === 0) {
+        bodFinal = Math.round(handelswaarde * 0.85 / 50) * 50
+        bodRange = null
+        needsReview = true
+        priceSource = "degraded_formula"
+        dataConfidence.reasons.push("expert_offline")
+        dataConfidence.level = "low"
+        dataConfidence.message = "Expert tijdelijk onbereikbaar — bod is formule-schatting, handmatig verifiëren"
+        console.log("[QUICK-DEGRADED]", v.make, v.model, ": expert offline, handel×0.85 =", bodFinal)
+      }
+    }
+
     // 9. Save naar taxaties
     try {
       stmts.saveTaxatie.run({
@@ -1371,6 +1398,7 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
         user_staat: staat || null,
         user_rijdt: rijdt || null,
         taxatie_type: "snel",
+        response_ms: Date.now() - _t0,
         expert_verkoop_low: expertEstimate ? expertEstimate.verkoop_low : null,
         expert_verkoop_high: expertEstimate ? expertEstimate.verkoop_high : null,
         expert_bod_low: expertEstimate ? expertEstimate.bod_low : null,

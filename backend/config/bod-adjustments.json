@@ -1,7 +1,7 @@
 {
-  "version": "1.1",
+  "version": "1.2",
   "fitted_at": "2026-05-21",
-  "source": "v1.0 (2026-05-20): Toyota Hybride export — BACKTEST-2026-05-20.md. v1.1 (2026-05-21): 6 negatieve multipliers — COVERAGE-ANALYSIS-2026-05-21.md (overshoot-clusters).",
+  "source": "v1.0 (2026-05-20): Toyota Hybride export. v1.1 (2026-05-21): 6 negatieve multipliers. v1.2 (2026-05-21): +12 clusters uit PRODUCTION-AUDIT-2026-05-21 + data-pool normalize gefaciliteerd.",
   "rules": [
     {
       "id": "toyota_hybride_export",
@@ -12,49 +12,133 @@
         "fuel_contains": "hybride",
         "km_gte": 100000
       },
-      "evidence": "BACKTEST-2026-05-20: cluster precision 77%, h_median 1.19. Conservatief 1.10 i.p.v. gefitte 1.14."
+      "evidence": "BACKTEST-2026-05-20: cluster precision 77%, h_median 1.19."
     },
     {
       "id": "overshoot_ford_fiesta",
       "enabled": true,
       "factor": 0.85,
       "conditions": { "make": "FORD", "model": "FIESTA" },
-      "evidence": "coverage 2026-05-21: n=10 sold cases, median delta 0.636. Conservatieve 0.85 i.p.v. volle empirische correctie."
+      "evidence": "coverage 2026-05-21: n=10, median 0.636."
     },
     {
       "id": "overshoot_citroen_c1",
       "enabled": true,
       "factor": 0.85,
       "conditions": { "make": "CITROEN", "model": "C1" },
-      "evidence": "n=8, median delta 0.626"
+      "evidence": "n=8, median 0.626"
     },
     {
       "id": "overshoot_renault_captur",
       "enabled": true,
       "factor": 0.85,
       "conditions": { "make": "RENAULT", "model": "CAPTUR" },
-      "evidence": "n=13, median delta 0.812"
+      "evidence": "n=13, median 0.812"
     },
     {
       "id": "overshoot_mitsubishi_outlander",
       "enabled": true,
       "factor": 0.85,
       "conditions": { "make": "MITSUBISHI", "model": "OUTLANDER" },
-      "evidence": "n=11, median delta 0.813"
+      "evidence": "n=11, median 0.813"
     },
     {
       "id": "overshoot_renault_clio",
       "enabled": true,
       "factor": 0.90,
       "conditions": { "make": "RENAULT", "model": "CLIO" },
-      "evidence": "n=13, median delta 0.881"
+      "evidence": "n=13, median 0.881"
     },
     {
       "id": "overshoot_hyundai_i20",
       "enabled": true,
       "factor": 0.88,
       "conditions": { "make": "HYUNDAI", "model": "I20" },
-      "evidence": "n=9, median delta 0.851"
+      "evidence": "n=9, median 0.851"
+    },
+    {
+      "id": "overshoot_renault_twingo",
+      "enabled": true,
+      "factor": 0.78,
+      "conditions": { "make": "RENAULT", "model": "TWINGO" },
+      "evidence": "audit 2026-05-21: n=7, median 0.61. Conservatief 0.78."
+    },
+    {
+      "id": "overshoot_nissan_note",
+      "enabled": true,
+      "factor": 0.78,
+      "conditions": { "make": "NISSAN", "model": "NOTE" },
+      "evidence": "n=5, median 0.57. Conservatief 0.78."
+    },
+    {
+      "id": "overshoot_toyota_aygo",
+      "enabled": true,
+      "factor": 0.82,
+      "conditions": { "make": "TOYOTA", "model": "AYGO" },
+      "evidence": "n=6, median 0.68"
+    },
+    {
+      "id": "overshoot_renault_megane",
+      "enabled": true,
+      "factor": 0.88,
+      "conditions": { "make": "RENAULT", "model": "MEGANE" },
+      "evidence": "n=10, median 0.82"
+    },
+    {
+      "id": "overshoot_skoda_fabia",
+      "enabled": true,
+      "factor": 0.83,
+      "conditions": { "make": "SKODA", "model": "FABIA" },
+      "evidence": "n=5, median 0.73"
+    },
+    {
+      "id": "overshoot_vw_up",
+      "enabled": true,
+      "factor": 0.85,
+      "conditions": { "make": "VOLKSWAGEN", "model": "UP" },
+      "evidence": "n=5, median 0.77"
+    },
+    {
+      "id": "overshoot_kia_venga",
+      "enabled": true,
+      "factor": 0.88,
+      "conditions": { "make": "KIA", "model": "VENGA" },
+      "evidence": "n=5, median 0.81"
+    },
+    {
+      "id": "overshoot_hyundai_i10",
+      "enabled": true,
+      "factor": 0.92,
+      "conditions": { "make": "HYUNDAI", "model": "I10" },
+      "evidence": "n=5, median 0.89"
+    },
+    {
+      "id": "overshoot_fiat_500",
+      "enabled": true,
+      "factor": 0.90,
+      "conditions": { "make": "FIAT", "model": "500" },
+      "evidence": "n=6, median 0.86"
+    },
+    {
+      "id": "export_toyota_auris",
+      "enabled": true,
+      "factor": 1.15,
+      "conditions": { "make": "TOYOTA", "model": "AURIS" },
+      "evidence": "n=6, median 1.22 (undershoot, export-vraag)"
+    },
+    {
+      "id": "export_toyota_corolla",
+      "enabled": true,
+      "factor": 1.08,
+      "conditions": { "make": "TOYOTA", "model": "COROLLA" },
+      "evidence": "n=8, median 1.06"
+    },
+    {
+      "id": "export_toyota_chr",
+      "enabled": true,
+      "factor": 1.08,
+      "conditions": { "make": "TOYOTA", "model": "C-HR" },
+      "evidence": "n=7, median 1.06"
     }
   ]
 }

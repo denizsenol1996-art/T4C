@@ -1,6 +1,6 @@
 {
   "name": "t4c-backend",
-  "version": "10.18.71",
+  "version": "10.19.0",
   "description": "CarDatax - Automotive Valuation Platform",
   "main": "server.js",
   "type": "commonjs",

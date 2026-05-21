@@ -663,4 +663,37 @@ router.get("/api/admin/crawler-stats", authMiddleware, adminOnly, (req, res) => 
   } catch(e) { res.json({ ok: false, error: e.message }) }
 })
 
+// v10.19.0 — Expert health monitoring endpoint
+router.get("/api/admin/expert-health", authMiddleware, adminOnly, (req, res) => {
+  try {
+    const { getHealthStats } = require("../lib/quick-price-expert")
+    res.json({ ok: true, ...getHealthStats(), ts: new Date().toISOString() })
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
+// v10.19.0 — Path/pricing distribution + recent error rate
+router.get("/api/admin/pricing-stats", authMiddleware, adminOnly, (req, res) => {
+  try {
+    const { queryAll, queryOne } = require("../db")
+    // Distribution last 24u
+    const sinceISO = new Date(Date.now() - 24*3600*1000).toISOString().slice(0,19).replace("T"," ")
+    const dist = queryAll("SELECT price_source, COUNT(*) as n, AVG(response_ms) as avg_ms FROM taxaties WHERE taxatie_type='snel' AND created_at >= ? GROUP BY price_source", [sinceISO])
+    const total24h = queryOne("SELECT COUNT(*) as c FROM taxaties WHERE taxatie_type='snel' AND created_at >= ?", [sinceISO])?.c || 0
+    // Trigger-tag distribution
+    const tags = queryAll("SELECT bod_adjustment_tag as tag, COUNT(*) as n FROM taxaties WHERE taxatie_type='snel' AND created_at >= ? AND bod_adjustment_tag IS NOT NULL GROUP BY bod_adjustment_tag ORDER BY n DESC LIMIT 10", [sinceISO])
+    // Expert health
+    const { getHealthStats } = require("../lib/quick-price-expert")
+    const health = getHealthStats()
+    res.json({
+      ok: true,
+      window_hours: 24,
+      total_snel_taxaties: total24h,
+      path_distribution: dist,
+      top_trigger_tags: tags,
+      expert_health: health,
+      ts: new Date().toISOString()
+    })
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
 module.exports = router

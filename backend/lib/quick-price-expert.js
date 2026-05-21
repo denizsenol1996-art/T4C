@@ -7,6 +7,36 @@ const CACHE_TTL_MS = 7 * 24 * 3600 * 1000  // 7 dagen
 const MAX_ENTRIES = 5000
 const _cache = new Map()  // key → { value, expires }
 
+// v10.19.0 — Health stats: ring buffer laatste 100 calls
+const _callLog = []
+const MAX_LOG = 100
+function _logCall(entry) {
+  _callLog.push(entry)
+  if (_callLog.length > MAX_LOG) _callLog.shift()
+}
+
+function getHealthStats() {
+  const recent = _callLog.slice()
+  const n = recent.length
+  if (n === 0) return { n: 0, success_rate: null, avg_latency_ms: null, last_error: null, cache_size: _cache.size, cache_hits: 0, cache_misses: 0 }
+  const ok = recent.filter(e => e.success).length
+  const lat = recent.filter(e => e.success).map(e => e.latency_ms)
+  const avgLat = lat.length ? Math.round(lat.reduce((a,b)=>a+b,0)/lat.length) : null
+  const lastErr = recent.slice().reverse().find(e => !e.success)
+  const hits = recent.filter(e => e.cached).length
+  return {
+    n,
+    success_rate: Math.round(ok / n * 100) / 100,
+    avg_latency_ms: avgLat,
+    last_error: lastErr ? { ts: lastErr.ts, error: lastErr.error } : null,
+    cache_size: _cache.size,
+    cache_hits: hits,
+    cache_misses: n - hits,
+    cache_hit_rate: Math.round(hits / n * 100) / 100,
+    last_3_consecutive_failures: recent.slice(-3).every(e => !e.success) && n >= 3
+  }
+}
+
 function _makeKey(v) {
   const km = parseInt(v.km) || 0
   const kmBucket = Math.floor(km / 25000) * 25000
@@ -46,6 +76,7 @@ async function getExpertPriceEstimate(vehicle) {
   const cached = _cacheGet(key)
   if (cached) {
     const _ms = Date.now() - t0
+    _logCall({ ts: Date.now(), latency_ms: _ms, success: true, cached: true })
     console.log("[QUICK-EXPERT]", "HIT", _ms + "ms", vehicle.make, vehicle.model)
     return Object.assign({}, cached, { _cached: true, _ms })
   }
@@ -75,6 +106,8 @@ async function getExpertPriceEstimate(vehicle) {
     contextLines.push("De dealer geeft aan dat de auto in SLECHTE staat verkeert: denk aan zichtbare schade, roest, deuken, of beschadigd interieur. Auto rijdt nog wel.")
   } else if (staatUp === "DEFECT") {
     contextLines.push("De dealer geeft aan dat de auto DEFECT is: ernstige mechanische of structurele problemen.")
+  } else if (staatUp === "NORMAAL") {
+    contextLines.push("De auto heeft gemiddelde gebruikssporen — geen significante schade maar wel zichtbare leeftijd. Kleine correctie naar beneden t.o.v. perfecte staat.")
   }
   if (rijdtUp === "NEE") {
     contextLines.push("De auto RIJDT NIET (moet versleept worden). Maak de inschatting op basis van onderdelen-waarde, reparatie-marge voor doorverkoop, en eventuele export-mogelijkheden.")
@@ -115,13 +148,15 @@ async function getExpertPriceEstimate(vehicle) {
 
     _cacheSet(key, result)
     const _ms = Date.now() - t0
+    _logCall({ ts: Date.now(), latency_ms: _ms, success: true, cached: false })
     console.log("[QUICK-EXPERT]", "MISS", _ms + "ms", vehicle.make, vehicle.model, "bod=" + result.bod_low + "-" + result.bod_high)
     return Object.assign({}, result, { _cached: false, _ms })
   } catch (e) {
     const _ms = Date.now() - t0
+    _logCall({ ts: Date.now(), latency_ms: _ms, success: false, cached: false, error: e.message })
     console.log("[QUICK-EXPERT]", "FAIL", _ms + "ms", vehicle.make, vehicle.model, "—", e.message)
     return null
   }
 }
 
-module.exports = { getExpertPriceEstimate }
+module.exports = { getExpertPriceEstimate, getHealthStats }
