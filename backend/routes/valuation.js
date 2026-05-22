@@ -1366,6 +1366,24 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
       }
     }
 
+    // v10.20.1-shadow — Bereken blend-bod NAAST live bod, logging only, géén UI-impact.
+    // Acceptatie-criteria zie BLEND-RESTORE-PLAN-2026-05-22.md (stap 2).
+    let _shadowBlendBod = null
+    let _shadowBlendSource = null
+    if (compResult && compResult.status === "ok" && cleanCount >= 3
+        && expertEstimate && expertEstimate.bod_low > 0 && bod > 0) {
+      const _expertBodMid = Math.round((expertEstimate.bod_low + expertEstimate.bod_high) / 2 / 50) * 50
+      const _shadowWeight = Math.min(0.70, Math.max(0.20, (compResult.confidenceComparable || 50) / 100 * 1.5))
+      _shadowBlendBod = Math.round((bod * _shadowWeight + _expertBodMid * (1 - _shadowWeight)) / 50) * 50
+      _shadowBlendSource = "shadow_blend"
+      console.log("[SHADOW-BLEND]", v.make, v.model, ":",
+        "liveBod=" + bodFinal, "shadowBod=" + _shadowBlendBod,
+        "compBod=" + bod, "expertBodMid=" + _expertBodMid,
+        "weight=" + _shadowWeight.toFixed(2),
+        "liveSource=" + priceSource, "cleanCount=" + cleanCount,
+        "confComp=" + (compResult.confidenceComparable || 0))
+    }
+
     // 9. Save naar taxaties
     try {
       stmts.saveTaxatie.run({
@@ -1406,7 +1424,9 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
         expert_reasoning: expertEstimate ? expertEstimate.reasoning : null,
         price_agreement_status: priceAgreement ? priceAgreement.status : null,
         price_agreement_delta_pct: priceAgreement ? priceAgreement.delta_pct : null,
-        price_source: priceSource
+        price_source: priceSource,
+        shadow_bod: _shadowBlendBod,
+        shadow_source: _shadowBlendSource
       })
     } catch(saveErr) { console.log("[QUICK-SAVE] Error:", saveErr.message) }
 
