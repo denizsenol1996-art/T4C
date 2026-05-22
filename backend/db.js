@@ -726,7 +726,7 @@ async function initDB() {
     for (const [c,t] of voorraad_migration) { try { run("ALTER TABLE voorraad ADD COLUMN "+c+" "+t) } catch(e) {} }
     const taxatie_migration = [["sold_price","REAL"],["sold_date","TEXT"],["days_to_sell","INTEGER"],["dealer_feedback","TEXT"],["gpt_opinion","TEXT"],["gpt_price","REAL"],["gpt_confidence","REAL"],["slider_courant","REAL"],["slider_risico","REAL"],["slider_staat","REAL"],["final_bod","REAL"],["trend_direction","TEXT"],["trend_pct","REAL"],["market_velocity","TEXT"],["market_confidence","TEXT"],["data_weight","REAL"],["comp_status","TEXT"],["comp_count","INTEGER"],["ai_verkoop","REAL"],["blend_verkoop","REAL"],["bod_adjustment_tag","TEXT"],["bod_adjustment_factor","REAL"],["confidence_level","TEXT"],["confidence_reasons","TEXT"],["user_staat","TEXT"],["user_rijdt","TEXT"],["taxatie_type","TEXT"],["model_platform","TEXT"],["expert_verkoop_low","REAL"],["expert_verkoop_high","REAL"],["expert_bod_low","REAL"],["expert_bod_high","REAL"],["expert_reasoning","TEXT"],["price_agreement_status","TEXT"],["price_agreement_delta_pct","INTEGER"],["price_source","TEXT"],["staat_factor","REAL"],["response_ms","INTEGER"]]
     for (const [c,t] of taxatie_migration) { try { run("ALTER TABLE taxaties ADD COLUMN "+c+" "+t) } catch(e) {} }
-    const ml_migration = [["days_on_market","INTEGER"],["price_changes","INTEGER DEFAULT 0"],["last_price","REAL"],["first_price","REAL"],["dealer","TEXT DEFAULT ''"],["model_normalized","TEXT"],["normalize_source","TEXT"]]
+    const ml_migration = [["days_on_market","INTEGER"],["price_changes","INTEGER DEFAULT 0"],["last_price","REAL"],["first_price","REAL"],["dealer","TEXT DEFAULT ''"],["model_normalized","TEXT"],["normalize_source","TEXT"],["kenteken","TEXT DEFAULT ''"]]
     for (const [c,t] of ml_migration) { try { run("ALTER TABLE market_listings ADD COLUMN "+c+" "+t) } catch(e) {} }
 
   // ── MIGRATE from JSON files ──
@@ -959,14 +959,9 @@ const stmts = {
       const _srcFull = (source||'').toLowerCase().replace(/^https?:\/\/(?:www\.)?/,'').split('/')[0]
       const _srcKey = _srcFull.split('.').slice(0,-1).join('.')
       source = _srcMap[_srcFull] || _srcMap[_srcKey] || _srcMap[(source||'').toLowerCase()] || 'src_x'
-      url = '' // never store source URLs
+      url = url || '' // v10.20.0: store source URL
       const existing = queryOne("SELECT id FROM market_listings WHERE hash=?", [hash])
       if (existing) {
-        // Check price change before update
-        const prev = queryOne("SELECT price FROM market_listings WHERE hash=?", [hash])
-        if (prev && prev.price && prev.price !== price && Math.abs(prev.price - price) > 100) {
-          try { run("INSERT INTO price_history (listing_hash,make,model,year,price,previous_price,source) VALUES (?,?,?,?,?,?,?)", [hash, mk, ml, yr, price, prev.price, source]) } catch(e) {}
-        }
         run("UPDATE market_listings SET price=?, km=?, dealer=CASE WHEN ?!='' THEN ? ELSE dealer END, image_url=CASE WHEN ?!='' AND (image_url IS NULL OR image_url='') THEN ? ELSE image_url END, options=CASE WHEN ?!='' AND (options IS NULL OR options='') THEN ? ELSE options END, last_seen=datetime('now'), status='active' WHERE hash=?", [price, km, dealer||'', dealer||'', image_url||'', image_url||'', options||'', options||'', hash])
         return 'updated'
       } else {
@@ -976,8 +971,8 @@ const stmts = {
         const _body = _parsed.bodyType || ''
         const _eng = _parsed.engineCode || ''
         if (_parsed.trans && !trans) trans = _parsed.trans
-        run("INSERT INTO market_listings (hash,make,model,year,title,price,km,transmission,source,url,dealer,fuel,body_type,engine_code,image_url,options) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-          [hash, mk, ml, yr, title, price, km, trans, source, url, dealer||'', _fuel, _body, _eng, image_url||'', options||''])
+        run("INSERT INTO market_listings (hash,make,model,year,title,price,km,transmission,source,url,dealer,fuel,body_type,engine_code,image_url,options,first_price,last_price) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+          [hash, mk, ml, yr, title, price, km, trans, source, url, dealer||'', _fuel, _body, _eng, image_url||'', options||'', price, price])
         return 'new'
       }
     }

@@ -754,13 +754,14 @@ async function backgroundCrawl() {
           // Direct DB update voor detail data
           const crypto2 = require('crypto')
           for (const el of toEnrich) {
-            if (el.options || el.description || el.transmission || el.fuel) {
+            if (el.options || el.description || el.transmission || el.fuel || el.kenteken) {
               const elHash = crypto2.createHash('md5').update((el.title||'').slice(0,40).toLowerCase() + '-' + el.price + '-' + (el.source||'').toLowerCase()).digest('hex').slice(0,16)
               try {
                 if (el.options) run("UPDATE market_listings SET options=? WHERE hash=? AND (options IS NULL OR options='')", [el.options, elHash])
                 if (el.description) run("UPDATE market_listings SET description=? WHERE hash=? AND (description IS NULL OR description='')", [el.description.slice(0,500), elHash])
                 if (el.transmission) run("UPDATE market_listings SET transmission=? WHERE hash=? AND (transmission IS NULL OR transmission='')", [el.transmission.toLowerCase(), elHash])
                 if (el.fuel) run("UPDATE market_listings SET fuel=? WHERE hash=? AND (fuel IS NULL OR fuel='')", [el.fuel.toLowerCase(), elHash])
+                if (el.kenteken) run("UPDATE market_listings SET kenteken=? WHERE hash=? AND (kenteken IS NULL OR kenteken='')", [el.kenteken, elHash])
               } catch(ue) {}
             }
           }
@@ -770,29 +771,28 @@ async function backgroundCrawl() {
         // Store
         if (listings.length > 0) {
           storeListingsForHistory(item.make, item.model, item.year, listings, trans)
-          // ── FLYWHEEL: Track price changes + days on market ──
+          // ── FLYWHEEL v10.20.0: Single source of truth for price_history ──
           try {
-            const { queryAll, run } = require("../db")
+            const { queryOne, run } = require("../db")
             for (const l of listings) {
               const hash = listingHash(l.title, l.price, l.source)
-              const existing = queryAll("SELECT id, price, first_seen FROM market_listings WHERE hash=? LIMIT 1", [hash])
-              if (existing.length > 0) {
-                const ex = existing[0]
-                // Track price change
-                if (ex.price && l.price && Math.abs(ex.price - l.price) > 50) {
-                  run("INSERT INTO price_history (listing_hash,make,model,year,price,previous_price,source,recorded_at) VALUES (?,?,?,?,?,?,?,datetime('now'))",
-                    [hash, item.make, item.model, item.year, l.price, ex.price, l.source || ""])
-                  run("UPDATE market_listings SET last_price=?, price=?, price_changes=COALESCE(price_changes,0)+1 WHERE id=?",
-                    [ex.price, l.price, ex.id])
-                }
-                // Update days on market
-                if (ex.first_seen) {
-                  const days = Math.max(1, Math.round((Date.now() - new Date(ex.first_seen).getTime()) / 86400000))
-                  run("UPDATE market_listings SET days_on_market=?, last_seen=datetime('now') WHERE id=?", [days, ex.id])
-                }
-              } else if (l.price) {
-                // New listing: set first_price
-                run("UPDATE market_listings SET first_price=? WHERE hash=? AND first_price IS NULL", [l.price, hash])
+              const existing = queryOne("SELECT id, price, first_price, first_seen FROM market_listings WHERE hash=?", [hash])
+              if (!existing) continue   // upsertListing rejected (gates)
+              // Idempotent first_price backfill for pre-v10.20.0 rows
+              if (existing.first_price === null) {
+                run("UPDATE market_listings SET first_price=? WHERE id=?", [l.price, existing.id])
+              }
+              // Price change tracking — threshold unified to >50
+              if (existing.price && l.price && Math.abs(existing.price - l.price) > 50) {
+                run("INSERT INTO price_history (listing_hash,make,model,year,price,previous_price,source,recorded_at) VALUES (?,?,?,?,?,?,?,datetime('now'))",
+                  [hash, item.make, item.model, item.year, l.price, existing.price, l.source || ""])
+                run("UPDATE market_listings SET last_price=?, price_changes=COALESCE(price_changes,0)+1 WHERE id=?",
+                  [l.price, existing.id])
+              }
+              // Update days on market (unchanged)
+              if (existing.first_seen) {
+                const days = Math.max(1, Math.round((Date.now() - new Date(existing.first_seen).getTime()) / 86400000))
+                run("UPDATE market_listings SET days_on_market=?, last_seen=datetime('now') WHERE id=?", [days, existing.id])
               }
             }
           } catch(pe) { console.log("  [CRAWLER] Price tracking error:", pe.message) }
