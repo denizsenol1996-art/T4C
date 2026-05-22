@@ -1384,6 +1384,23 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
         "confComp=" + (compResult.confidenceComparable || 0))
     }
 
+    // v10.20.2 — STAP 3: blend-promote gate. Behind BLEND_GATE_ENABLED env-flag.
+    // Wanneer aan: comp-path (zonder problematic input, bod ≥ €1000) krijgt
+    // shadow_bod als nieuwe bodFinal en priceSource='comp_blend'. Alle andere
+    // paden ongewijzigd. Roll-back: BLEND_GATE_ENABLED=0 + pm2 restart --update-env.
+    // Spec + risico-analyse: /opt/t4c/BLEND-RESTORE-PLAN-2026-05-22.md
+    if (process.env.BLEND_GATE_ENABLED === "1"
+        && priceSource === "comp"
+        && !isProblematicInput
+        && bodFinal !== null && bodFinal >= 1000
+        && _shadowBlendBod !== null) {
+      console.log("[BLEND-PROMOTE]", v.make, v.model, ":",
+        "liveBod=" + bodFinal, "→ shadowBod=" + _shadowBlendBod,
+        "(priceSource comp → comp_blend)")
+      bodFinal = _shadowBlendBod
+      priceSource = "comp_blend"
+    }
+
     // 9. Save naar taxaties
     try {
       stmts.saveTaxatie.run({
