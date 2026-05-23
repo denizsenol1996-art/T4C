@@ -485,7 +485,7 @@ async function initDB() {
 
   // ── VEILING BIEDINGEN ARCHIEF (bewaar bids na herstart) ──
   db.run(`
-    
+
     CREATE TABLE IF NOT EXISTS dealer_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, make TEXT, model TEXT, year INTEGER, our_bod REAL, sold_price REAL, feedback TEXT, created_at TEXT);
     CREATE TABLE IF NOT EXISTS veiling_biedingen_archief (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -493,6 +493,18 @@ async function initDB() {
       user_id INTEGER, username TEXT, bedrag REAL,
       original_created_at TEXT,
       archived_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS crawl_queue (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      make TEXT NOT NULL, model TEXT NOT NULL, year INTEGER NOT NULL,
+      transmission TEXT DEFAULT '',
+      last_crawled_at INTEGER DEFAULT 0,
+      created_at INTEGER DEFAULT (strftime('%s','now')),
+      priority INTEGER DEFAULT 5,
+      crawl_count INTEGER DEFAULT 0,
+      avg_prices INTEGER DEFAULT 0,
+      taxatie_count INTEGER DEFAULT 0,
+      UNIQUE(make,model,year,transmission)
     )
   `)
 
@@ -728,6 +740,9 @@ async function initDB() {
     for (const [c,t] of taxatie_migration) { try { run("ALTER TABLE taxaties ADD COLUMN "+c+" "+t) } catch(e) {} }
     const ml_migration = [["days_on_market","INTEGER"],["price_changes","INTEGER DEFAULT 0"],["last_price","REAL"],["first_price","REAL"],["dealer","TEXT DEFAULT ''"],["model_normalized","TEXT"],["normalize_source","TEXT"],["kenteken","TEXT DEFAULT ''"]]
     for (const [c,t] of ml_migration) { try { run("ALTER TABLE market_listings ADD COLUMN "+c+" "+t) } catch(e) {} }
+    // v10.20.4 — dealer_feedback rich-schema: unblock /api/taxatie/feedback (misc.js:320 INSERT noemde 8 kolommen die niet bestonden → silent fail in outer try/catch)
+    const dealer_feedback_migration = [["taxatie_id","INTEGER"],["kenteken","TEXT"],["gpt_price","REAL"],["days_on_lot","INTEGER"],["accuracy_pct","REAL"],["feedback_type","TEXT"],["notes","TEXT"],["user_id","INTEGER"]]
+    for (const [c,t] of dealer_feedback_migration) { try { run("ALTER TABLE dealer_feedback ADD COLUMN "+c+" "+t) } catch(e) {} }
 
   // ── MIGRATE from JSON files ──
   migrateFromJSON()
