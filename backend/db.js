@@ -8,6 +8,7 @@ const path = require("path")
 const fs = require("fs")
 const initSqlJs = require("sql.js")
 const { parseTitle } = require('./lib/title-parser')
+const { normalizeListing } = require('./lib/listing-normalizer')
 
 // ── DATA DIRECTORY ── lives OUTSIDE backend/ so updates don't touch it
 const DATA_DIR = process.env.T4C_DATA_DIR || path.join(__dirname, "..", "data")
@@ -744,6 +745,25 @@ async function initDB() {
     const dealer_feedback_migration = [["taxatie_id","INTEGER"],["kenteken","TEXT"],["gpt_price","REAL"],["days_on_lot","INTEGER"],["accuracy_pct","REAL"],["feedback_type","TEXT"],["notes","TEXT"],["user_id","INTEGER"]]
     for (const [c,t] of dealer_feedback_migration) { try { run("ALTER TABLE dealer_feedback ADD COLUMN "+c+" "+t) } catch(e) {} }
 
+    // v10.20.7 — backfill listing-normalizer (was geïmporteerd maar nergens aangeroepen → NULL voor recente scrapes, oude 'unmatched' rows voor uitgebreide brands)
+    try {
+      const _bfKey = 'backfill_normalize_v10_20_7'
+      const _bfDone = queryOne("SELECT value FROM settings WHERE key=?", [_bfKey])
+      if (!_bfDone) {
+        const _rows = queryAll("SELECT id, make, model, title, source FROM market_listings WHERE model_normalized IS NULL OR model_normalized = '' OR normalize_source = 'unmatched' LIMIT 100000")
+        let _ok = 0, _unmatched = 0
+        for (const r of _rows) {
+          const _n = normalizeListing(r)
+          if (_n.normalized_model) {
+            run("UPDATE market_listings SET model_normalized=?, normalize_source=? WHERE id=?", [_n.normalized_model, _n.normalize_source, r.id])
+            if (_n.normalize_source === 'unmatched') _unmatched++; else _ok++
+          }
+        }
+        run("INSERT OR REPLACE INTO settings (key,value) VALUES (?,?)", [_bfKey, `total=${_rows.length},matched=${_ok},unmatched=${_unmatched}`])
+        console.log('[NORMALIZE-BACKFILL]', _rows.length, 'rows checked,', _ok, 'matched,', _unmatched, 'unmatched')
+      }
+    } catch (e) { console.log('[NORMALIZE-BACKFILL] error:', e.message) }
+
   // ── MIGRATE from JSON files ──
   migrateFromJSON()
 
@@ -989,8 +1009,10 @@ const stmts = {
         const _body = _parsed.bodyType || ''
         const _eng = _parsed.engineCode || ''
         if (_parsed.trans && !trans) trans = _parsed.trans
-        run("INSERT INTO market_listings (hash,make,model,year,title,price,km,transmission,source,url,dealer,fuel,body_type,engine_code,image_url,options,first_price,last_price) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-          [hash, mk, ml, yr, title, price, km, trans, source, url, dealer||'', _fuel, _body, _eng, image_url||'', options||'', price, price])
+        // v10.20.7 — wire up listing-normalizer (was geïmporteerd maar nergens aangeroepen)
+        const _norm = normalizeListing({ make: mk, model: ml, title, source })
+        run("INSERT INTO market_listings (hash,make,model,year,title,price,km,transmission,source,url,dealer,fuel,body_type,engine_code,image_url,options,first_price,last_price,model_normalized,normalize_source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+          [hash, mk, ml, yr, title, price, km, trans, source, url, dealer||'', _fuel, _body, _eng, image_url||'', options||'', price, price, _norm.normalized_model, _norm.normalize_source])
         return 'new'
       }
     }

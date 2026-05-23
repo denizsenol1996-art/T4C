@@ -334,6 +334,148 @@ const TAXONOMY = {
     "bravo": ["bravo"],
     "stilo": ["stilo"],
     "freemont": ["freemont"]
+  },
+  volvo: {
+    "xc40": ["xc40", "xc 40"],
+    "xc60": ["xc60", "xc 60"],
+    "xc70": ["xc70", "xc 70"],
+    "xc90": ["xc90", "xc 90"],
+    "v40": ["v40", "v 40"],
+    "v50": ["v50", "v 50"],
+    "v60": ["v60", "v 60"],
+    "v70": ["v70", "v 70"],
+    "v90": ["v90", "v 90"],
+    "s40": ["s40", "s 40"],
+    "s60": ["s60", "s 60"],
+    "s80": ["s80", "s 80"],
+    "s90": ["s90", "s 90"],
+    "c30": ["c30", "c 30"],
+    "c70": ["c70", "c 70"],
+    "ex30": ["ex30", "ex 30"],
+    "ex40": ["ex40", "ex 40"],
+    "ex90": ["ex90", "ex 90"],
+    "amazon": ["amazon"]
+  },
+  tesla: {
+    "model s": ["model s"],
+    "model 3": ["model 3"],
+    "model x": ["model x"],
+    "model y": ["model y"],
+    "roadster": ["roadster"],
+    "cybertruck": ["cybertruck"]
+  },
+  mini: {
+    "cooper": ["cooper s", "cooper d", "cooper se", "cooper"],
+    "one": ["one"],
+    "clubman": ["clubman"],
+    "countryman": ["countryman"],
+    "paceman": ["paceman"],
+    "cabrio": ["cabrio", "cabriolet"],
+    "coupe": ["coupe"],
+    "roadster": ["roadster"]
+  },
+  porsche: {
+    "911": ["911"],
+    "718": ["718", "718 boxster", "718 cayman"],
+    "boxster": ["boxster"],
+    "cayman": ["cayman"],
+    "cayenne": ["cayenne"],
+    "macan": ["macan"],
+    "panamera": ["panamera"],
+    "taycan": ["taycan"]
+  },
+  suzuki: {
+    "swift": ["swift"],
+    "vitara": ["vitara", "grand vitara"],
+    "ignis": ["ignis"],
+    "celerio": ["celerio"],
+    "baleno": ["baleno"],
+    "splash": ["splash"],
+    "alto": ["alto"],
+    "jimny": ["jimny"],
+    "sx4": ["sx4", "sx4 s-cross", "s-cross"],
+    "across": ["across"],
+    "swace": ["swace"]
+  },
+  mitsubishi: {
+    "asx": ["asx"],
+    "outlander": ["outlander"],
+    "eclipse cross": ["eclipse cross", "eclipse"],
+    "space star": ["space star", "spacestar"],
+    "colt": ["colt"],
+    "lancer": ["lancer"],
+    "l200": ["l200", "l 200"],
+    "pajero": ["pajero"],
+    "i-miev": ["i-miev", "imiev"]
+  },
+  "land rover": {
+    "defender": ["defender"],
+    "discovery": ["discovery", "discovery sport"],
+    "range rover": ["range rover", "range rover sport", "range rover evoque", "range rover velar"],
+    "evoque": ["evoque"],
+    "velar": ["velar"],
+    "freelander": ["freelander"]
+  },
+  jaguar: {
+    "xe": ["xe"],
+    "xf": ["xf"],
+    "xj": ["xj"],
+    "xk": ["xk"],
+    "f-pace": ["f-pace", "f pace"],
+    "e-pace": ["e-pace", "e pace"],
+    "i-pace": ["i-pace", "i pace"],
+    "f-type": ["f-type", "f type"],
+    "s-type": ["s-type", "s type"]
+  },
+  jeep: {
+    "renegade": ["renegade"],
+    "compass": ["compass"],
+    "cherokee": ["cherokee", "grand cherokee"],
+    "wrangler": ["wrangler"],
+    "avenger": ["avenger"],
+    "commander": ["commander"],
+    "patriot": ["patriot"]
+  },
+  "alfa romeo": {
+    "giulia": ["giulia", "giulietta"],
+    "stelvio": ["stelvio"],
+    "mito": ["mito"],
+    "tonale": ["tonale"],
+    "156": ["156"],
+    "159": ["159"],
+    "147": ["147"],
+    "brera": ["brera"],
+    "spider": ["spider"]
+  },
+  dacia: {
+    "sandero": ["sandero", "sandero stepway"],
+    "duster": ["duster"],
+    "logan": ["logan", "logan mcv"],
+    "lodgy": ["lodgy"],
+    "dokker": ["dokker"],
+    "jogger": ["jogger"],
+    "spring": ["spring"]
+  },
+  smart: {
+    "fortwo": ["fortwo", "for two"],
+    "forfour": ["forfour", "for four"],
+    "roadster": ["roadster"],
+    "#1": ["#1", "smart 1"],
+    "#3": ["#3", "smart 3"]
+  },
+  lexus: {
+    "ct": ["ct200h", "ct 200h", "ct"],
+    "is": ["is300h", "is 300h", "is250", "is 250", "is"],
+    "es": ["es"],
+    "ls": ["ls"],
+    "gs": ["gs"],
+    "rc": ["rc"],
+    "lc": ["lc"],
+    "nx": ["nx300h", "nx 300h", "nx450h", "nx 450h", "nx"],
+    "rx": ["rx450h", "rx 450h", "rx500h", "rx 500h", "rx"],
+    "ux": ["ux250h", "ux 250h", "ux300e", "ux 300e", "ux"],
+    "lx": ["lx"],
+    "lbx": ["lbx"]
   }
 }
 

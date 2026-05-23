@@ -280,7 +280,6 @@ app.get("/app/*", (req, res) => {
         console.log('[DAILY] Starting ILSA scraper...')
         const axios = require('axios')
         const crypto = require('crypto')
-        const _srcMap = {'autoofy':'nlmarket','autohero':'nlretail'}
 
         // ILSA (Autoofy) — 7400+ listings
         try {
@@ -321,39 +320,10 @@ app.get("/app/*", (req, res) => {
           console.log('[DAILY] ILSA done: ' + ilsaNew + ' new, ' + ilsaUpd + ' updated')
         } catch(e) { console.log('[DAILY] ILSA error:', e.message) }
 
-        // Autohero — 1100+ listings via JSON-LD
-        try {
-          const cheerio = require('cheerio')
-          let ahNew = 0, ahUpd = 0, page = 1
-          while (page <= 100) {
-            const { data } = await axios.get('https://www.autohero.com/nl/search/?page=' + page, {
-              headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15' },
-              timeout: 15000
-            })
-            const $ = cheerio.load(data)
-            let found = 0
-            $('script[type="application/ld+json"]').each((_, el) => {
-              try {
-                const j = JSON.parse($(el).html())
-                if (j['@type'] !== 'Product') return
-                const brand = (j.brand || '').toLowerCase()
-                const name = j.name || ''
-                const model = name.replace(new RegExp('^' + (j.brand||''), 'i'), '').trim().toLowerCase()
-                const price = j.offers?.[0]?.price || 0
-                if (!brand || !model || price < 500) return
-                const hash = crypto.createHash('md5').update('nlretail|' + brand + '|' + model + '|' + price + '|' + name.slice(0,30)).digest('hex')
-                const ex = queryOne('SELECT id FROM market_listings WHERE hash=?', [hash])
-                if (ex) { run("UPDATE market_listings SET price=?, last_seen=datetime('now'), status='active' WHERE hash=?", [price, hash]); ahUpd++ }
-                else { run("INSERT INTO market_listings (hash,make,model,year,title,price,km,transmission,source,url,dealer) VALUES (?,?,?,?,?,?,?,?,?,?,?)", [hash, brand, model, 0, name.slice(0,80), price, 0, '', 'nlretail', '', 'Retail']); ahNew++ }
-                found++
-              } catch {}
-            })
-            if (found === 0) break
-            page++
-            await new Promise(r => setTimeout(r, Math.random() * 3000 + 1500))
-          }
-          console.log('[DAILY] Autohero done: ' + ahNew + ' new, ' + ahUpd + ' updated')
-        } catch(e) { console.log('[DAILY] Autohero error:', e.message) }
+        // Autohero scraper verwijderd v10.20.7 — search-tile JSON-LD bevatte
+        // geen year/km, alle 776 rows hadden year=0/km=0 = 0% bruikbaar voor
+        // pricing (valuation.js filtert `year BETWEEN` weg). Detail-page
+        // scraping zou rijke data opleveren maar is een aparte sprint.
 
         // Marker: vandaag is gerund (voor skip-recovery bij PM2 restart)
         try {
