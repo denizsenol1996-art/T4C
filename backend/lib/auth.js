@@ -5,6 +5,9 @@ let JWT_SECRET = "3e9cd9895784e75d87d1e9e2d4954ef47f76f06dfc470ee88cebab62b99bd1
 
 function setSecret(s) { JWT_SECRET = s }
 function getSecret() { return JWT_SECRET }
+function verifyToken(token) {
+  try { return jwt.verify(token, JWT_SECRET) } catch { return null }
+}
 
 function authMiddleware(req, res, next) {
   const token = (req.headers.authorization || "").replace("Bearer ", "")
@@ -35,4 +38,4 @@ function dealerPlus(req, res, next) {
    MULTI-USER BEHEER
    ═══════════════════════════════════════════════ */
 
-module.exports = { authMiddleware, adminOnly, t4cOnly, staffOnly, dealerPlus, setSecret, getSecret }
+module.exports = { authMiddleware, adminOnly, t4cOnly, staffOnly, dealerPlus, setSecret, getSecret, verifyToken }

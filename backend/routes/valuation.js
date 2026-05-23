@@ -66,7 +66,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
   try {
     // Optionele auth: pak user als token meegegeven
     let _userId = null
-    try { const { verifyToken } = require("../lib/auth"); const t = (req.headers.authorization||"").replace("Bearer ",""); if (t) { const u = verifyToken(t); _userId = u?.uid || null } } catch{}
+    try { const { verifyToken } = require("../lib/auth"); const t = (req.headers.authorization||"").replace("Bearer ",""); if (t) { const u = verifyToken(t); _userId = u?.userId || u?.uid || null } } catch{}
     let d = req.body
     const _t0 = Date.now()
     // If plate is provided, enrich with full vehicle data first
@@ -1049,7 +1049,23 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
         bod_adjustment_tag: _bodAdjustment ? _bodAdjustment.tag : null,
         bod_adjustment_factor: _bodAdjustment ? _bodAdjustment.factor : null,
         confidence_level: _dataConfidence ? _dataConfidence.level : null,
-        confidence_reasons: (_dataConfidence && _dataConfidence.reasons && _dataConfidence.reasons.length) ? _dataConfidence.reasons.join(",") : null
+        confidence_reasons: (_dataConfidence && _dataConfidence.reasons && _dataConfidence.reasons.length) ? _dataConfidence.reasons.join(",") : null,
+        user_staat: null,
+        user_rijdt: null,
+        taxatie_type: "volledig",
+        model_platform: d.subModel || null,
+        expert_verkoop_low: null,
+        expert_verkoop_high: null,
+        expert_bod_low: null,
+        expert_bod_high: null,
+        expert_reasoning: null,
+        price_agreement_status: null,
+        price_agreement_delta_pct: null,
+        price_source: priceSource,
+        staat_factor: 1.0,
+        response_ms: Date.now() - _t0,
+        shadow_bod: null,
+        shadow_source: null
       })
       console.log("[TAXATIE-SAVE]", d.make, d.model, year, "-> saved")
     } catch(saveErr) { console.log("[TAXATIE-SAVE] Error:", saveErr.message) }
@@ -1130,7 +1146,7 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
   const _t0 = Date.now()
   try {
     let _userId = null
-    try { const { verifyToken } = require("../lib/auth"); const t = (req.headers.authorization||"").replace("Bearer ",""); if (t) { const u = verifyToken(t); _userId = u?.uid || null } } catch{}
+    try { const { verifyToken } = require("../lib/auth"); const t = (req.headers.authorization||"").replace("Bearer ",""); if (t) { const u = verifyToken(t); _userId = u?.userId || u?.uid || null } } catch{}
 
     const body = req.body || {}
     const kentekenRaw = (body.kenteken || "").toString()
