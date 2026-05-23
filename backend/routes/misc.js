@@ -1,8 +1,9 @@
 // T4C Misc Routes
 const express = require("express")
 const router = express.Router()
+const jwt = require("jsonwebtoken")
 const { stmts, queryAll, queryOne, run } = require("../db")
-const { authMiddleware, adminOnly, staffOnly } = require("../lib/auth")
+const { authMiddleware, adminOnly, staffOnly, getSecret } = require("../lib/auth")
 const { getApiKey, callGPT } = require("../lib/ai")
 const { writeLog } = require("../lib/state")
 
@@ -46,7 +47,7 @@ router.post("/api/register/koper", express.json(), (req, res) => {
     run("INSERT INTO users (username,password,name,role,email,phone,active) VALUES (?,?,?,?,?,?,?)",
       [d.username, hash, d.naam || d.username, 'koper', d.email, d.telefoon || '', 1])
     const user = queryOne("SELECT id,username,name,role,email FROM users WHERE username=?", [d.username])
-    const token = jwt.sign({ sub: user.username, name: user.name, role: user.role, userId: user.id }, JWT_SECRET, { expiresIn: "7d" })
+    const token = jwt.sign({ sub: user.username, name: user.name, role: user.role, userId: user.id }, getSecret(), { expiresIn: "7d" })
     writeLog("server.log", `KOPER GEREGISTREERD: ${user.username} (${user.email})`)
     // Queue welkomstmail
     stmts.addEmailQueue.run({ to_email: d.email, subject: "Welkom bij Transfer4Cars!", body: `Hallo ${d.naam || d.username},\n\nJe account is aangemaakt! Je kunt nu bieden op veilingen.\n\nLog in op: ${req.headers.origin || 'https://transfer4cars.com'}/verkoop/veilingen/\n\nTeam Transfer4Cars`, type: 'welkom' })

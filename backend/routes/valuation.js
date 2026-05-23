@@ -4,7 +4,7 @@ const express = require("express")
 const axios = require("axios")
 const { stmts, queryAll, queryOne, run } = require("../db")
 const { getCached, setCache, maxPrice, MIN_PRICE, fmtE, safeFetch } = require("../lib/helpers")
-const { getSeasonFactor, getDepreciation, getMarketPressure, normalizeKm, generateInsights, recordTaxatie, learn, getLearned, kmCorrection } = require("../lib/pricing")
+const { kmCorrection } = require("../lib/pricing")
 const { med, validate, buildSearchUrls } = require("../lib/scrapers")
 const { getApiKey, hasApiKey } = require("../lib/ai")
 const { authMiddleware, staffOnly } = require("../lib/auth")
@@ -919,13 +919,16 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
             _blendedVerkoop = Math.round((compVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
             console.log('[PRICING-COMP]', d.make, d.model, ':', compResult.cleanCount, 'clean comps, compMedian', compResult.marketMedian, '-> compVP', compVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
           }
-          if (!_useCompEngine) { _dataWeight = _filteredCount >= 15 ? 0.50 : _filteredCount >= 8 ? 0.35 : _filteredCount >= 3 ? 0.20 : 0.0  // RE-ENABLED — km-filter zit nu in SQL hierboven
+          if (!_useCompEngine) {
+            _dataWeight = _filteredCount >= 15 ? 0.50 : _filteredCount >= 8 ? 0.35 : _filteredCount >= 3 ? 0.20 : 0.0
             _blendedVerkoop = Math.round((_filteredVerkoop * _dataWeight + aiVerkoop * (1 - _dataWeight)) / 50) * 50
-            console.log('[PRICING-BLEND]', d.make, d.model, ':', _filteredCount, 'listings (van', _dbCount, 'raw), mediaan', _filteredMedian, '-> VP', _filteredVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
-          } else {
+            if (_dataWeight > 0) {
+              console.log('[PRICING-BLEND]', d.make, d.model, ':', _filteredCount, 'listings (van', _dbCount, 'raw), mediaan', _filteredMedian, '-> VP', _filteredVerkoop, '| GPT:', aiVerkoop, '| blend(' + Math.round(_dataWeight*100) + '/' + Math.round((1-_dataWeight)*100) + '):', _blendedVerkoop)
+            } else {
+              console.log('[PRICING-GPT]', d.make, d.model, ': geen data (filteredCount=' + _filteredCount + '), 100% GPT:', aiVerkoop)
+            }
           }
-            console.log('[PRICING-GPT]', d.make, d.model, ': geen data, 100% GPT:', aiVerkoop)
-            _auditDataWeight = _dataWeight
+          _auditDataWeight = _dataWeight
           }
           // GPT houdt al rekening met km — geen extra km correctie
           _auditAiVerkoop = aiVerkoop

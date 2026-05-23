@@ -2,7 +2,7 @@
 const fs = require("fs")
 const path = require("path")
 
-const VERSION = "10.16.0"
+const { version: VERSION } = require("../package.json")
 
 const _serverStats = {
   startTime: Date.now(),

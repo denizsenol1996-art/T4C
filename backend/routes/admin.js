@@ -42,7 +42,7 @@ router.get("/api/health", (_, res) => {
 
 // Admin table browser
 router.get("/api/admin/table/:name", authMiddleware, adminOnly, (req, res) => {
-  const allowed = ['users','search_history','voorraad','inspecties','crawl_queue','market_prices','market_listings','market_snapshots','api_logs','taxaties','learned_prices','car_photos','damage_reports','price_trends','settings','veilingen','biedingen','verkopen','portfolio','deals_history'];
+  const allowed = ['users','search_history','voorraad','inspecties','crawl_queue','market_listings','market_snapshots','taxaties','learned_prices','car_photos','price_trends','settings','veilingen','biedingen','verkopen','portfolio','deals_history','dealer_feedback'];
   const name = req.params.name;
   if (!allowed.includes(name)) return res.json({ ok:false, error:'Tabel niet toegestaan' });
   const limit = Math.min(parseInt(req.query.limit)||100, 500);
