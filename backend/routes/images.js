@@ -162,92 +162,169 @@ router.get("/api/image", async (req, res) => {
 
 router.use("/photos/generated", express.static(GENERATED_DIR))
 
-router.post("/api/generate-car-images", express.json(), async (req, res) => {
+router.post("/api/generate-car-images", authMiddleware, staffOnly, express.json({ limit: "50mb" }), async (req, res) => {
   try {
-    const { make, model, year, color, colorSecondary, body, plate, variant, generation, subModel, trimLevel } = req.body
+    const { make, model, year, color, body, plate, referencePhotos, allAngles } = req.body
     if (!make || !model) return res.status(400).json({ error: "make + model vereist" })
 
     const apiKey = getApiKey("OPENAI_API_KEY")
-    if (!apiKey || apiKey === "sk-...") return res.status(500).json({ error: "OpenAI API key niet geconfigureerd" })
+    if (!apiKey) return res.status(500).json({ error: "OpenAI API key niet geconfigureerd" })
 
-    // Create plate-based folder for caching
     const plateClean = (plate || "AUTO").replace(/[^A-Z0-9]/gi, "").toUpperCase() || "UNKNOWN"
     const cacheDir = path.join(GENERATED_DIR, plateClean)
+    const { execSync } = require("child_process")
 
-    // Check cache — alleen voorkant (v10.18.61: bandbreedte besparen)
-    const angles = ["1-front"]
-    const cached = angles.every(a => fs.existsSync(path.join(cacheDir, a + ".png")))
-    if (cached) {
-      console.log(`[DALL-E] Cache hit for ${plateClean}`)
-      return res.json({
-        ok: true, cached: true,
-        images: angles.map(a => ({ angle: a, url: `/photos/generated/${plateClean}/${a}.png` }))
-      })
+    // === VEILING MODUS: rembg mask + gpt-image-1.5 inpainting per foto ===
+    if (allAngles && referencePhotos && referencePhotos.length > 0) {
+      const cacheFiles = fs.existsSync(cacheDir) ? fs.readdirSync(cacheDir).filter(f => /^photo-\d+\.jpg$/.test(f)) : []
+      if (cacheFiles.length >= referencePhotos.length) {
+        return res.json({ ok: true, cached: true, images: cacheFiles.sort().map((f, i) => ({ angle: "photo-" + (i+1), url: `/photos/generated/${plateClean}/${f}` })) })
+      }
+
+      if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
+
+      // Classificeer foto's
+      const positions = req.body.photoPositions || []
+      const hasPositions = positions.some(p => p && p.trim())
+      let usablePhotos
+
+      if (hasPositions) {
+        // Positie-namen beschikbaar — gebruik die
+        usablePhotos = referencePhotos.map((url, i) => {
+          const positie = (positions[i] || "").toLowerCase()
+          if (/interieur|dashboard|instrument|laadruimte|kofferbak|motorruimte|motor|stoel|navigatie|scherm/.test(positie)) return { index: i, type: "interior" }
+          if (/voorzijde|achterzijde|zijde|voor|achter|links|rechts/.test(positie)) return { index: i, type: "exterior" }
+          return { index: i, type: "interior" }
+        })
+      } else {
+        // Geen positie-namen — vision classificatie
+        try {
+          const fR = await axios.post("https://api.openai.com/v1/chat/completions", {
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: [
+              { type: "text", text: "Classify each car photo: \"exterior\" (outside of car visible), \"interior\" (inside car, dashboard, seats, trunk, engine, detail shots, close-ups of parts). Return ONLY JSON: [{\"index\":0,\"type\":\"exterior\"},...]" },
+              ...referencePhotos.map((url, i) => ({ type: "image_url", image_url: { url, detail: "low" } }))
+            ]}], max_tokens: 500, temperature: 0
+          }, { headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" }, timeout: 30000 })
+          const ft = fR.data?.choices?.[0]?.message?.content || "[]"
+          const jm = ft.match(/\[.*\]/s)
+          if (jm) usablePhotos = JSON.parse(jm[0])
+          else usablePhotos = referencePhotos.map((_, i) => ({ index: i, type: "exterior" }))
+          console.log("[VEILING] Vision classified:", usablePhotos.map(p=>p.type).join(","))
+        } catch (e) {
+          console.log("[VEILING] Vision failed:", e.message)
+          usablePhotos = referencePhotos.map((_, i) => ({ index: i, type: "exterior" }))
+        }
+      }
+
+      console.log(`[VEILING] Processing ${usablePhotos.length} photos for ${plateClean}...`)
+
+      const boothPrompt = "Replace only the background. Do not change the car at all. Do not change the license plate. Plain white walls, grey concrete floor, overhead lighting. Nothing on the walls. Just a simple empty room."
+      const interiorPrompt = "Keep this photo exactly as-is. Only very subtle color grading."
+
+      const results = await Promise.allSettled(usablePhotos.map(async (info, idx) => {
+        const refUrl = referencePhotos[info.index]
+        if (!/^https?:\/\//i.test(refUrl || "")) { console.warn(`[VEILING] skip photo-${idx + 1}: geen geldige URL`); return null }
+        try {
+          let refResp
+          for (let attempt = 1; ; attempt++) {
+            try { refResp = await axios.get(refUrl, { responseType: "arraybuffer", timeout: 20000 }); break }
+            catch (e) { if (attempt >= 3 || !/ECONNRESET|ETIMEDOUT|socket hang up/i.test(e.message || "")) throw e; await new Promise(r => setTimeout(r, attempt * 1000)) }
+          }
+          const tmpOrig = path.join(cacheDir, `_tmp_${idx}.png`)
+          const tmpMask = path.join(cacheDir, `_tmp_mask_${idx}.png`)
+          fs.writeFileSync(tmpOrig, refResp.data)
+
+          const savePath = path.join(cacheDir, `photo-${idx + 1}.jpg`)
+
+          if (info.type === "exterior") {
+            // rembg mask — als het faalt, gebruik origineel
+            try {
+              execSync(`python3 /opt/t4c/scripts/make-mask.py "${tmpOrig}" "${tmpMask}"`, { timeout: 60000 })
+            } catch (maskErr) {
+              console.log(`[VEILING] Mask failed photo-${idx + 1}, using original`)
+              try { execSync(`python3 -c "from PIL import Image;i=Image.open('${tmpOrig}');i.thumbnail((1200,900),Image.LANCZOS);i.convert('RGB').save('${savePath}','JPEG',quality=90)"`, { timeout: 10000 }) } catch(e) { fs.copyFileSync(tmpOrig, savePath) }
+              try { fs.unlinkSync(tmpOrig) } catch(e) {}
+              return { angle: `photo-${idx + 1}`, url: `/photos/generated/${plateClean}/photo-${idx + 1}.jpg`, type: "original" }
+            }
+          }
+
+
+          if (info.type === "interior") {
+            // Interior foto's: origineel behouden, NIET door GPT
+            try { execSync(`python3 -c "from PIL import Image;i=Image.open('${tmpOrig}');i.thumbnail((1200,900),Image.LANCZOS);i.convert('RGB').save('${savePath}','JPEG',quality=90)"`, { timeout: 10000 }) } catch(e) { fs.copyFileSync(tmpOrig, savePath) }
+          } else {
+            // Exterieur: rembg mask + GPT inpainting
+            const FormData = require("form-data")
+            const form = new FormData()
+            form.append("model", "gpt-image-1.5")
+            form.append("prompt", boothPrompt)
+            form.append("n", "1")
+            form.append("size", "1536x1024")
+            form.append("quality", "high")
+            form.append("image", fs.createReadStream(tmpOrig), { filename: "orig.png", contentType: "image/png" })
+            form.append("mask", fs.createReadStream(tmpMask), { filename: "mask.png", contentType: "image/png" })
+
+            const dR = await axios.post("https://api.openai.com/v1/images/edits", form, {
+              headers: { "Authorization": `Bearer ${apiKey}`, ...form.getHeaders() },
+              timeout: 180000, maxContentLength: Infinity, maxBodyLength: Infinity
+            })
+
+            const b64 = dR.data?.data?.[0]?.b64_json || dR.data?.data?.[0]?.url
+            if (!b64) throw new Error("No image data")
+            if (b64.startsWith("http")) { const dl = await axios.get(b64, { responseType: "arraybuffer", timeout: 30000 }); fs.writeFileSync(savePath, dl.data) }
+            else { fs.writeFileSync(savePath, Buffer.from(b64, "base64")) }
+          }
+
+          // Compress
+          try { execSync(`python3 -c "from PIL import Image;i=Image.open('${savePath}');i.thumbnail((1200,900),Image.LANCZOS);i.convert('RGB').save('${savePath}','JPEG',quality=85)"`, { timeout: 10000 }) } catch(e) {}
+
+          // Cleanup
+          try { fs.unlinkSync(tmpOrig) } catch(e) {}
+          try { fs.unlinkSync(tmpMask) } catch(e) {}
+
+          console.log(`[VEILING] OK photo-${idx + 1} (${info.type})`)
+          return { angle: `photo-${idx + 1}`, url: `/photos/generated/${plateClean}/photo-${idx + 1}.jpg`, type: info.type }
+        } catch (err) {
+          console.error(`[VEILING] FAIL photo-${idx + 1}:`, err.response?.data?.error?.message || err.message)
+          try { fs.unlinkSync(path.join(cacheDir, `_tmp_${idx}.png`)) } catch(e) {}
+          try { fs.unlinkSync(path.join(cacheDir, `_tmp_mask_${idx}.png`)) } catch(e) {}
+          return { angle: `photo-${idx + 1}`, url: "", error: err.message }
+        }
+      }))
+
+      const images = results.map(r => r.status === "fulfilled" ? r.value : { angle: "?", url: "", error: "Failed" })
+      const ok = images.filter(i => i.url).length
+      console.log(`[VEILING] Done: ${ok}/${usablePhotos.length}`)
+      return res.json({ ok: true, cached: false, generated: ok, images })
     }
 
-    // Build the car description
+    // === STANDAARD: front-only text generatie ===
+    const angles = ["1-front"]
+    const cached = angles.every(a => fs.existsSync(path.join(cacheDir, a + ".png")))
+    if (cached) return res.json({ ok: true, cached: true, images: angles.map(a => ({ angle: a, url: `/photos/generated/${plateClean}/${a}.png` })) })
+
     const colorEn = COLOR_MAP[(color || "").toUpperCase()] || (color || "grey").toLowerCase()
-    const colorDesc = (colorSecondary && colorSecondary !== "Niet geregistreerd") ? `${colorEn} with ${COLOR_MAP[(colorSecondary||"").toUpperCase()]||colorSecondary.toLowerCase()} accents` : `${colorEn} metallic`
     const bodyEn = BODY_MAP[(body || "").toLowerCase()] || (body || "hatchback").toLowerCase()
-    const cleanSub = (subModel && model && !subModel.toLowerCase().includes(model.toLowerCase().split(" ")[0])) ? "" : subModel
-    const trimInfo = [variant, generation, cleanSub, trimLevel].filter(Boolean).join(" ")
-    const genHint = generation ? ` (${generation} generation, NOT the current/latest model)` : (year < 2020 ? ` (${year} model year version, NOT the current/latest model)` : "")
-    const carDesc = `${year || 2020} ${make} ${model}${trimInfo ? " " + trimInfo : ""}${genHint}, ${bodyEn}, ${colorDesc}`
+    const prompt = `Photorealistic studio photo of a ${year||2020} ${make} ${model}, ${bodyEn}, ${colorEn} metallic. Front 3/4 view on dark showroom turntable. Black plate TRANSFER4CARS. Grey studio, 8K.`
 
-    // 5 turntable angles — include plate text so DALL-E picks the right model, UI overlay corrects the text
-    const plateText = plate || "XX-999-X"
-    const studioBg = "on a round dark showroom turntable platform. Clean neutral grey studio background with soft even lighting and subtle reflections on a polished dark floor. Professional car dealership photography, ultra sharp focus, 8K quality. Small subtle watermark text EXAMPLE IMAGE in bottom left corner."
-    const prompts = [
-      { angle: "1-front",  prompt: `Photorealistic studio photograph of a ${carDesc}. Front view, camera at bumper height, showing full front face. Dutch yellow license plate reading "${plateText}" on front bumper. Car is placed ${studioBg}` }
-    ]
-
-    console.log(`[DALL-E] Generating 1 image (front-only) for ${make} ${model} (${plateClean})...`)
-
-    // Create cache dir
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
-
-    // Call DALL-E 3 for all 4 angles in parallel
-    const results = await Promise.allSettled(prompts.map(async ({ angle, prompt }) => {
-      try {
-        const dalleResp = await axios.post("https://api.openai.com/v1/images/generations", {
-          model: "gpt-image-1.5",
-          prompt,
-          n: 1,
-          size: "1536x1024",
-          quality: "medium",
-          
-        }, {
-          headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          timeout: 120000 // 2 min per image
-        })
-
-        const imgB64 = dalleResp.data?.data?.[0]?.b64_json || dalleResp.data?.data?.[0]?.url
-        if (!imgB64) throw new Error("No image data")
-        const savePath = path.join(cacheDir, angle + ".png")
-        if (imgB64.startsWith("http")) { const dl = await axios.get(imgB64,{responseType:"arraybuffer",timeout:30000}); fs.writeFileSync(savePath, dl.data) }
-        else { fs.writeFileSync(savePath, Buffer.from(imgB64, "base64")) }
-
-        console.log(`[DALL-E] ✓ ${angle} saved for ${plateClean}`)
-        // Auto-compress: 2MB -> ~50KB
-        try { require('child_process').execSync(`python3 -c "from PIL import Image;img=Image.open('${savePath}');img.thumbnail((800,600),Image.LANCZOS);img.convert('RGB').save('${savePath}','JPEG',quality=80,optimize=True)"`) } catch(e) { console.log('[IMG-COMPRESS] failed:', e.message) }
-        return { angle, url: `/photos/generated/${plateClean}/${angle}.png` }
-      } catch (err) {
-        console.error(`[DALL-E] ✗ ${angle} failed:`, err.response?.data?.error?.message || err.message)
-        return { angle, url: "", error: err.response?.data?.error?.message || err.message }
-      }
-    }))
-
-    const images = results.map(r => r.status === "fulfilled" ? r.value : { angle: "?", url: "", error: "Failed" })
-    const successCount = images.filter(i => i.url).length
-
-    console.log(`[DALL-E] Done: ${successCount}/4 images generated for ${plateClean}`)
-    res.json({ ok: true, cached: false, generated: successCount, images })
-
+    const dR = await axios.post("https://api.openai.com/v1/images/generations", {
+      model: "gpt-image-1.5", prompt, n: 1, size: "1536x1024", quality: "medium"
+    }, { headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" }, timeout: 120000 })
+    const b64 = dR.data?.data?.[0]?.b64_json || dR.data?.data?.[0]?.url
+    if (!b64) throw new Error("No image data")
+    const sp = path.join(cacheDir, "1-front.png")
+    if (b64.startsWith("http")) { const dl = await axios.get(b64,{responseType:"arraybuffer",timeout:30000}); fs.writeFileSync(sp, dl.data) }
+    else { fs.writeFileSync(sp, Buffer.from(b64, "base64")) }
+    try { execSync(`python3 -c "from PIL import Image;i=Image.open('${sp}');i.thumbnail((800,600),Image.LANCZOS);i.convert('RGB').save('${sp}','JPEG',quality=80)"`, { timeout: 10000 }) } catch(e) {}
+    res.json({ ok: true, cached: false, generated: 1, images: [{ angle: "1-front", url: `/photos/generated/${plateClean}/1-front.png` }] })
   } catch (err) {
     console.error("[DALL-E] Error:", err.message)
     res.status(500).json({ error: err.message })
   }
 })
+
 
 // Quick check if generated images exist (no generation, just cache check)
 router.get("/api/car-images/:plate", (req, res) => {
@@ -266,5 +343,17 @@ router.get("/api/car-images/:plate", (req, res) => {
    DEALER PRICE (server-side pricing engine)
    ═══════════════════════════════════════════════ */
 
+
+
+// Veiling foto cache check
+router.get("/api/veiling-photos/:plate", (req, res) => {
+  const pc = (req.params.plate || "").replace(/[^A-Z0-9]/gi, "").toUpperCase()
+  if (!pc) return res.json({ ok: false })
+  const dir = path.join(GENERATED_DIR, pc)
+  if (!fs.existsSync(dir)) return res.json({ ok: false, photos: [] })
+  const files = fs.readdirSync(dir).filter(f => /^photo-\d+\.jpg$/.test(f)).sort()
+  const photos = files.map(f => ({ url: `/photos/generated/${pc}/${f}`, filename: f }))
+  res.json({ ok: photos.length > 0, photos })
+})
 
 module.exports = router
