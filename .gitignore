@@ -33,3 +33,7 @@ backend-test/
 check.js
 backend/test-*.js
 *.PRE-*-20260515*
+
+# Security + grote artefacten (hardening 2026-06-13)
+secrets/
+FULL-STATE-BACKUPS/
