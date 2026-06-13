@@ -6,15 +6,19 @@ const { stmts, queryAll, queryOne, run } = require("../db")
 const { authMiddleware, adminOnly, staffOnly, getSecret } = require("../lib/auth")
 const { getApiKey, callGPT } = require("../lib/ai")
 const { writeLog } = require("../lib/state")
+const { logAudit } = require("../lib/audit")
+const bcrypt = require("bcryptjs")
+const V = require("../lib/validators")
 
 // Register
 router.post("/api/register", express.json(), (req, res) => {
   try {
     const d = req.body
-    if (!d.email) return res.status(400).json({ ok: false, error: "E-mail is vereist" })
-    if (!d.bedrijf) return res.status(400).json({ ok: false, error: "Bedrijfsnaam is vereist" })
-    if (!d.telefoon) return res.status(400).json({ ok: false, error: "Telefoonnummer is vereist" })
-    if (!d.kvk || d.kvk.replace(/\D/g,"").length !== 8) return res.status(400).json({ ok: false, error: "Geldig KvK-nummer (8 cijfers) is vereist" })
+    if (!V.isValidEmail(d.email)) return res.status(400).json({ ok: false, error: "Geldig e-mailadres is vereist" })
+    if (!V.isValidBedrijf(d.bedrijf)) return res.status(400).json({ ok: false, error: "Bedrijfsnaam is vereist (2-200 tekens)" })
+    if (!V.isValidPhone(d.telefoon)) return res.status(400).json({ ok: false, error: "Geldig telefoonnummer is vereist" })
+    if (!V.isValidKvK(d.kvk)) return res.status(400).json({ ok: false, error: "Geldig KvK-nummer (8 cijfers) is vereist" })
+    if (!V.isValidBTW(d.btw) || !d.btw) return res.status(400).json({ ok: false, error: "BTW-nummer is vereist (NL999999999B99)" })
     // Check of email al bestaat
     const existingUser = queryOne("SELECT id FROM users WHERE email=?", [d.email])
     if (existingUser) return res.status(400).json({ ok: false, error: "Dit e-mailadres is al geregistreerd. Probeer in te loggen." })
@@ -22,14 +26,23 @@ router.post("/api/register", express.json(), (req, res) => {
     if (existingReq) {
       if (existingReq.status === 'nieuw' || existingReq.status === 'in_behandeling') return res.status(400).json({ ok: false, error: "Uw aanmelding is al ontvangen en wordt beoordeeld." })
     }
-    run("INSERT INTO contact_requests (naam,bedrijf,email,telefoon,kvk,type,status,bericht) VALUES (?,?,?,?,?,?,?,?)",
-      [d.naam||'', d.bedrijf, d.email, d.telefoon, d.kvk||'', 'b2b_aanmelding', 'nieuw',
-       `Aanmelding via website\nNaam: ${d.naam||'-'}\nBedrijf: ${d.bedrijf}\nKvK: ${d.kvk||'-'}\nTelefoon: ${d.telefoon}\nEmail: ${d.email}`])
+    run("INSERT INTO contact_requests (naam,bedrijf,email,telefoon,kvk,btw,type,status,bericht) VALUES (?,?,?,?,?,?,?,?,?)",
+      [d.naam||'', d.bedrijf, d.email, d.telefoon, d.kvk||'', d.btw||'', 'b2b_aanmelding', 'nieuw',
+       `Aanmelding via website\nNaam: ${d.naam||'-'}\nBedrijf: ${d.bedrijf}\nKvK: ${d.kvk||'-'}\nBTW: ${d.btw||'-'}\nTelefoon: ${d.telefoon}\nEmail: ${d.email}`])
     writeLog("server.log", `B2B AANMELDING: ${d.bedrijf} (${d.email}) — wacht op goedkeuring`)
     // Email notificatie naar admin
     try {
       stmts.addEmailQueue.run({ to_email: 'info@transfer4cars.com', subject: 'Nieuwe B2B aanmelding: ' + d.bedrijf, body: 'Nieuwe dealer aanmelding!\nBedrijf: ' + d.bedrijf + '\nNaam: ' + (d.naam||'-') + '\nKvK: ' + (d.kvk||'-') + '\nTelefoon: ' + d.telefoon + '\nEmail: ' + d.email, type: 'admin_alert' })
     } catch(e) { console.error('Email queue error:', e.message) }
+    // Bevestigingsmail naar aanmelder
+    try {
+      stmts.addEmailQueue.run({
+        to_email: d.email,
+        subject: 'Aanmelding ontvangen — Transfer4Cars',
+        body: `Hi ${d.naam || ''},\n\nWe hebben je aanmelding voor ${d.bedrijf} ontvangen en in behandeling genomen.`,
+        type: 'aanmelding_ontvangen'
+      })
+    } catch(e) { console.error('Email queue error (bevestiging):', e.message) }
     res.json({ ok: true, message: "Aanmelding ontvangen! Wij beoordelen uw aanvraag en nemen binnen 24 uur contact op." })
   } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
 })
@@ -39,7 +52,9 @@ router.post("/api/register/koper", express.json(), (req, res) => {
   try {
     const d = req.body
     if (!d.username || !d.password || !d.email) return res.status(400).json({ ok: false, error: "Gebruikersnaam, wachtwoord en e-mail vereist" })
-    if (d.password.length < 6) return res.status(400).json({ ok: false, error: "Wachtwoord minimaal 6 tekens" })
+    if (!V.isValidEmail(d.email)) return res.status(400).json({ ok: false, error: "Geldig e-mailadres is vereist" })
+    if (!V.isStrongPassword(d.password)) return res.status(400).json({ ok: false, error: "Wachtwoord minimaal 8 tekens, niet alleen cijfers, niet een veel-gebruikt wachtwoord" })
+    if (d.telefoon && !V.isValidPhone(d.telefoon)) return res.status(400).json({ ok: false, error: "Telefoonnummer ongeldig" })
     const existing = queryOne("SELECT id FROM users WHERE username=? OR email=?", [d.username, d.email])
     if (existing) return res.status(400).json({ ok: false, error: "Gebruikersnaam of e-mail al in gebruik" })
     const bcrypt = require("bcryptjs")
@@ -61,6 +76,7 @@ router.post("/api/register/koper", express.json(), (req, res) => {
 router.put("/api/profiel", authMiddleware, express.json(), (req, res) => {
   try {
     const d = req.body
+    const before = queryOne("SELECT name, email, phone, company FROM users WHERE id=?", [req.userId])
     const sets = [], vals = []
     if (d.naam) { sets.push("name=?"); vals.push(d.naam) }
     if (d.email) { sets.push("email=?"); vals.push(d.email) }
@@ -69,7 +85,82 @@ router.put("/api/profiel", authMiddleware, express.json(), (req, res) => {
     if (!sets.length) return res.status(400).json({ ok: false, error: "Niets om bij te werken" })
     vals.push(req.userId)
     run("UPDATE users SET " + sets.join(",") + " WHERE id=?", vals)
+    logAudit({ userId: req.userId, action: "profile_update", targetType: "user", targetId: req.userId, details: { before, changes: { name: d.naam, email: d.email, phone: d.telefoon, company: d.bedrijf } }, req })
     res.json({ ok: true })
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
+// Wachtwoord wijzigen (eigen account)
+router.post("/api/profiel/password", authMiddleware, express.json(), async (req, res) => {
+  try {
+    const { old: oldPwd, new: newPwd } = req.body || {}
+    if (!oldPwd || !newPwd) return res.status(400).json({ ok: false, error: "Beide velden vereist" })
+    if (String(newPwd).length < 8) return res.status(400).json({ ok: false, error: "Nieuw wachtwoord minimaal 8 tekens" })
+    const u = queryOne("SELECT id, password FROM users WHERE id=?", [req.userId])
+    if (!u) return res.status(404).json({ ok: false, error: "User niet gevonden" })
+    const ok = await bcrypt.compare(oldPwd, u.password)
+    if (!ok) {
+      logAudit({ userId: req.userId, action: "password_change_failed", req })
+      return res.status(401).json({ ok: false, error: "Huidig wachtwoord onjuist" })
+    }
+    const hash = await bcrypt.hash(newPwd, 10)
+    run("UPDATE users SET password=? WHERE id=?", [hash, req.userId])
+    logAudit({ userId: req.userId, action: "password_changed", req })
+    res.json({ ok: true })
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
+// AVG art. 15 + 20 — Data-export. Klant download alles wat we over hem hebben.
+router.get("/api/profiel/export", authMiddleware, (req, res) => {
+  try {
+    const uid = req.userId
+    const user = queryOne("SELECT id, username, name, email, phone, company, role, created_at, last_login FROM users WHERE id=?", [uid])
+    if (!user) return res.status(404).json({ ok: false, error: "User niet gevonden" })
+    const veilingBiedingen = queryAll("SELECT id, veiling_id, bedrag, created_at FROM veiling_biedingen WHERE user_id=?", [uid])
+    const gewonnen = queryAll("SELECT id, kenteken, merk, model, bouwjaar, winnaar_bod, eind_datum FROM veilingen WHERE winnaar_user_id=?", [uid])
+    const facturen = queryAll("SELECT * FROM facturen WHERE koper_id=?", [uid])
+    let watchlist = []
+    try { watchlist = queryAll("SELECT veiling_id, created_at FROM watchlist WHERE user_id=?", [uid]) || [] } catch {}
+    const auditLog = queryAll("SELECT action, target_type, target_id, ip, details, created_at FROM audit_log WHERE user_id=? ORDER BY created_at DESC LIMIT 1000", [uid])
+    const payload = {
+      _meta: {
+        generated_at: new Date().toISOString(),
+        controller: "JHVT Holding B.V. (Transfer4Cars)",
+        kvk: "88503925",
+        contact: "info@transfer4cars.com",
+        legal_basis: "AVG art. 15 (recht op inzage) + art. 20 (dataportabiliteit)",
+        note: "Dit bestand bevat alle persoonsgegevens en gerelateerde records die wij over u verwerken."
+      },
+      profiel: user,
+      biedingen: veilingBiedingen,
+      gewonnen_veilingen: gewonnen,
+      facturen,
+      watchlist,
+      audit_log: auditLog
+    }
+    logAudit({ userId: uid, action: "data_export", details: { counts: { biedingen: veilingBiedingen.length, facturen: facturen.length, audit: auditLog.length } }, req })
+    res.set("Content-Type", "application/json; charset=utf-8")
+    res.set("Content-Disposition", `attachment; filename="transfer4cars-mijn-data-${new Date().toISOString().slice(0,10)}.json"`)
+    res.send(JSON.stringify(payload, null, 2))
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
+// AVG art. 17 — Account verwijderen. Soft-delete: anonimiseer user, behoud facturen + biedhistorie (fiscaal 7 jaar).
+router.post("/api/profiel/verwijderen", authMiddleware, express.json(), (req, res) => {
+  try {
+    if (req.body?.confirm !== "VERWIJDER") return res.status(400).json({ ok: false, error: "Bevestiging vereist (confirm='VERWIJDER')" })
+    const uid = req.userId
+    const u = queryOne("SELECT role FROM users WHERE id=?", [uid])
+    if (!u) return res.status(404).json({ ok: false, error: "User niet gevonden" })
+    if (u.role === "admin") return res.status(400).json({ ok: false, error: "Admin-account kan niet via self-service verwijderd worden" })
+
+    // Anonimiseer: behoud id (FK-keys werken nog), nullify PII, blank password.
+    run(
+      "UPDATE users SET name=?, email=NULL, phone=NULL, company=NULL, password=? WHERE id=?",
+      ["Verwijderd #" + uid, "DELETED-" + Date.now(), uid]
+    )
+    logAudit({ userId: uid, action: "account_deleted", targetType: "user", targetId: uid, details: { soft_delete: true, note: "Profiel-PII geanonimiseerd, facturen/biedhistorie behouden voor fiscale verplichting" }, req })
+    res.json({ ok: true, message: "Account verwijderd. Facturen en biedhistorie blijven 7 jaar bewaard conform fiscale verplichting." })
   } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
 })
 
@@ -110,20 +201,8 @@ router.put("/api/settings", authMiddleware, (req, res) => {
   } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
 })
 
-// ── Change own password ──
-router.post("/api/me/password", authMiddleware, (req, res) => {
-  try {
-    const { current_password, new_password } = req.body
-    if (!new_password || new_password.length < 6) return res.status(400).json({ ok: false, error: "Wachtwoord moet minimaal 6 tekens zijn" })
-    // Verify current password
-    const user = verifyUser(req.user.sub, current_password)
-    if (!user) return res.status(400).json({ ok: false, error: "Huidig wachtwoord onjuist" })
-    const bcrypt = require("bcryptjs")
-    const hash = bcrypt.hashSync(new_password, 10)
-    stmts.changePassword.run(req.user.sub, hash)
-    res.json({ ok: true, message: "Wachtwoord gewijzigd" })
-  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
-})
+// /api/me/password verwijderd 2026-06-11 — vervangen door /api/profiel/password (regel 90).
+// Frontend belde alleen /api/profiel/password (account/index.html:396). Audit-bevestigd.
 
 // ── All inspecties (for desktop overview) ──
 
@@ -277,6 +356,28 @@ router.post("/api/contact-requests/:id/approve", authMiddleware, adminOnly, expr
     // Update contact request
     stmts.updateContactStatus.run(parseInt(req.params.id), "goedgekeurd")
     writeLog("server.log", `B2B GOEDGEKEURD: ${cr.bedrijf || cr.naam} (${cr.email}) → account: ${username} / rol: ${role} door ${req.user.sub}`)
+
+    // Audit-log
+    try { logAudit({ userId: req.userId, action: "b2b_aanmelding_goedgekeurd", targetType: "contact_request", targetId: cr.id, details: { bedrijf: cr.bedrijf, email: cr.email, username, role }, req }) } catch {}
+
+    // Welkomstmail met credentials in queue
+    try {
+      const body = `Welkom bij Transfer4Cars, ${cr.naam || cr.bedrijf}!\n\n`
+        + `Je B2B-aanvraag is goedgekeurd. Je kunt nu inloggen op de veilingen.\n\n`
+        + `Login: https://transfer4cars.com/login/\n`
+        + `Gebruikersnaam: ${username}\n`
+        + `Tijdelijk wachtwoord: ${password}\n\n`
+        + `Wijzig je wachtwoord direct na inloggen via 'Mijn account' → Profiel → Wachtwoord wijzigen.\n\n`
+        + `Vragen? Bel +31 6 87 99 71 68 of mail info@transfer4cars.com\n\n`
+        + `Transfer4Cars Team`
+      stmts.addEmailQueue.run({
+        to_email: cr.email,
+        subject: "Welkom bij Transfer4Cars — je dealer-account is aangemaakt",
+        body,
+        type: "welkom_dealer"
+      })
+    } catch(e) { console.error("[approve] welkomstmail queue error:", e.message) }
+
     res.json({ ok: true, account: { username, password, email: cr.email, role, bedrijf: cr.bedrijf } })
   } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
 })
@@ -285,6 +386,97 @@ router.delete("/api/contact-requests/:id", authMiddleware, adminOnly, (req, res)
   try {
     stmts.deleteContactRequest.run(parseInt(req.params.id))
     res.json({ ok: true })
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
+// B2B aanmelding afwijzen (met optionele reden via email)
+router.post("/api/contact-requests/:id/reject", authMiddleware, adminOnly, express.json(), (req, res) => {
+  try {
+    const cr = queryOne("SELECT * FROM contact_requests WHERE id=?", [parseInt(req.params.id)])
+    if (!cr) return res.status(404).json({ ok: false, error: "Aanmelding niet gevonden" })
+    const reden = (req.body.reden || "").trim()
+    stmts.updateContactStatus.run(parseInt(req.params.id), "afgewezen")
+    writeLog("server.log", `B2B AFGEWEZEN: ${cr.bedrijf || cr.naam} (${cr.email}) door ${req.user.sub}${reden?" — reden: "+reden:""}`)
+    try { logAudit({ userId: req.userId, action: "b2b_aanmelding_afgewezen", targetType: "contact_request", targetId: cr.id, details: { bedrijf: cr.bedrijf, email: cr.email, reden }, req }) } catch {}
+    // Notificatie-mail naar aanvrager als email-set
+    if (cr.email && req.body.notify !== false) {
+      try {
+        const body = `Beste ${cr.naam || cr.bedrijf},\n\n`
+          + `Bedankt voor je interesse in Transfer4Cars.\n\n`
+          + `Helaas kunnen we je B2B-aanvraag op dit moment niet goedkeuren.${reden?"\n\nReden: "+reden:""}\n\n`
+          + `Heb je vragen? Neem gerust contact op via info@transfer4cars.com.\n\n`
+          + `Transfer4Cars Team`
+        stmts.addEmailQueue.run({
+          to_email: cr.email,
+          subject: "Reactie op je B2B-aanvraag bij Transfer4Cars",
+          body,
+          type: "afwijzing_dealer"
+        })
+      } catch(e) { console.error("[reject] afwijzingsmail queue error:", e.message) }
+    }
+    res.json({ ok: true })
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
+// Analytics-stats voor admin-dashboard (server-side metrics naast GA4)
+router.get("/api/admin/analytics/stats", authMiddleware, adminOnly, (req, res) => {
+  try {
+    const since24h = "datetime('now', '-1 day')"
+    const since7d = "datetime('now', '-7 days')"
+    const since30d = "datetime('now', '-30 days')"
+
+    const aanmeldingen = {
+      totaal: queryOne("SELECT COUNT(*) as c FROM contact_requests WHERE type='b2b_aanmelding'")?.c || 0,
+      vandaag: queryOne(`SELECT COUNT(*) as c FROM contact_requests WHERE type='b2b_aanmelding' AND created_at > ${since24h}`)?.c || 0,
+      week: queryOne(`SELECT COUNT(*) as c FROM contact_requests WHERE type='b2b_aanmelding' AND created_at > ${since7d}`)?.c || 0,
+      maand: queryOne(`SELECT COUNT(*) as c FROM contact_requests WHERE type='b2b_aanmelding' AND created_at > ${since30d}`)?.c || 0,
+      nieuw: queryOne("SELECT COUNT(*) as c FROM contact_requests WHERE type='b2b_aanmelding' AND status='nieuw'")?.c || 0,
+      goedgekeurd: queryOne("SELECT COUNT(*) as c FROM contact_requests WHERE type='b2b_aanmelding' AND status='goedgekeurd'")?.c || 0,
+      afgewezen: queryOne("SELECT COUNT(*) as c FROM contact_requests WHERE type='b2b_aanmelding' AND status='afgewezen'")?.c || 0,
+    }
+
+    const biedingen = {
+      totaal: queryOne("SELECT COUNT(*) as c FROM veiling_biedingen")?.c || 0,
+      vandaag: queryOne(`SELECT COUNT(*) as c FROM veiling_biedingen WHERE created_at > ${since24h}`)?.c || 0,
+      week: queryOne(`SELECT COUNT(*) as c FROM veiling_biedingen WHERE created_at > ${since7d}`)?.c || 0,
+      maand: queryOne(`SELECT COUNT(*) as c FROM veiling_biedingen WHERE created_at > ${since30d}`)?.c || 0,
+    }
+
+    const veilingen = {
+      totaal: queryOne("SELECT COUNT(*) as c FROM veilingen")?.c || 0,
+      actief: queryOne("SELECT COUNT(*) as c FROM veilingen WHERE status='actief'")?.c || 0,
+      gewonnen: queryOne("SELECT COUNT(*) as c FROM veilingen WHERE status='gewonnen'")?.c || 0,
+      gewonnen_week: queryOne(`SELECT COUNT(*) as c FROM veilingen WHERE status='gewonnen' AND updated_at > ${since7d}`)?.c || 0,
+    }
+
+    const users = {
+      totaal: queryOne("SELECT COUNT(*) as c FROM users")?.c || 0,
+      kopers: queryOne("SELECT COUNT(*) as c FROM users WHERE role='koper' OR role='dealer'")?.c || 0,
+      actief_week: queryOne(`SELECT COUNT(DISTINCT user_id) as c FROM audit_log WHERE action='login_success' AND created_at > ${since7d}`)?.c || 0,
+    }
+
+    // Top acties uit audit_log (laatste 7d)
+    const topActions = queryAll(`SELECT action, COUNT(*) as c FROM audit_log WHERE created_at > ${since7d} GROUP BY action ORDER BY c DESC LIMIT 10`)
+
+    // Recente activiteit (laatste 20)
+    const recent = queryAll(`SELECT id, action, target_type, target_id, ip, created_at FROM audit_log ORDER BY id DESC LIMIT 20`)
+
+    res.json({
+      ok: true,
+      aanmeldingen, biedingen, veilingen, users,
+      top_actions: topActions,
+      recent_activity: recent,
+      generated_at: new Date().toISOString()
+    })
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
+})
+
+// Inbox-count voor admin-badge
+router.get("/api/contact-requests/count", authMiddleware, adminOnly, (req, res) => {
+  try {
+    const nieuw = queryOne("SELECT COUNT(*) as c FROM contact_requests WHERE status='nieuw'")?.c || 0
+    const inBehandeling = queryOne("SELECT COUNT(*) as c FROM contact_requests WHERE status='in_behandeling'")?.c || 0
+    res.json({ ok: true, nieuw, in_behandeling: inBehandeling, totaal_open: nieuw + inBehandeling })
   } catch(e) { res.status(500).json({ ok: false, error: e.message }) }
 })
 

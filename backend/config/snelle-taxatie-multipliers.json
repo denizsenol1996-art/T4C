@@ -1,0 +1,105 @@
+{
+  "version": "1.0",
+  "fitted_at": "2026-05-20",
+  "seed": 42,
+  "n_cases_total": 655,
+  "n_cases_per_label": {
+    "GOED": 617,
+    "NORMAAL": 2,
+    "SLECHT": 35,
+    "DEFECT": 1
+  },
+  "multipliers": {
+    "staat": {
+      "GOED": {
+        "median": 0.9032,
+        "ci_low": 0.9022,
+        "ci_high": 0.9059,
+        "fold_variance": 2e-06,
+        "n": 617,
+        "low_confidence": false
+      },
+      "NORMAAL": {
+        "median": 0.8994,
+        "ci_low": 0.8994,
+        "ci_high": 1.0,
+        "fold_variance": 0.001621,
+        "n": 2,
+        "low_confidence": true
+      },
+      "SLECHT": {
+        "median": 0.6972,
+        "ci_low": 0.6732,
+        "ci_high": 0.7434,
+        "fold_variance": 0.000624,
+        "n": 35,
+        "low_confidence": false
+      },
+      "DEFECT": {
+        "median": 0.1902,
+        "ci_low": 0.1902,
+        "ci_high": 1.0,
+        "fold_variance": 0.104916,
+        "n": 1,
+        "low_confidence": true
+      }
+    },
+    "rijdt_nee_extra_factor": null,
+    "export_bonus": {
+      "median": 1.141,
+      "n": 54,
+      "applies_when": "notitie bevat export-keyword OF (merk=Toyota AND segment in [midden,premium,lcv] AND ons_bod < marktverwachting)"
+    }
+  },
+  "validation": {
+    "cv_folds": 5,
+    "baseline_mae_eur": 3516.6,
+    "fitted_mae_eur": 3494.8,
+    "baseline_mape": 0.4731,
+    "fitted_mape": 0.3951,
+    "mae_improvement_pct": 0.62,
+    "mape_improvement_pct": 16.48,
+    "per_fold": [
+      {
+        "fold": 1,
+        "n_test": 131,
+        "mae_baseline": 932.3,
+        "mae_fitted": 956.7,
+        "mape_baseline": 0.3762,
+        "mape_fitted": 0.3147
+      },
+      {
+        "fold": 2,
+        "n_test": 131,
+        "mae_baseline": 1304.6,
+        "mae_fitted": 1192.4,
+        "mape_baseline": 0.5558,
+        "mape_fitted": 0.4459
+      },
+      {
+        "fold": 3,
+        "n_test": 131,
+        "mae_baseline": 1294.9,
+        "mae_fitted": 1227.2,
+        "mape_baseline": 0.4052,
+        "mape_fitted": 0.3437
+      },
+      {
+        "fold": 4,
+        "n_test": 131,
+        "mae_baseline": 1056.8,
+        "mae_fitted": 1061.3,
+        "mape_baseline": 0.5304,
+        "mape_fitted": 0.4499
+      },
+      {
+        "fold": 5,
+        "n_test": 131,
+        "mae_baseline": 12994.5,
+        "mae_fitted": 13036.6,
+        "mape_baseline": 0.4979,
+        "mape_fitted": 0.4215
+      }
+    ]
+  }
+}

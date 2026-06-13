@@ -92,38 +92,45 @@ function autoRestore(SQL) {
 let db = null
 let _saveTimer = null
 
+// Per-PID tmp-pad voorkomt race als ooit een tweede instance per ongeluk schrijft.
+function tmpPathFor() { return DB_PATH + "." + process.pid + ".tmp" }
+
 function scheduleSave() {
   if (_saveTimer) return
+  // Jitter 5000-7000ms ontkoppelt eventuele gelijktijdige writes.
+  const delay = 5000 + Math.floor(Math.random() * 2000)
   _saveTimer = setTimeout(() => {
     _saveTimer = null
-    if (db) {
-      try {
-        const data = db.export()
-        if (data.length < 10000) { console.error("[DB] scheduleSave: export te klein (" + data.length + " bytes) — GEWEIGERD"); return }
-        const tmpPath = DB_PATH + ".tmp"
-        fs.writeFileSync(tmpPath, Buffer.from(data))
-        fs.renameSync(tmpPath, DB_PATH)
-      } catch (e) { console.error("[DB] Save error:", e.message) }
+    if (!db) return
+    const tmpPath = tmpPathFor()
+    try {
+      const data = db.export()
+      if (data.length < 10000) { console.error("[DB] scheduleSave: export te klein (" + data.length + " bytes) — GEWEIGERD"); return }
+      fs.writeFileSync(tmpPath, Buffer.from(data))
+      fs.renameSync(tmpPath, DB_PATH)
+    } catch (e) {
+      console.error("[DB] Save error:", e.message)
+      try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath) } catch {}
     }
-  }, 5000)
+  }, delay)
 }
 
 function forceSave() {
   if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null }
-  if (db) {
-    try {
-      // Integrity check voor save — NOOIT een corrupte DB wegschrijven
-      try { db.run("PRAGMA integrity_check") } catch(intErr) {
-        console.error("[DB] INTEGRITY CHECK FAILED — save GEWEIGERD:", intErr.message)
-        return
-      }
-      const data = db.export()
-      if (data.length < 1000) { console.error("[DB] Export too small (" + data.length + " bytes) — save GEWEIGERD"); return }
-      // Schrijf naar temp bestand eerst, dan rename (atomic)
-      const tmpPath = DB_PATH + ".tmp"
-      fs.writeFileSync(tmpPath, Buffer.from(data))
-      fs.renameSync(tmpPath, DB_PATH)
-    } catch (e) { console.error("[DB] Force save error:", e.message) }
+  if (!db) return
+  const tmpPath = tmpPathFor()
+  try {
+    try { db.run("PRAGMA integrity_check") } catch(intErr) {
+      console.error("[DB] INTEGRITY CHECK FAILED — save GEWEIGERD:", intErr.message)
+      return
+    }
+    const data = db.export()
+    if (data.length < 1000) { console.error("[DB] Export too small (" + data.length + " bytes) — save GEWEIGERD"); return }
+    fs.writeFileSync(tmpPath, Buffer.from(data))
+    fs.renameSync(tmpPath, DB_PATH)
+  } catch (e) {
+    console.error("[DB] Force save error:", e.message)
+    try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath) } catch {}
   }
 }
 
@@ -891,6 +898,15 @@ function migrateFromJSON() {
 
 function run(sql, params = []) {
   if (!db) throw new Error("DB not initialized")
+  // Sanitize: undefined -> null (sql.js crasht op undefined params)
+  if (params.length) {
+    for (let i = 0; i < params.length; i++) {
+      if (params[i] === undefined) {
+        console.error("[DB-WARN] undefined param at index " + i + " in: " + sql.slice(0, 120))
+        params[i] = null
+      }
+    }
+  }
   db.run(sql, params)
   scheduleSave()
   return { lastInsertRowid: queryOne("SELECT last_insert_rowid() as id")?.id || 0 }
@@ -898,6 +914,15 @@ function run(sql, params = []) {
 
 function queryAll(sql, params = []) {
   if (!db) return []
+  // Sanitize: undefined -> null (sql.js crasht op undefined params)
+  if (params.length) {
+    for (let i = 0; i < params.length; i++) {
+      if (params[i] === undefined) {
+        console.error("[DB-WARN] undefined param at index " + i + " in: " + sql.slice(0, 120))
+        params[i] = null
+      }
+    }
+  }
   const stmt = db.prepare(sql)
   if (params.length) stmt.bind(params)
   const rows = []
@@ -1134,8 +1159,8 @@ const stmts = {
   getBiedingStats: { get: (kenteken) => queryOne("SELECT COUNT(*) as count, AVG(bedrag) as avg, MIN(bedrag) as min, MAX(bedrag) as max FROM biedingen WHERE kenteken=? AND status='actief'", [kenteken]) },
 
   // Veilingen
-  addVeiling: { run: (d) => run(`INSERT INTO veilingen (voorraad_id,kenteken,titel,beschrijving,merk,model,bouwjaar,km,brandstof,kleur,minimumprijs,startprijs,start_datum,eind_datum,created_by,status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [d.voorraad_id,d.kenteken,d.titel,d.beschrijving,d.merk,d.model,d.bouwjaar,d.km,d.brandstof,d.kleur,d.minimumprijs,d.startprijs||0,d.start_datum,d.eind_datum,d.created_by,d.status||'actief']) },
+  addVeiling: { run: (d) => run(`INSERT INTO veilingen (voorraad_id,kenteken,titel,beschrijving,merk,model,bouwjaar,km,brandstof,kleur,minimumprijs,startprijs,start_datum,eind_datum,created_by,status,atx_job_id,channel_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [d.voorraad_id,d.kenteken,d.titel,d.beschrijving,d.merk,d.model,d.bouwjaar,d.km,d.brandstof,d.kleur,d.minimumprijs,d.startprijs||0,d.start_datum,d.eind_datum,d.created_by,d.status||'actief',d.atx_job_id||null,d.channel_type||'24h']) },
   getVeiling: { get: (id) => queryOne("SELECT * FROM veilingen WHERE id=?", [id]) },
   getVeilingen: { all: (status) => status ? queryAll("SELECT * FROM veilingen WHERE status=? ORDER BY eind_datum ASC", [status]) : queryAll("SELECT * FROM veilingen ORDER BY created_at DESC") },
   getActieveVeilingen: { all: () => queryAll("SELECT * FROM veilingen WHERE status='actief' AND eind_datum > datetime('now') ORDER BY eind_datum ASC") },

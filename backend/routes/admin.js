@@ -451,7 +451,7 @@ router.post("/api/admin/crawl-add", authMiddleware, adminOnly, (req, res) => {
 
 
 // ── Bulk seed crawl queue (moved from server.js) ──
-router.get("/api/admin/bulk-seed-queue", (req, res) => {
+router.get("/api/admin/bulk-seed-queue", authMiddleware, adminOnly, (req, res) => {
   const makes = {
     volkswagen:["golf","polo","tiguan","t-roc","touran","passat","up","arteon","id.3","id.4","caddy","transporter","crafter"],
     toyota:["yaris","corolla","aygo","c-hr","rav4","avensis","auris","prius","camry","hilux","proace","yaris cross"],
@@ -504,7 +504,7 @@ router.get("/api/admin/bulk-seed-queue", (req, res) => {
 
 
 // ── DB Cleanup endpoint ──
-router.post("/api/admin/cleanup-db", (req, res) => {
+router.post("/api/admin/cleanup-db", authMiddleware, adminOnly, (req, res) => {
   try {
     const { run, queryAll, forceSave } = require("../db")
     let removed = 0

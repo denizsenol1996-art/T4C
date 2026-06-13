@@ -20,11 +20,14 @@ function scoreComparable(target, listing) {
     }
   }
 
-  // Fuel — only count in maxPossible if listing has fuel detected
+  // Fuel — patch 12c: hard reject bij fuel-mismatch (beide bekend), soft bij onbekend
   if (tf.fuel && lf.fuel) {
     maxPossible += 10
     if (tf.fuel === lf.fuel) { score += 10; reasons.push('fuel_match') }
-    else { score = Math.max(0, score - 12); reasons.push('fuel_mismatch') }  // v10.19.1: penalty ipv hard cap
+    else { return { score: 0, band: 'ignore', reasons: ['fuel_hard_reject'] } }  // patch 12c: benzine ≠ hybride = uitsluiten
+  } else if (tf.fuel && !lf.fuel) {
+    // Listing heeft geen fuel-detectie — milde penalty, niet uitsluiten
+    score = Math.max(0, score - 5); reasons.push('fuel_unknown')
   }
 
   // Transmission — only count if listing has it

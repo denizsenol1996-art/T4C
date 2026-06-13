@@ -1,427 +1,542 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="referrer" content="no-referrer">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Voertuig — Transfer4Cars</title>
-<meta name="description" content="Voertuig details — Transfer4Cars">
-<link rel="icon" href="/m/favicon-32.png">
+<meta name="description" content="Voertuigdetails bij Transfer4Cars">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="/js/user-nav.js"></script>
 <style>
-:root{--bg0:#060a0f;--bg1:#080c12;--bg2:#0c1018;--bg3:#111620;--bg4:#161c28;--green:#4ade80;--green2:#22c55e;--green-dim:rgba(74,222,128,.08);--text1:#f0f4f8;--text2:#a8b8cc;--text3:#5a6e84;--text4:#2d3a48;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.10);--border-green:rgba(74,222,128,.2);--radius:12px;--radius-lg:18px;--font:'Inter',system-ui,sans-serif;--head:'Plus Jakarta Sans',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;--shadow:0 4px 32px rgba(0,0,0,.5)}
-[data-theme=light]{--bg0:#f0f2f5;--bg1:#f8f9fb;--bg2:#fff;--bg3:#f0f2f5;--bg4:#e8eaed;--green:#16a34a;--green2:#15803d;--green-dim:rgba(22,163,74,.06);--text1:#0f1923;--text2:#374151;--text3:#6b7280;--text4:#9ca3af;--border:rgba(0,0,0,.07);--border2:rgba(0,0,0,.12);--border-green:rgba(22,163,74,.2);--shadow:0 4px 24px rgba(0,0,0,.06)}
-*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
-body{font-family:var(--font);background:var(--bg0);color:var(--text2);line-height:1.6;overflow-x:hidden}
-h1,h2,h3,h4{font-family:var(--head);color:var(--text1);line-height:1.15;letter-spacing:-.02em}
-a{color:var(--green);text-decoration:none;transition:.2s}img{max-width:100%;display:block}
-.container{max-width:1240px;margin:0 auto;padding:0 28px}
-/* TOPBAR + NAV (same as other pages) */
-.topbar{background:rgba(6,10,15,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:9px 0;font-size:12.5px;color:var(--text3)}
-[data-theme=light] .topbar{background:rgba(248,249,251,.97)}
-.topbar .container{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.tb-left{display:flex;align-items:center;gap:18px}.tb-right{display:flex;align-items:center;gap:10px}
-.tb-link{color:var(--text3);display:flex;align-items:center;gap:5px}.tb-link:hover{color:var(--green)}
-.tb-badge{padding:3px 10px;border-radius:20px;background:var(--green-dim);border:1px solid var(--border-green);color:var(--green);font-size:11px;font-weight:600}
-.lang-wrap{display:flex;gap:3px}.lang-btn{padding:3px 9px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);transition:.15s}.lang-btn.active,.lang-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-dim)}
-.theme-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-size:14px;transition:.15s;display:flex;align-items:center;justify-content:center}.theme-btn:hover{border-color:var(--green);color:var(--green)}
-nav{background:rgba(8,12,18,.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
-[data-theme=light] nav{background:rgba(255,255,255,.98)}
-nav .container{display:flex;align-items:center;justify-content:space-between;height:64px;gap:8px}
-.logo{display:flex;align-items:baseline;gap:0;font-family:var(--head);text-decoration:none;user-select:none}
-.logo-t{font-size:20px;font-weight:800;color:var(--text1)}.logo-4{font-size:26px;font-weight:800;color:var(--green);margin:0 1px;line-height:1}.logo-c{font-size:13px;font-weight:400;color:var(--text1);letter-spacing:3px;margin-bottom:1px}
-.nav-links{display:flex;gap:2px;align-items:center}
-.nav-link{padding:8px 13px;color:var(--text3);font-size:13.5px;font-weight:500;border-radius:8px;transition:.15s;white-space:nowrap;text-decoration:none}
-.nav-link:hover{color:var(--text1);background:rgba(255,255,255,.05)}.nav-link.active{color:var(--green)}.nav-link.hl{color:var(--green);font-weight:600}
-.nav-cta{padding:9px 20px;background:var(--green);color:#000;font-weight:700;border-radius:9px;font-size:13px;border:none;cursor:pointer;transition:.15s;font-family:var(--font);white-space:nowrap}.nav-cta:hover{filter:brightness(1.1);transform:translateY(-1px)}
-.hamburger{display:none;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text1);font-size:18px;cursor:pointer;padding:5px 10px}
-@media(max-width:880px){.nav-links{display:none;position:absolute;top:64px;left:0;right:0;background:var(--bg1);border-bottom:1px solid var(--border);padding:10px;flex-direction:column;align-items:stretch;gap:3px}.nav-links.open{display:flex}.hamburger{display:flex;align-items:center}nav .container{position:relative}}
-/* BREADCRUMB */
-.breadcrumb-bar{padding:14px 0;border-bottom:1px solid var(--border);background:var(--bg1)}
-.breadcrumb{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text3)}
-.breadcrumb a{color:var(--text3)}.breadcrumb a:hover{color:var(--green)}.breadcrumb span{color:var(--text4)}
-/* MAIN LAYOUT */
-.car-page{padding:36px 0 60px}
-.car-layout{display:grid;grid-template-columns:1fr 380px;gap:32px;align-items:start}
-@media(max-width:1024px){.car-layout{grid-template-columns:1fr}}
-/* GALLERY */
-.gallery{border-radius:var(--radius-lg);overflow:hidden;background:var(--bg2);border:1px solid var(--border);margin-bottom:20px}
-[data-theme=light] .gallery{background:var(--bg3)}
-.gallery-main{position:relative;height:400px;overflow:hidden;cursor:pointer;background:var(--bg3)}
-.gallery-main img{width:100%;height:100%;object-fit:cover;transition:.3s}
-.gallery-main:hover img{transform:scale(1.02)}
-.gallery-thumbs{display:flex;gap:8px;padding:12px;overflow-x:auto;scrollbar-width:none}
-.gallery-thumbs::-webkit-scrollbar{display:none}
-.thumb{width:80px;height:56px;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;flex-shrink:0;transition:.15s;background:var(--bg3)}
-.thumb.active,.thumb:hover{border-color:var(--green)}
-.thumb img{width:100%;height:100%;object-fit:cover}
-.no-gallery{height:360px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--text4)}
-.no-gallery p{font-size:13px;color:var(--text3)}
-/* CAR INFO */
-.car-title-row{margin-bottom:16px}
-.car-make-model{font-size:clamp(26px,3.5vw,34px);font-weight:800;margin-bottom:4px}
-.car-variant-line{font-size:14px;color:var(--green);margin-bottom:12px;font-weight:500}
-.car-badges{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px}
-.badge{padding:4px 11px;border-radius:7px;font-size:11.5px;font-weight:600;background:var(--bg3);color:var(--text2);border:1px solid var(--border);font-family:var(--mono)}
-[data-theme=light] .badge{background:var(--bg4)}
-.badge.warn{background:rgba(240,180,41,.1);color:#f0b429;border-color:rgba(240,180,41,.2)}
-.badge.danger{background:rgba(239,68,68,.1);color:#ef4444;border-color:rgba(239,68,68,.2)}
-/* SPECS GRID */
-.specs-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;margin-bottom:18px}
-[data-theme=light] .specs-card{background:#fff}
-.specs-card h3{font-size:14px;font-weight:700;margin-bottom:16px;color:var(--text1);font-family:var(--head);display:flex;align-items:center;gap:8px}
-.specs-card h3 svg{color:var(--green)}
-.specs-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:var(--radius)}
-.spec-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px}
-.spec-row:last-child{border-bottom:none}
-.spec-row:nth-child(odd){background:rgba(255,255,255,.015)}
-[data-theme=light] .spec-row:nth-child(odd){background:rgba(0,0,0,.02)}
-.spec-label{color:var(--text3)}.spec-value{font-weight:600;color:var(--text1);font-family:var(--mono);font-size:12.5px;text-align:right}
-/* DESCRIPTION */
-.desc-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;margin-bottom:18px}
-[data-theme=light] .desc-card{background:#fff}
-.desc-card h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text1);font-family:var(--head)}
-.desc-card p{font-size:14px;color:var(--text2);line-height:1.8;font-weight:300}
-/* SIDEBAR */
-.sidebar{}
-.price-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:26px;margin-bottom:16px;position:sticky;top:80px}
-[data-theme=light] .price-card{background:#fff}
-.price-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-.price-main{font-family:var(--head);font-size:38px;font-weight:800;color:var(--green);letter-spacing:-.03em;margin-bottom:20px}
-.price-meta{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;padding:14px;background:var(--bg3);border-radius:var(--radius)}
-[data-theme=light] .price-meta{background:var(--bg4)}
-.pm-row{display:flex;justify-content:space-between;font-size:12.5px}
-.pm-label{color:var(--text3)}.pm-value{font-weight:600;color:var(--text1);font-family:var(--mono)}
-.cta-btns{display:flex;flex-direction:column;gap:10px}
-.btn-p{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;background:var(--green);color:#000;font-weight:700;border-radius:10px;font-size:14.5px;border:none;cursor:pointer;transition:.2s;font-family:var(--font);text-decoration:none;width:100%}
-.btn-p:hover{filter:brightness(1.1);color:#000}
-.btn-o{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;background:transparent;color:var(--text1);font-weight:500;border-radius:10px;font-size:14px;border:1px solid var(--border2);cursor:pointer;transition:.2s;font-family:var(--font);text-decoration:none;width:100%}
-.btn-o:hover{border-color:var(--green);color:var(--green)}
-.contact-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px}
-[data-theme=light] .contact-block{background:#fff}
-.contact-block h4{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text1);font-family:var(--head)}
-.contact-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
-.contact-row:last-child{border-bottom:none}
-.contact-row svg{color:var(--green);flex-shrink:0}
-.contact-row a{color:var(--text2)}.contact-row a:hover{color:var(--green)}
-/* LOADING */
-.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:80px auto}
-@keyframes spin{to{transform:rotate(360deg)}}
-/* MODALS */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
-.overlay.show{display:flex}
-.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.5)}
-[data-theme=light] .modal{background:#fff}
-.modal-x{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
-.modal-x:hover{border-color:var(--green);color:var(--green)}
-.modal h2{font-size:19px;font-weight:800;margin-bottom:4px}.modal>p,.modal .msub{font-size:13px;color:var(--text3);margin-bottom:18px}
-.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
-.fl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px}
-.mfi{padding:11px 14px;background:var(--bg0);border:1px solid var(--border2);border-radius:9px;color:var(--text1);font-size:13.5px;font-family:var(--font);outline:none;transition:.2s;width:100%}
-[data-theme=light] .mfi{background:var(--bg3)}.mfi:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-dim)}
-.mfta{padding:11px 14px;background:var(--bg0);border:1px solid var(--border2);border-radius:9px;color:var(--text1);font-size:13.5px;font-family:var(--font);outline:none;transition:.2s;resize:vertical;min-height:80px;line-height:1.6;width:100%}
-[data-theme=light] .mfta{background:var(--bg3)}.mfta:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-dim)}
-/* TOAST */
-.toast{position:fixed;bottom:22px;right:22px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;opacity:0;transform:translateY(8px);transition:.3s;pointer-events:none}
-.toast.show{opacity:1;transform:translateY(0)}.toast.ok{background:var(--green);color:#000}.toast.err{background:#ef4444;color:#fff}
-/* RELATED */
-.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px}
-@media(max-width:768px){.related-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:480px){.related-grid{grid-template-columns:1fr}}
-.car-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:all .22s;display:flex;flex-direction:column;text-decoration:none}
-[data-theme=light] .car-card{background:#fff}
-.car-card:hover{transform:translateY(-4px);border-color:var(--border-green);box-shadow:0 14px 40px rgba(0,0,0,.3)}
-.rc-img{height:150px;overflow:hidden;background:var(--bg3)}
-.rc-img img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
-.car-card:hover .rc-img img{transform:scale(1.05)}
-.rc-body{padding:14px 16px}
-.rc-name{font-family:var(--head);font-size:14px;font-weight:700;color:var(--text1);margin-bottom:2px}
-.rc-sub{font-size:11.5px;color:var(--text3);margin-bottom:8px}
-.rc-price{font-family:var(--head);font-size:17px;font-weight:800;color:var(--green)}
-/* FOOTER */
-footer{background:var(--bg1);border-top:1px solid var(--border);padding:44px 0 22px;margin-top:20px}
-.foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:44px;margin-bottom:28px}
-@media(max-width:880px){.foot-grid{grid-template-columns:1fr 1fr;gap:24px}}
-@media(max-width:500px){.foot-grid{grid-template-columns:1fr}}
-.foot-brand p{font-size:12.5px;color:var(--text3);line-height:1.7;max-width:260px;margin-top:10px}
-.foot-col h4{font-size:11px;font-weight:700;color:var(--text1);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
-.foot-col a{display:block;font-size:12.5px;color:var(--text3);margin-bottom:6px;transition:.15s}.foot-col a:hover{color:var(--green)}
-.foot-bottom{border-top:1px solid var(--border);padding-top:16px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:11.5px;color:var(--text4)}
+:root{
+  --bg:#0b1216;--bg-2:#0f181d;--card:#121d23;--card-2:#17242b;
+  --line:rgba(255,255,255,.06);--line-2:rgba(255,255,255,.12);
+  --ink:#ecf0ed;--ink-2:#8a9591;--ink-3:#5a6663;
+  --green:#00e68a;--green-d:#00cc7a;--green-glow:rgba(0,230,138,.18);
+  --warn:#f59e0b;--red:#ef4444;--plate:#f5c518;
+  --header-bg:rgba(11,18,22,.92);
+  --card-img-bg:#0a0e10;
+  --shadow-card:0 12px 40px rgba(0,0,0,.35);
+  --shadow-cmd:0 12px 40px rgba(0,0,0,.3);
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+[data-theme=light]{
+  --bg:#f5f7fa;--bg-2:#ffffff;--card:#ffffff;--card-2:#f3f5f8;
+  --line:rgba(15,25,35,.08);--line-2:rgba(15,25,35,.14);
+  --ink:#0f1923;--ink-2:#4b5563;--ink-3:#6b7280;
+  --green:#16a34a;--green-d:#15803d;--green-glow:rgba(22,163,74,.12);
+  --header-bg:rgba(255,255,255,.92);
+  --card-img-bg:#eef1f5;
+  --shadow-card:0 8px 26px rgba(15,25,35,.06);
+  --shadow-cmd:0 8px 26px rgba(15,25,35,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg)}
+body{font-family:var(--font);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;padding:0}
+img{display:block;max-width:100%}
+
+header{border-bottom:1px solid var(--line);background:var(--header-bg);backdrop-filter:saturate(180%) blur(20px);position:sticky;top:0;z-index:50}
+.theme-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--line-2);background:transparent;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s}
+.theme-btn:hover{border-color:var(--green);color:var(--green)}
+.head-in{max-width:1320px;margin:0 auto;padding:18px 32px;display:flex;align-items:center;gap:48px}
+.logo{font-size:19px;font-weight:800;letter-spacing:-.5px;color:var(--ink)}
+.logo .num{color:var(--green);font-weight:900}
+nav.primary{display:flex;gap:32px;flex:1}
+nav.primary a{font-size:14px;color:var(--ink-2);font-weight:500;transition:color .15s}
+nav.primary a:hover{color:var(--ink)}
+nav.primary a.active{color:var(--green)}
+.user{display:flex;align-items:center;gap:14px}
+.user .name{font-size:13px;color:var(--ink-2);font-family:var(--mono)}
+.linkbtn{font-size:14px;color:var(--ink-2);font-weight:500;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;transition:color .15s}
+.linkbtn:hover{color:var(--ink)}
+.cta{display:inline-flex;align-items:center;justify-content:center;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:700;background:var(--green);color:#001a0d;transition:background .15s,transform .1s,box-shadow .2s;font-family:inherit;cursor:pointer;border:none}
+.cta:hover{background:#0fff97;transform:translateY(-1px);box-shadow:0 6px 24px var(--green-glow)}
+.ghost{display:inline-flex;align-items:center;justify-content:center;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:600;background:transparent;color:var(--ink);border:1px solid var(--line-2);transition:.15s;font-family:inherit;cursor:pointer}
+.ghost:hover{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.03)}
+.block{width:100%}
+
+.crumbs{max-width:1320px;margin:0 auto;padding:18px 32px 0;font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.5px}
+.crumbs a{color:var(--ink-2)}.crumbs a:hover{color:var(--green)}
+
+.loading,.alert-err{max-width:1320px;margin:32px auto;padding:0 32px;font-family:var(--mono);font-size:13px;color:var(--ink-3)}
+.alert-err{color:var(--red);padding:18px 24px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;width:calc(100% - 64px)}
+
+.title-strip{max-width:1320px;margin:20px auto 0;padding:0 32px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.title-strip h1{font-size:clamp(26px,3.6vw,38px);font-weight:800;letter-spacing:-1px;margin:0;line-height:1.05}
+.title-strip .variant{font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.5px;text-transform:uppercase;width:100%;margin-top:4px}
+
+/* Echte NL kentekenplaat: blauwe NL-strip + gele body — match aanbod */
+.plate{display:inline-flex;align-items:stretch;border-radius:5px;overflow:hidden;border:1.5px solid #0a0a0a;font-family:var(--mono);font-weight:700;line-height:1;height:32px;box-shadow:0 2px 6px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.18);vertical-align:middle}
+.plate__nl{background:linear-gradient(180deg,#003399 0%,#002270 100%);color:#ffd700;font-size:9px;letter-spacing:.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 5px;font-weight:800;gap:2px}
+.plate__nl b{color:#fff;font-size:11px;letter-spacing:.5px;line-height:1}
+.plate__nl span{font-size:7px;letter-spacing:1px;line-height:1}
+.plate__num{background:linear-gradient(180deg,#f5c518 0%,#e6b300 100%);color:#0a0a0a;font-size:17px;letter-spacing:2.5px;display:flex;align-items:center;padding:0 14px;text-transform:uppercase;font-weight:800}
+
+.hero{max-width:1320px;margin:20px auto 0;padding:0 32px;display:grid;grid-template-columns:1.5fr 1fr;gap:20px;align-items:start}
+@media(max-width:980px){.hero{grid-template-columns:1fr}}
+
+.gallery{position:relative;border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-card)}
+.gallery__main{position:relative;aspect-ratio:16/10;background:var(--card-img-bg);cursor:zoom-in}
+.gallery__main img{width:100%;height:100%;object-fit:cover;display:block}
+.gallery__main .nophoto{display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink-3);font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase}
+.gallery__counter{position:absolute;bottom:14px;right:14px;background:var(--header-bg);backdrop-filter:blur(8px);border:1px solid var(--line-2);padding:5px 11px;border-radius:999px;font-family:var(--mono);font-size:11px;color:var(--ink);z-index:2}
+.gallery__nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;background:var(--header-bg);backdrop-filter:blur(8px);border:1px solid var(--line-2);border-radius:50%;color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;z-index:2;cursor:pointer;transition:.15s}
+.gallery__nav:hover{background:var(--green);color:#001a0d;border-color:var(--green)}
+.gallery__nav.prev{left:14px}.gallery__nav.next{right:14px}
+.gallery__thumbs{display:flex;gap:6px;padding:10px;background:var(--card-img-bg);overflow-x:auto}
+.gallery__thumbs button{flex:0 0 84px;aspect-ratio:16/10;padding:0;border:2px solid transparent;border-radius:8px;background:var(--card-2);cursor:pointer;overflow:hidden;transition:border-color .15s}
+.gallery__thumbs button img{width:100%;height:100%;object-fit:cover;display:block}
+.gallery__thumbs button.active{border-color:var(--green);box-shadow:0 0 12px rgba(0,230,138,.3)}
+
+.cmd{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:16px;position:sticky;top:88px;height:max-content;box-shadow:var(--shadow-cmd)}
+.cmd__price{padding:18px;border-radius:12px;background:var(--green-glow);border:1px solid var(--line);text-align:center}
+.cmd__price .lbl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--ink-3);text-transform:uppercase}
+.cmd__price .val{font-family:var(--mono);font-size:34px;font-weight:600;color:var(--green);letter-spacing:-1px;margin-top:4px;line-height:1.1;font-variant-numeric:tabular-nums}
+.cmd__price .btw{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.5px;margin-top:6px}
+.cmd__actions{display:flex;flex-direction:column;gap:8px}
+.cmd__contact{padding:14px;border-radius:10px;background:var(--card-2);border:1px solid var(--line)}
+.cmd__contact h4{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--ink-3);text-transform:uppercase;margin:0 0 10px}
+.cmd__contact a{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px;padding:6px 0;font-family:var(--mono);transition:color .15s}
+.cmd__contact a:hover{color:var(--green)}
+.cmd__contact svg{color:var(--green);flex-shrink:0}
+
+.section{max-width:1320px;margin:24px auto 0;padding:0 32px}
+.sec-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:20px}
+@media(max-width:980px){.sec-grid{grid-template-columns:1fr}}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+.panel h3{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:2px;color:var(--ink-3);text-transform:uppercase;margin:0 0 16px}
+
+.spec-groups{display:grid;grid-template-columns:repeat(2,1fr);gap:20px 32px}
+@media(max-width:760px){.spec-groups{grid-template-columns:1fr;gap:18px}}
+.spec-group h4{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--green);text-transform:uppercase;margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.specs{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px}
+.specs .sp{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.specs .sp .lbl{font-family:var(--font);font-size:13px;font-weight:500;color:var(--ink-2);letter-spacing:0;text-transform:none}
+.specs .sp .val{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink);word-break:break-word;text-align:right}
+@media(max-width:520px){.specs{grid-template-columns:1fr}}
+
+.desc{color:var(--ink);font-size:14.5px;line-height:1.7;margin:0}
+.desc p{margin:0 0 12px}
+.desc p:last-child{margin-bottom:0}
+
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 18px}
+.opts li{font-family:var(--font);font-size:13px;color:var(--ink-2);list-style:none;padding:4px 0 4px 18px;position:relative;line-height:1.4}
+.opts li::before{content:"";position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green-glow)}
+.opts-wrap{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.opts-wrap h4{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--green);text-transform:uppercase;margin:0 0 12px}
+.opts-count{color:var(--ink-3);font-weight:500}
+
+.related-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.rc{background:var(--card-2);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;color:inherit;transition:transform .15s,border-color .15s}
+.rc:hover{transform:translateY(-2px);border-color:var(--green);color:inherit}
+.rc__img{aspect-ratio:16/10;background:var(--card-img-bg)}
+.rc__img img{width:100%;height:100%;object-fit:cover;display:block}
+.rc__img .nophoto{display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink-3);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase}
+.rc__body{padding:10px 14px 14px}
+.rc__name{font-size:13px;font-weight:700;line-height:1.25}
+.rc__sub{font-family:var(--mono);font-size:10px;color:var(--ink-3);letter-spacing:.3px;margin-top:3px}
+.rc__price{margin-top:6px;font-family:var(--mono);font-size:15px;font-weight:600;color:var(--green);font-variant-numeric:tabular-nums}
+
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:200;display:none;align-items:center;justify-content:center;padding:30px;backdrop-filter:blur(8px)}
+.lb.show{display:flex}
+.lb img{max-width:100%;max-height:100%;display:block;border-radius:8px}
+.lb__close{position:absolute;top:20px;right:20px;width:42px;height:42px;background:rgba(255,255,255,.08);border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px}
+.lb__close:hover{background:var(--green);color:#001a0d}
+.lb__nav{position:absolute;top:50%;transform:translateY(-50%);width:50px;height:50px;background:rgba(255,255,255,.08);border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px}
+.lb__nav:hover{background:var(--green);color:#001a0d}
+.lb__nav.prev{left:20px}.lb__nav.next{right:20px}
+
+footer{border-top:1px solid var(--line);margin-top:48px;background:var(--bg-2)}
+.foot-in{max-width:1320px;margin:0 auto;padding:32px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+.foot-in a{color:var(--ink-2)}.foot-in a:hover{color:var(--green)}
+
+.hamburger{display:none;background:transparent;border:none;color:var(--ink);padding:6px;cursor:pointer;align-items:center;justify-content:center;border-radius:8px;transition:background .15s}
+.hamburger:hover{background:var(--card-2)}
+.mob-menu{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-2);border-bottom:1px solid var(--line);padding:14px 24px;flex-direction:column;gap:8px;box-shadow:var(--shadow-card);z-index:49}
+.mob-menu.open{display:flex}
+.mob-menu a{padding:12px 8px;font-size:15px;color:var(--ink-2);border-radius:8px;transition:.15s}
+.mob-menu a:hover,.mob-menu a.active{color:var(--green);background:var(--green-glow)}
+
+@media(max-width:980px){
+  /* Detail-cmd niet meer sticky op mobile — voorkomt 'plakkend' bid-paneel */
+  .cmd{position:static;top:auto}
+}
+
+@media(max-width:640px){
+  header{position:relative}
+  .head-in{padding:14px 18px;gap:14px}
+  nav.primary{display:none}
+  .hamburger{display:inline-flex}
+  .user .name{display:none}
+  .crumbs,.title-strip,.hero,.section,.foot-in{padding-left:18px;padding-right:18px}
+  .title-strip h1{font-size:26px}
+  .cmd{padding:20px}
+  .cmd__price .val{font-size:30px}
+  .specs{grid-template-columns:repeat(2,1fr);gap:14px}
+}
 </style>
+<!-- Google Analytics 4 -->
+<script src="/js/consent.js"></script>
+<script src="/js/theme.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ECSBWCG10K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-ECSBWCG10K');
+</script>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="container">
-    <div class="tb-left">
-      <a href="tel:+31687997168" class="tb-link"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> +31 (0)6 87 99 71 68</a>
-      <span class="tb-badge">Ma–Vr 09:00–18:00</span>
+<header>
+  <div class="head-in">
+    <a class="logo" href="/">TRANSFER<span class="num">4</span>CARS</a>
+    <nav class="primary">
+      <a href="/aanbod/" class="active">Voorraad</a>
+      <a href="/veilingen/">Veilingen</a>
+      <a href="/#over-ons">Over ons</a>
+      <a href="/#b2b">B2B</a>
+      <a href="/transport/">Transport</a>
+      <a href="/#contact">Contact</a>
+    </nav>
+    <button id="themeBtn" class="theme-btn" aria-label="Wissel licht/donker" onclick="toggleTheme()"></button>
+    <div class="user" id="user-area"></div>
+    <button class="hamburger" aria-label="Menu" onclick="document.getElementById('mob-menu').classList.toggle('open')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  <nav id="mob-menu" class="mob-menu">
+    <a href="/aanbod/" class="active">Voorraad</a>
+    <a href="/veilingen/">Veilingen</a>
+    <a href="/transport/">Transport</a>
+    <a href="/verkoop/">Verkoop</a>
+  </nav>
+</header>
+
+<div class="crumbs"><a href="/aanbod/">← Terug naar voorraad</a></div>
+
+<div id="login-wall" style="display:none">
+  <div style="max-width:560px;margin:80px auto;padding:40px 32px;background:var(--card);border:1px solid var(--line);border-radius:18px;text-align:center;box-shadow:var(--shadow-card)">
+    <div style="width:56px;height:56px;border-radius:50%;background:rgba(0,230,138,.08);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--green)">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
     </div>
-    <div class="tb-right">
-      <div class="lang-wrap">
-        <button class="lang-btn active" onclick="setLang('nl')">NL</button>
-        <button class="lang-btn" onclick="setLang('en')">EN</button>
-        <button class="lang-btn" onclick="setLang('de')">DE</button>
-      </div>
-      <button class="theme-btn" onclick="toggleTheme()" id="themeBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+    <h2 style="font-size:22px;font-weight:800;letter-spacing:-.5px;margin:0 0 8px">Account vereist</h2>
+    <p style="color:var(--ink-2);font-size:14px;margin:0 0 24px;line-height:1.6">Voertuigdetails zijn alleen toegankelijk voor geregistreerde autohandelaren. Vraag toegang aan met je bedrijfsgegevens — antwoord binnen 24 uur.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a class="ghost" id="wall-login" href="/login/" style="flex:1;min-width:140px">Inloggen</a>
+      <a class="cta" href="/aanmelden/" style="flex:1;min-width:140px">Toegang aanvragen</a>
     </div>
   </div>
 </div>
 
-<nav>
-  <div class="container">
-    <a href="/" class="logo"><span class="logo-t">TRANSFER</span><span class="logo-4">4</span><span class="logo-c">cars</span></a>
-    <div class="nav-links" id="navLinks">
-      <a href="/aanbod/" class="nav-link active">Voorraad</a>
-      <a href="/veilingen/" class="nav-link hl">Veilingen</a>
-      <a href="/#over-ons" class="nav-link">Over ons</a>
-      <a href="/#b2b" class="nav-link">B2B</a>
-      <a href="/#contact" class="nav-link">Contact</a>
-      <button class="nav-cta" id="navCta" onclick="openM('login')">B2B Inloggen</button>
-    </div>
-    <button class="hamburger" onclick="document.getElementById('navLinks').classList.toggle('open')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-  </div>
-</nav>
+<div id="loading" class="loading">Voertuig laden…</div>
+<div id="error" class="alert-err" style="display:none"></div>
 
-<div class="breadcrumb-bar">
-  <div class="container">
-    <div class="breadcrumb">
-      <a href="/">Home</a><span>›</span>
-      <a href="/aanbod/">Voorraad</a><span>›</span>
-      <span id="bcCar" style="color:var(--text2)">Laden...</span>
-    </div>
-  </div>
+<div id="content" style="display:none">
+
+<div class="title-strip">
+  <h1 id="title">—</h1>
+  <span class="plate" id="plate"></span>
+  <div class="variant" id="variant"></div>
 </div>
 
-<div class="car-page">
-  <div class="container">
-    <div id="pageContent"><div class="spinner"></div></div>
+<section class="hero">
+  <div class="gallery">
+    <div class="gallery__main" id="gal-main">
+      <div id="main-photo"><div class="nophoto">— geen foto's —</div></div>
+    </div>
+    <div class="gallery__thumbs" id="thumbs" style="display:none"></div>
   </div>
+
+  <aside class="cmd">
+    <div class="cmd__price">
+      <div class="lbl">Vraagprijs</div>
+      <div class="val" id="price">—</div>
+      <div class="btw" id="btw">—</div>
+    </div>
+    <div class="cmd__actions">
+      <a class="cta block" href="tel:+31687997168">Bel direct: 06 87 99 71 68</a>
+      <a class="ghost block" id="email-link" href="#">E-mail aanvraag</a>
+    </div>
+    <div class="cmd__contact">
+      <h4>Direct contact</h4>
+      <a href="tel:+31687997168"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.07 4.18 2 2 0 0 1 5.06 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> +31 6 87 99 71 68</a>
+      <a href="mailto:info@transfer4cars.com"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> info@transfer4cars.com</a>
+      <a href="https://wa.me/31687997168" target="_blank"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/></svg> WhatsApp</a>
+    </div>
+  </aside>
+</section>
+
+<section class="section">
+  <div class="panel">
+    <h3>Specificaties</h3>
+    <div class="spec-groups" id="spec-groups"></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="panel">
+    <h3>Omschrijving</h3>
+    <div id="desc" class="desc">—</div>
+    <div class="opts-wrap" id="opts-wrap" style="display:none">
+      <h4>Uitrusting <span class="opts-count" id="opts-count"></span></h4>
+      <ul class="opts" id="opts"></ul>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="related-wrap" style="display:none">
+  <div class="panel">
+    <h3>Vergelijkbare voertuigen</h3>
+    <div id="related" class="related-grid"></div>
+  </div>
+</section>
+
 </div>
 
 <footer>
-  <div class="container">
-    <div class="foot-grid">
-      <div class="foot-brand">
-        <a href="/" class="logo" style="font-size:17px"><span class="logo-t">TRANSFER</span><span class="logo-4">4</span><span class="logo-c">cars</span></a>
-        <p>Uw betrouwbare partner in B2B autohandel.</p>
-        <div class="socials" style="margin-top:12px">
-          <a href="https://wa.me/31687997168" target="_blank" class="soc wa" title="WhatsApp"><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg></a>
-          <a href="https://instagram.com/Transfer4Cars" target="_blank" class="soc ig" title="Instagram"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.791-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
-          <a href="https://www.marktplaats.nl/u/transfer4cars/17478300/" target="_blank" class="soc mp" title="Marktplaats"><svg width="20" height="20" viewBox="0 0 100 100" fill="white"><polygon points="18,15 18,85 55,50"/><rect x="40" y="75" width="45" height="12" rx="6"/></svg></a>
-          <a href="mailto:info&#64;transfer4cars.com" class="soc ml" title="E-mail"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></a>
-        </div>
-      </div>
-      <div class="foot-col"><h4>Navigatie</h4><a href="/">Home</a><a href="/aanbod/">Voorraad</a><a href="/#contact">Contact</a></div>
-      <div class="foot-col"><h4>Diensten</h4><a href="/#b2b">B2B Inkoop</a><a href="/#b2b">B2B Verkoop</a><a href="/veilingen/">Veilingen</a></div>
-      <div class="foot-col"><h4>Contact</h4><a href="tel:+31687997168">+31 6 87 99 71 68</a><a href="mailto:info&#64;transfer4cars.com">info&#64;transfer4cars.com</a><a>Ter Aar, Nederland</a></div>
-    </div>
-    <div class="foot-bottom"><p>© 2026 Transfer4Cars. All rights reserved.</p></div>
+  <div class="foot-in">
+    <div>© 2026 Transfer4Cars · KvK 88503925</div>
+    <div><a href="/voorwaarden/">Voorwaarden</a> · <a href="/privacy/">Privacy</a></div>
   </div>
 </footer>
 
-<!-- MODALS -->
-<div class="overlay" id="m-login" onclick="if(event.target===this)closeM()">
-  <div class="modal">
-    <button class="modal-x" onclick="closeM()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <h2>B2B Login</h2><p class="msub">Log in om toegang te krijgen tot ons volledige platform</p>
-    <form onsubmit="doLogin(event)">
-      <div class="fg"><label class="fl">Gebruikersnaam</label><input class="mfi" id="lu" required placeholder="gebruikersnaam"></div>
-      <div class="fg"><label class="fl">Wachtwoord</label><input class="mfi" id="lp" type="password" required placeholder="••••••••"></div>
-      <div id="lErr" style="display:none;color:#ef4444;font-size:13px;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;margin-bottom:10px"></div>
-      <button type="submit" class="btn-p">Inloggen</button>
-    </form>
-  </div>
+<div id="lightbox" class="lb">
+  <button class="lb__close" onclick="closeLB()">✕</button>
+  <button class="lb__nav prev" onclick="lbNav(-1)">‹</button>
+  <button class="lb__nav next" onclick="lbNav(1)">›</button>
+  <img id="lb-img">
 </div>
-
-<div class="overlay" id="m-bod" onclick="if(event.target===this)closeM()">
-  <div class="modal">
-    <button class="modal-x" onclick="closeM()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <h2>Bod uitbrengen</h2>
-    <p class="msub" id="bodCarName">Breng een bod uit op dit voertuig</p>
-    <form onsubmit="doBod(event)">
-      <div class="fg"><label class="fl">Uw naam *</label><input class="mfi" id="bodNaam" required placeholder="Uw naam"></div>
-      <div class="fg"><label class="fl">Telefoon *</label><input class="mfi" id="bodTel" type="tel" required placeholder="06 12 34 56 78"></div>
-      <div class="fg"><label class="fl">Uw bod (EUR) *</label><input class="mfi" id="bodBedrag" type="number" required placeholder="15000"></div>
-      <div class="fg"><label class="fl">Opmerking</label><textarea class="mfta" id="bodNote" placeholder="Eventuele opmerkingen..."></textarea></div>
-      <div id="bodErr" style="display:none;color:#ef4444;font-size:13px;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;margin-bottom:10px"></div>
-      <button type="submit" class="btn-p">Bod versturen</button>
-    </form>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
 
 <script>
-let CAR = null;
-let PHOTOS = [];
-let currentPhoto = 0;
+const carId=new URLSearchParams(location.search).get("id");
+const token=localStorage.getItem("t4c_token");
+const user=JSON.parse(localStorage.getItem("t4c_user")||"{}");
 
-function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
-function toast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className='toast '+(t||'ok')+' show';setTimeout(()=>e.classList.remove('show'),3500)}
-function sv(n,w,h){const p={cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',gauge:'<circle cx="12" cy="12" r="10"/><path d="M12 8v4l2.5 1.5"/>',fuel:'<path d="M3 22V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v17M13 10h3a2 2 0 0 1 2 2v5a2 2 0 0 0 4 0V9.83a2 2 0 0 0-.59-1.42L18 5M3 22h10"/>',zap:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',wa:'<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',car:'<path d="M7 17m0 0a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm10 0a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/><path d="M5 17H3v-3.15a1 1 0 0 1 .84-.99L9 11l2.7-3.6a1 1 0 0 1 .8-.4h5.24a2 2 0 0 1 1.8 1.1l.8 1.63A6 6 0 0 1 22 12.42V17h-3"/>'};return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="${w||16}" height="${h||16}">${p[n]||''}</svg>`}
-function toggleTheme(){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('t4c-theme',t);document.getElementById('themeBtn').innerHTML=t==='dark'?`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`}
-(()=>{const s=localStorage.getItem('t4c-theme');if(s){document.documentElement.dataset.theme=s;if(s==='light')document.getElementById('themeBtn').innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`}})();
-function setLang(l){localStorage.setItem('t4c-lang',l);document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()))}
-function openM(id){document.getElementById('m-'+id)?.classList.add('show');document.body.style.overflow='hidden'}
-function closeM(){document.querySelectorAll('.overlay').forEach(m=>m.classList.remove('show'));document.body.style.overflow=''}
+function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function fmtEur(n){return n?"€ "+Number(n).toLocaleString("nl-NL"):"—";}
 
-function imgUrl(f){return f?(f.startsWith('http')?f:'/photos/'+f):''}
-function parseCarPhotos(c){
-  var arr=[];
-  if(c.cover_photo)arr=[c.cover_photo];
-  if(c.photos){try{var p=typeof c.photos==='string'?JSON.parse(c.photos):c.photos;if(Array.isArray(p)&&p.length)arr=p.map(function(x){return typeof x==='string'?x:x.filename||''})}catch(e){}}
-  return arr
-}
+t4cUserNav("user-area", { currentPath: "/auto/" });
 
-function setGalleryPhoto(idx){
-  currentPhoto=idx;
-  const img=document.getElementById('mainPhoto');
-  if(img&&PHOTOS[idx])img.src=imgUrl(PHOTOS[idx].filename||PHOTOS[idx]);
-  document.querySelectorAll('.thumb').forEach((t,i)=>t.classList.toggle('active',i===idx));
-}
-
-function renderPage(c, photos, related){
-  CAR=c; PHOTOS=photos;
-  const km=c.km?c.km.toLocaleString('nl-NL'):'?';
-  const price=(c.vraag_prijs||0).toLocaleString('nl-NL');
-  document.title=`${c.make} ${c.model} — Transfer4Cars`;
-  document.getElementById('bcCar').textContent=`${c.make} ${c.model} (${c.year})`;
-
-  // Gallery
-  const hasPhotos=photos.length>0;
-  const fallbackImg='/api/image?make='+encodeURIComponent(c.make||'')+'&model='+encodeURIComponent(c.model||'');
-  const galleryHTML=hasPhotos?`
-    <div class="gallery">
-      <div class="gallery-main" id="galleryMain">
-        <img id="mainPhoto" src="${imgUrl(photos[0].filename||photos[0])}" alt="${esc(c.make)} ${esc(c.model)}">
-      </div>
-      ${photos.length>1?`<div class="gallery-thumbs">${photos.map((p,i)=>`<div class="thumb${i===0?' active':''}" onclick="setGalleryPhoto(${i})"><img src="${imgUrl(p.filename||p)}" loading="lazy"></div>`).join('')}</div>`:''}
-    </div>`
-    :`<div class="gallery"><div class="gallery-main"><img src="${fallbackImg}" alt="${esc(c.make)} ${esc(c.model)}" onerror="this.parentElement.innerHTML='<div class=no-gallery><p>Geen foto\\'s beschikbaar</p></div>'"></div></div>`;
-
-  // Spec rows helper
-  const sr=(l,v)=>v?`<div class="spec-row"><span class="spec-label">${l}</span><span class="spec-value">${esc(String(v))}</span></div>`:'';
-
-  // Related
-  const relatedHTML=related.length?'<div style="margin-top:48px"><h2 style="font-size:20px;font-weight:800;margin-bottom:20px">Meer uit ons <span style=\"color:var(--green)\">aanbod</span></h2><div class=\"related-grid\">'+related.map(r=>{const rPhotos=parseCarPhotos(r);const rImg=rPhotos.length?imgUrl(rPhotos[0]):'';return '<a href=\"/auto/?id='+r.id+'\" class=\"car-card\"><div class=\"rc-img\">'+(rImg?'<img src=\"'+rImg+'\" loading=\"lazy\">':'')+'</div><div class=\"rc-body\"><div class=\"rc-name\">'+r.make+' '+r.model+'</div><div class=\"rc-sub\">'+r.year+' &middot; '+(r.km?r.km.toLocaleString('nl-NL')+'km':'?')+'</div><div class=\"rc-price\">€ '+(r.vraag_prijs||0).toLocaleString('nl-NL')+'</div></div></a>'}).join('')+'</div></div>':'';
-
-  document.getElementById('pageContent').innerHTML=`
-    <div class="car-layout">
-      <div>
-        ${galleryHTML}
-        <div class="car-title-row">
-          <div class="car-make-model">${esc(c.make)} ${esc(c.model)}</div>
-          <div class="car-variant-line">${esc(c.model_variant||c.engine_label||'')}&nbsp;</div>
-          <div class="car-badges">
-            <span class="badge">${sv('cal',12,12)} ${c.year||'?'}</span>
-            <span class="badge">${sv('gauge',12,12)} ${km} km</span>
-            <span class="badge">${sv('fuel',12,12)} ${esc(c.fuel||'?')}</span>
-            ${c.power_hp?'<span class="badge">'+c.power_hp+' pk</span>':''}
-            ${c.transmission?`<span class="badge">${esc(c.transmission)}</span>`:''}
-            ${c.color?`<span class="badge">${esc(c.color)}</span>`:''}
-          </div>
-        </div>
-
-        <div class="specs-card">
-          <h3>${sv('cal')} Voertuiggegevens</h3>
-          <div class="specs-grid">
-            ${sr('Merk',c.make)}
-            ${sr('Model',c.model)}
-            ${sr('Uitvoering',c.model_variant||c.engine_label)}
-            ${sr('Bouwjaar',c.year)}
-            ${sr('Brandstof',c.fuel)}
-            ${sr('Kilometerstand',c.km?c.km.toLocaleString('nl-NL')+' km':null)}
-            ${sr('Vermogen',c.power_hp?c.power_hp+' pk':null)}
-            ${sr('Transmissie',c.transmission)}
-            ${sr('Kleur',c.color)}
-            ${sr('Carrosserie',c.body)}
-            ${sr('APK tot',c.apk_until)}
-            ${sr('VIN',c.vin)}
-          </div>
-        </div>
-
-        ${c.beschrijving?`<div class="desc-card"><h3>Omschrijving</h3><p>${esc(c.beschrijving)}</p></div>`:''}
-
-        ${relatedHTML}
-      </div>
-
-      <div class="sidebar">
-        <div class="price-card">
-          <div class="price-label">Vraagprijs</div>
-          <div class="price-main">€ ${price}</div>
-          <div class="price-meta">
-            <div class="pm-row"><span class="pm-label">Bouwjaar</span><span class="pm-value">${c.year||'?'}</span></div>
-            <div class="pm-row"><span class="pm-label">Kilometerstand</span><span class="pm-value">${km} km</span></div>
-            <div class="pm-row"><span class="pm-label">Brandstof</span><span class="pm-value">${esc(c.fuel||'?')}</span></div>
-            ${c.apk_until?`<div class="pm-row"><span class="pm-label">APK tot</span><span class="pm-value">${esc(c.apk_until)}</span></div>`:''}
-          </div>
-          <div class="cta-btns">
-            <a href="tel:+31687997168" class="btn-p">${sv('phone',16,16)} Bel ons</a>
-            <button class="btn-o" onclick="openBod()">${sv('car',16,16)} Bod uitbrengen</button>
-            <a href="mailto:info&#64;transfer4cars.com?subject=Info over ${encodeURIComponent(c.make+' '+c.model)}" class="btn-o">${sv('mail',16,16)} E-mail</a>
-          </div>
-        </div>
-
-        <div class="contact-block">
-          <h4>Direct contact</h4>
-          <div class="contact-row">${sv('phone',15,15)}<a href="tel:+31687997168">+31 (0)6 87 99 71 68</a></div>
-          <div class="contact-row">${sv('phone',15,15)}<a href="tel:+31642208084">+31 (0)6 42 20 80 84</a></div>
-          <div class="contact-row">${sv('mail',15,15)}<a href="mailto:info&#64;transfer4cars.com">info&#64;transfer4cars.com</a></div>
-        </div>
-
-        <div style="text-align:center;padding:12px 0">
-          <a href="/aanbod/" style="font-size:13px;color:var(--text3)">← Terug naar aanbod</a>
-        </div>
-      </div>
-    </div>`;
-}
+let photos=[],curIdx=0;
 
 async function load(){
-  const id=new URLSearchParams(location.search).get('id');
-  if(!id){document.getElementById('pageContent').innerHTML='<p style="text-align:center;padding:60px;color:var(--text3)">Geen voertuig opgegeven. <a href="/aanbod/">Bekijk ons aanbod</a></p>';return}
+  if(!carId){showErr("Geen voertuig-ID");return}
   try{
-    const [carR, allR]=await Promise.all([fetch('/api/public/voorraad/'+id),fetch('/api/public/voorraad')]);
-    const carD=await carR.json();
-    if(!carD.ok)throw new Error('Niet gevonden');
-    const allD=await allR.json();
-    const c=carD.car;
-    const photos=(carD.photos&&carD.photos.length)?carD.photos:parseCarPhotos(c).map(function(u){return{filename:u}});
-    const related=(allD.cars||[]).filter(r=>r.id!==c.id&&(r.make===c.make||r.fuel===c.fuel)).slice(0,3);
-    renderPage(c,photos,related);
-  }catch(e){
-    document.getElementById('pageContent').innerHTML=`<p style="text-align:center;padding:60px;color:var(--text3)">Voertuig niet gevonden. <a href="/aanbod/">Bekijk ons aanbod</a></p>`;
+    const [carR,allR]=await Promise.all([
+      fetch("/api/public/voorraad/"+encodeURIComponent(carId)),
+      fetch("/api/public/voorraad")
+    ]);
+    const d=await carR.json();
+    if(!d.ok)throw new Error(d.error||"Niet gevonden");
+    photos=(d.photos||[]).map(p=>p.filename);
+    if(!photos.length&&d.car.cover_photo)photos=[d.car.cover_photo];
+    const all=(await allR.json()).cars||[];
+    const related=all.filter(c=>c.id!==d.car.id&&(c.make===d.car.make||c.body===d.car.body)).slice(0,4);
+    render(d.car,related);
+  }catch(e){showErr(e.message)}
+}
+
+function showErr(msg){
+  document.getElementById("loading").style.display="none";
+  const el=document.getElementById("error");
+  el.textContent="Fout: "+msg;el.style.display="";
+}
+
+function render(c,related){
+  document.getElementById("loading").style.display="none";
+  document.getElementById("content").style.display="";
+
+  const naam=esc(((c.make||"")+" "+(c.model||"")).trim()||c.kenteken||"—");
+  document.title=naam+" — Transfer4Cars";
+  document.getElementById("title").textContent=naam;
+  const pl=document.getElementById("plate");
+  if(c.kenteken){
+    pl.innerHTML=`<span class="plate__nl"><b>NL</b><span>EU</span></span><span class="plate__num">${esc(c.kenteken)}</span>`;
+    pl.style.display="inline-flex";
+  }else pl.style.display="none";
+  document.getElementById("variant").textContent=c.model_variant||"";
+
+  document.getElementById("price").textContent=fmtEur(c.vraag_prijs);
+  document.getElementById("btw").textContent=c.btw_type||"Op aanvraag";
+  document.getElementById("email-link").href="mailto:info@transfer4cars.com?subject="+encodeURIComponent("Interesse: "+naam+" "+(c.kenteken||""));
+
+  if(photos.length){
+    showPhoto(0);
+    if(photos.length>1){
+      const th=document.getElementById("thumbs");
+      th.style.display="";
+      th.innerHTML=photos.slice(0,20).map((p,i)=>
+        `<button class="${i===0?'active':''}" data-idx="${i}"><img src="${esc(p)}" loading="lazy"></button>`
+      ).join("");
+      th.onclick=e=>{const b=e.target.closest("button");if(b)showPhoto(Number(b.dataset.idx));};
+      const main=document.getElementById("gal-main");
+      main.insertAdjacentHTML("beforeend",
+        `<button class="gallery__nav prev" onclick="event.stopPropagation();navPhoto(-1)">‹</button>
+         <button class="gallery__nav next" onclick="event.stopPropagation();navPhoto(1)">›</button>
+         <div class="gallery__counter" id="counter">1/${photos.length}</div>`);
+    }
   }
+
+  const num=n=>(n!=null&&n!=="")?Number(n).toLocaleString("nl-NL"):null;
+  const eur=n=>(n!=null&&n!=="")?"€ "+Number(n).toLocaleString("nl-NL"):null;
+  const power=c.power_hp?(c.power_hp+" pk"+(c.power_kw?" / "+c.power_kw+" kW":"")):(c.power_kw?c.power_kw+" kW":null);
+  const variant=[c.model_variant,c.uitrustingsniveau].filter(Boolean).join(" ");
+
+  const groups=[
+    {h:"Algemeen",rows:[
+      {l:"Merk",v:c.make},
+      {l:"Model",v:c.model},
+      {l:"Uitvoering",v:variant},
+      {l:"Bouwjaar",v:c.year},
+      {l:"Modeljaar",v:c.modeljaar},
+      {l:"Kenteken",v:c.kenteken},
+      {l:"Carrosserie",v:c.body},
+      {l:"Kleur",v:c.color},
+      {l:"Lak",v:c.laksoort},
+      {l:"Bekleding",v:c.bekleding},
+      {l:"Interieurkleur",v:c.interieurkleur},
+      {l:"Deuren",v:c.doors},
+      {l:"Zitplaatsen",v:c.seats}
+    ]},
+    {h:"Motor & prestaties",rows:[
+      {l:"Brandstof",v:c.fuel},
+      {l:"Vermogen",v:power},
+      {l:"Cilinderinhoud",v:c.cilinderinhoud?num(c.cilinderinhoud)+" cc":null},
+      {l:"Cilinders",v:c.cilinders},
+      {l:"Transmissie",v:c.transmission},
+      {l:"Versnellingen",v:c.versnellingen},
+      {l:"Topsnelheid",v:c.topsnelheid?c.topsnelheid+" km/u":null},
+      {l:"0-100 km/u",v:c.acceleratie?c.acceleratie+" sec":null},
+      {l:"Verbruik",v:c.verbruik?c.verbruik+" l/100km":null},
+      {l:"CO₂-uitstoot",v:c.co2?c.co2+" g/km":null},
+      {l:"Emissieklasse",v:c.emissieklasse?"Euro "+c.emissieklasse:null},
+      {l:"Energielabel",v:c.energielabel},
+      {l:"Actieradius EV",v:c.actieradius?c.actieradius+" km":null},
+      {l:"Massa",v:c.massa?num(c.massa)+" kg":null},
+      {l:"Trekgewicht",v:c.trekgewicht?num(c.trekgewicht)+" kg":null}
+    ]},
+    {h:"Historie & status",rows:[
+      {l:"Km-stand",v:c.km?num(c.km)+" km":null},
+      {l:"APK tot",v:c.apk_until},
+      {l:"Eigenaren",v:c.eigenaren},
+      {l:"Sleutels",v:c.sleutels},
+      {l:"Onderhoudsboekjes",v:c.onderhoudsboekjes},
+      {l:"NAP",v:c.nap?"Ja":null},
+      {l:"VIN",v:c.vin},
+      {l:"Locatie",v:c.locatie},
+      {l:"Schade-historie",v:c.schade?(c.schade_status||"Ja"):null}
+    ]},
+    {h:"Prijs & fiscaal",rows:[
+      {l:"Vraagprijs",v:eur(c.vraag_prijs)},
+      {l:"BTW / Marge",v:c.btw_type},
+      {l:"Nieuwprijs",v:eur(c.nieuwprijs)},
+      {l:"BPM",v:eur(c.bpm)},
+      {l:"Rest-BPM",v:eur(c.rest_bpm)}
+    ]}
+  ];
+
+  document.getElementById("spec-groups").innerHTML=groups.map(g=>{
+    const rows=g.rows.filter(r=>r.v!=null&&r.v!=="");
+    if(!rows.length)return"";
+    return`<div class="spec-group"><h4>${esc(g.h)}</h4>
+      <div class="specs">${rows.map(r=>
+        `<div class="sp"><div class="lbl">${esc(r.l)}</div><div class="val">${esc(r.v)}</div></div>`
+      ).join("")}</div></div>`;
+  }).filter(Boolean).join("");
+
+  const descEl=document.getElementById("desc");
+  const raw=(c.beschrijving||"").trim();
+  if(raw){
+    const paragraphs=raw
+      .replace(/<br\s*\/?>/gi,"\n")
+      .split(/\n{2,}|\r\n\r\n/)
+      .map(p=>p.replace(/\n+/g," ").trim())
+      .filter(Boolean);
+    descEl.innerHTML=paragraphs.map(p=>`<p>${esc(p)}</p>`).join("");
+  }else{
+    descEl.textContent="Geen omschrijving beschikbaar.";
+  }
+
+  let opts=c.options;
+  if(typeof opts==="string"){try{opts=JSON.parse(opts);}catch{opts=null;}}
+  if(Array.isArray(opts)&&opts.length){
+    const clean=[...new Set(opts.map(o=>String(o).trim()).filter(Boolean))]
+      .map(o=>o.charAt(0).toUpperCase()+o.slice(1));
+    document.getElementById("opts-wrap").style.display="";
+    document.getElementById("opts-count").textContent="("+clean.length+")";
+    document.getElementById("opts").innerHTML=clean.map(o=>`<li>${esc(o)}</li>`).join("");
+  }
+
+  if(related.length){
+    document.getElementById("related-wrap").style.display="";
+    document.getElementById("related").innerHTML=related.map(r=>{
+      const naam2=esc(((r.make||"")+" "+(r.model||"")).trim()||r.kenteken);
+      const sub=[r.year,r.km?(r.km/1000).toFixed(0)+"K km":null].filter(Boolean).join(" · ");
+      const foto=r.cover_photo?`<img src="${esc(r.cover_photo)}" loading="lazy">`:`<div class="nophoto">geen foto</div>`;
+      return `<a class="rc" href="/auto/?id=${r.id}">
+        <div class="rc__img">${foto}</div>
+        <div class="rc__body">
+          <div class="rc__name">${naam2}</div>
+          <div class="rc__sub">${esc(sub)}</div>
+          <div class="rc__price">${fmtEur(r.vraag_prijs)}</div>
+        </div></a>`;
+    }).join("");
+  }
+
+  const ld={
+    "@context":"https://schema.org","@type":"Vehicle","name":naam,
+    "brand":c.make?{"@type":"Brand","name":c.make}:undefined,
+    "model":c.model,"vehicleModelDate":c.year?String(c.year):undefined,
+    "mileageFromOdometer":c.km?{"@type":"QuantitativeValue","value":c.km,"unitCode":"KMT"}:undefined,
+    "fuelType":c.fuel,"color":c.color,"vehicleTransmission":c.transmission,
+    "image":photos[0]||undefined,
+    "offers":c.vraag_prijs?{"@type":"Offer","priceCurrency":"EUR","price":c.vraag_prijs,"availability":"https://schema.org/InStock","seller":{"@type":"AutoDealer","name":"Transfer4Cars"}}:undefined
+  };
+  Object.keys(ld).forEach(k=>ld[k]===undefined&&delete ld[k]);
+  const s=document.createElement("script");s.type="application/ld+json";s.textContent=JSON.stringify(ld);document.head.appendChild(s);
 }
 
-function openBod(){
-  if(CAR)document.getElementById('bodCarName').textContent=`Breng een bod uit op ${CAR.make} ${CAR.model}`;
-  openM('bod');
+function showPhoto(i){
+  curIdx=i;
+  document.getElementById("main-photo").innerHTML=`<img src="${esc(photos[i])}" alt="">`;
+  document.querySelectorAll("#thumbs button").forEach((b,idx)=>b.classList.toggle("active",idx===i));
+  const c=document.getElementById("counter");if(c)c.textContent=(i+1)+"/"+photos.length;
 }
+function navPhoto(d){const n=(curIdx+d+photos.length)%photos.length;showPhoto(n)}
 
-async function doBod(e){
-  e.preventDefault();
-  const err=document.getElementById('bodErr');err.style.display='none';
-  const carName=CAR?`${CAR.make} ${CAR.model} (${CAR.year})`:'dit voertuig';
-  try{
-    const r=await fetch('/api/public/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({naam:document.getElementById('bodNaam').value,telefoon:document.getElementById('bodTel').value,email:'',onderwerp:'Bod - '+carName,bericht:`Bod: €${document.getElementById('bodBedrag').value} | ${carName} | ${document.getElementById('bodNote').value}`})});
-    const d=await r.json();
-    if(d.ok){toast('Bod ontvangen! We nemen snel contact op.');closeM();e.target.reset()}
-    else{err.textContent=d.error||'Er ging iets mis';err.style.display='block'}
-  }catch{err.textContent='Verbindingsfout';err.style.display='block'}
+document.getElementById("gal-main").addEventListener("click",e=>{
+  if(e.target.closest(".gallery__nav"))return;
+  if(!photos.length)return;
+  openLB(curIdx);
+});
+function openLB(i){
+  curIdx=i;document.getElementById("lb-img").src=photos[i];
+  document.getElementById("lightbox").classList.add("show");document.body.style.overflow="hidden";
 }
+function closeLB(){document.getElementById("lightbox").classList.remove("show");document.body.style.overflow=""}
+function lbNav(d){const n=(curIdx+d+photos.length)%photos.length;curIdx=n;document.getElementById("lb-img").src=photos[n];showPhoto(n)}
+document.addEventListener("keydown",e=>{
+  if(!document.getElementById("lightbox").classList.contains("show"))return;
+  if(e.key==="Escape")closeLB();
+  if(e.key==="ArrowLeft")lbNav(-1);
+  if(e.key==="ArrowRight")lbNav(1);
+});
 
-async function doLogin(e){
-  e.preventDefault();const err=document.getElementById('lErr');err.style.display='none';
-  try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:document.getElementById('lu').value,password:document.getElementById('lp').value})});const d=await r.json();if(d.ok){localStorage.setItem('t4c_token',d.token);if(d.user)localStorage.setItem('t4c_user',JSON.stringify(d.user));closeM();updateNav();toast('Ingelogd!')}else{err.textContent=d.error||'Onjuiste inloggegevens';err.style.display='block'}}catch{err.textContent='Verbindingsfout';err.style.display='block'}
+if(!token){
+  document.getElementById("loading").style.display="none";
+  document.getElementById("login-wall").style.display="";
+  const nextUrl=location.pathname+location.search;
+  document.getElementById("wall-login").href="/login/?next="+encodeURIComponent(nextUrl);
+}else{
+  load();
 }
-
-function updateNav(){
-  const tk=localStorage.getItem('t4c_token');const btn=document.getElementById('navCta');if(!btn)return;
-  if(tk){let u;try{u=JSON.parse(localStorage.getItem('t4c_user'))}catch{}btn.textContent=(u?.name||'Account')+' ▾';btn.onclick=null;let dd=document.getElementById('navDd');if(!dd){dd=document.createElement('div');dd.id='navDd';dd.style.cssText='display:none;position:absolute;top:56px;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:8px;min-width:190px;z-index:300;box-shadow:0 8px 32px rgba(0,0,0,.4)';dd.innerHTML='<a href="/app/" style="display:block;padding:9px 13px;color:var(--text2);border-radius:8px;font-size:13px;text-decoration:none">CarDatax Platform</a><a href="/aanbod/" style="display:block;padding:9px 13px;color:var(--text2);border-radius:8px;font-size:13px;text-decoration:none">Voorraad</a><div style="border-top:1px solid var(--border);margin:4px 0"></div><a href="#" onclick="event.preventDefault();localStorage.removeItem(\'t4c_token\');location.reload()" style="display:block;padding:9px 13px;color:#ef4444;border-radius:8px;font-size:13px;text-decoration:none">Uitloggen</a>';btn.parentElement.style.position='relative';btn.parentElement.appendChild(dd)}btn.onclick=e=>{e.stopPropagation();const d=document.getElementById('navDd');if(d)d.style.display=d.style.display==='block'?'none':'block'}}else{btn.textContent='B2B Inloggen';btn.onclick=()=>openM('login')}}
-
-load();
-updateNav();
 </script>
 </body>
 </html>

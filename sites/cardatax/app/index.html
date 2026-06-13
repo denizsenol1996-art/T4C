@@ -826,6 +826,27 @@ async function doTax(){
   window._isExtendedTax=false
   const errEl=document.getElementById('tax-error'),btn=document.getElementById('tax-btn');
   errEl.textContent='';
+  // ─── atx-pipeline mode: fetch context if ?atx_job=N ───
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _atxJobId = _urlParams.get('atx_job');
+  if (_atxJobId && !window._atxContextLoaded) {
+    try {
+      showPanel('loading'); ldStep(1);
+      const ctxResp = await fetch('http://127.0.0.1:3110/api/inbound/context/' + encodeURIComponent(_atxJobId), { credentials: 'omit' });
+      if (!ctxResp.ok) throw new Error('atx context fetch failed: '+ctxResp.status);
+      const ctx = await ctxResp.json();
+      if (!ctx.ok) throw new Error(ctx.error || 'context not ok');
+      window._atxContextLoaded = ctx;
+      // Prefill plate + km from context
+      const _kt = (ctx.autotelex_meta?.kenteken || ctx.vehicle?.kenteken || '').replace(/-/g,'').toUpperCase();
+      const _km = ctx.vehicle?.km || 0;
+      if (_kt) document.getElementById('mp').value = _kt;
+      if (_km) document.getElementById('mk').value = String(_km);
+    } catch (e) {
+      console.warn('[atx-mode] context fetch failed:', e.message);
+      // Continue with normal flow — graceful degradation
+    }
+  }
   const p=document.getElementById('mp').value.replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
   const km=document.getElementById('mk').value.replace(/[^0-9]/g,'');
   if(!p||p.length<5){errEl.textContent='Voer een geldig kenteken in';return}
@@ -840,7 +861,13 @@ async function doTax(){
       _api('/api/dealer/price',{method:'POST',headers:_authH(),body:JSON.stringify({plate:fmtP(p),make:v.make,model:v.model,year:v.year,km:Number(km)||v.km||0,fuel:v.fuel,weightKg:v.weightKg,catalogPrice:v.catalogPrice,bpm:v.bpm,power:v.powerKw,ownerCount:v.ownerCount||0,isExDealer:v.isExDealer||false,bpmRest:v.bpmRest||0,importFlag:v.importFlag,stolenFlag:v.stolenFlag,transmissionAuto:v.transmissionAuto,transmissionType:v.transmissionType,transmissionDetail:v.transmissionDetail,engineLabel:v.engineLabel,subModel:v.subModel,vin:v.vin,motorCode:v.motorCode,generation:v.generation,trimLevel:v.trimLevel,drivetrain:v.drivetrain,engineRiskProfile:v.engineRiskProfile,courantScore:v.courantScore,optionPriceImpact:v.optionPriceImpact})}).then(r=>r.json())
     ]);
     const m=mR.status==='fulfilled'?mR.value:null;
-    const r=pR.status==='fulfilled'?pR.value:null;
+    let r=pR.status==='fulfilled'?pR.value:null;
+    // atx-mode: overlay our pre-computed Autotelex-overridden pricing
+    if (window._atxContextLoaded && window._atxContextLoaded.t4c_response && window._atxContextLoaded.t4c_response.full_pricing) {
+      const _fp = window._atxContextLoaded.t4c_response.full_pricing;
+      r = { ...r, ..._fp };
+      console.log('[atx-mode] using Autotelex-overridden pricing from atx-pipeline');
+    }
     if(!r||r.error)throw new Error(r?.error||'Prijsberekening mislukt');
     ldStep(4);
     last={v,m,r,plate:fmtP(p),km:Number(km)||0};
@@ -1552,6 +1579,26 @@ async function extAnalyzePhotos(){
 
 // ── Boot ──
 initApp();
+
+// atx-mode auto-trigger op page-load
+(function _atxAutoTrigger(){
+  const _params = new URLSearchParams(window.location.search);
+  if (_params.get('atx_job')) {
+    // Wait for DOM ready + nav-taxatie active state
+    const _run = () => {
+      try {
+        const navBtn = document.getElementById('nav-taxatie');
+        if (navBtn) navBtn.click();
+        setTimeout(() => { if (typeof doTax === 'function') doTax(); }, 100);
+      } catch (e) { console.warn('[atx-mode] auto-trigger failed:', e.message); }
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', _run);
+    } else {
+      setTimeout(_run, 50);
+    }
+  }
+})();
 </script>
 </body>
 </html>

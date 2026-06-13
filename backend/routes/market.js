@@ -5,7 +5,7 @@ const { stmts, queryAll, queryOne, run } = require("../db")
 const { authMiddleware, adminOnly } = require("../lib/auth")
 const { getCached, setCache, parsePrice, maxPrice, safeFetch, extractListings, extractPrices, scrapeAutowereldDetail } = require("../lib/helpers")
 const scrapers = require("../lib/scrapers")
-const { scrapeMarktplaats, scrapeAutoScout24NL, scrapeAutoTrack, scrapeGaspedaal, scrapeAutowereld, scrapeViaBovag, scrapeAutoWeek, scrapeAutosNL, scrapeAutoGids, scrapeDealerOccasions, scrapeAutoBedrijven, scrapeAutoBedrijf24, scrapeAutoKopen, scrapeAutoDealers, scrapeAutoWerk, scrapeVakgarage, scrapeAutoBedrijfNL, scrapeMobileDE, scrapeAutoScout24DE, scrapeAutoScout24BE, scrape2eHandsBE, scrapeAutoScout24COM, scrapeLeBonCoin, scrapeAutoVeiling, scrapeBCA, scrapeOpenLane, scrapeAdesaEU, scrapeCopart, scrapeAutoBidDE, scrapeGoogleSearch, scrapeBingSearch, scrapeDuckDuckGo, scrapeEcosia, scrapeVanMossel, scrapeLouwman, scrapeWensink, scrapeBroekhuis, scrapeHerwers, scrapePonCenter, scrapeZeeuwZeeuw, scrapeTerwolde, scrapeStam, scrapeMulder, scrapeHartgerink, scrapeLeasePlan, scrapeAthlon, scrapeArval, scrapeAlphabet, scrapeAutoTraderNL, scrapeAutoFirstNL, scrapeBoschCarService, scrapeAutoScout24FR, scrapeAutoTraderUK, buildSearchUrls, med, validate } = scrapers
+const { scrapeMarktplaats, scrapeAutoScout24NL, scrapeAutoTrack, scrapeGaspedaal, scrapeAutowereld, scrapeViaBovag, scrapeAutoWeek, scrapeAutosNL, scrapeAutoGids, scrapeDealerOccasions, scrapeAutoBedrijven, scrapeAutoBedrijf24, scrapeAutoKopen, scrapeAutoDealers, scrapeAutoWerk, scrapeVakgarage, scrapeAutoBedrijfNL, scrapeMobileDE, scrapeAutoScout24DE, scrapeAutoScout24BE, scrape2eHandsBE, scrapeAutoScout24COM, scrapeLeBonCoin, scrapeAutoVeiling, scrapeBCA, scrapeOpenLane, scrapeAdesaEU, scrapeCopart, scrapeAutoBidDE, scrapeGoogleSearch, scrapeBingSearch, scrapeDuckDuckGo, scrapeEcosia, scrapeVanMossel, scrapeLouwman, scrapeWensink, scrapeBroekhuis, scrapeHerwers, scrapePonCenter, scrapeZeeuwZeeuw, scrapeTerwolde, scrapeStam, scrapeMulder, scrapeHartgerink, scrapeLeasePlan, scrapeAthlon, scrapeArval, scrapeAlphabet, scrapeAutoTraderNL, scrapeAutoFirstNL, scrapeBoschCarService, scrapeAutoScout24FR, scrapeAutoTraderUK, scrapeAutoTrackBE, scrapeTradus, buildSearchUrls, med, validate } = scrapers
 const pricing = require("../lib/pricing")
 const { getLearned, recordTaxatie, learn, getSeasonFactor, getDepreciation, getMarketPressure, normalizeKm, generateInsights } = pricing
 const crypto = require("crypto")
@@ -133,6 +133,8 @@ router.get("/api/market",authMiddleware,async(req,res)=>{
     { name:"autoscout24.de", fn:(m,d,y,c)=>scrapeAutoScout24DE(m,d,y,c) },
     { name:"2dehands.be",    fn:(m,d,y,c)=>scrape2eHandsBE(m,d,y,c) },
     { name:"autoscout24.be", fn:(m,d,y,c)=>scrapeAutoScout24BE(m,d,y,c) },
+    { name:"autotrack.be",   fn:(m,d,y,c)=>scrapeAutoTrackBE(m,d,y,c) },
+    { name:"tradus",         fn:(m,d,y,c)=>scrapeTradus(m,d,y,c) },
   ]
   const names = scraperDefs.map(s=>s.name)
   const hasSubModel = sub && sub !== baseMl && !baseMl.includes(sub)

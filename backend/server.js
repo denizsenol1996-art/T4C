@@ -4,6 +4,7 @@ try { require("dotenv").config() } catch(e) { /* dotenv optional */ }
 
 const express = require("express")
 const cors = require("cors")
+const helmet = require("helmet")
 const fs = require("fs")
 const path = require("path")
 const { initDB, stmts, getJwtSecret, verifyUser, getStats, backup, DATA_DIR, queryAll, queryOne, run, forceSave } = require("./db")
@@ -14,8 +15,66 @@ const auth = require("./lib/auth")
 const { hasApiKey } = require("./lib/ai")
 
 const app = express()
-app.use(cors())
-app.use(express.json({ limit: '10mb' }))
+// Cloudflared/nginx loopt voor ons — vertrouw X-Forwarded-For zodat req.ip de echte client-IP is.
+// Cruciaal voor login rate-limit (anders is iedereen "127.0.0.1" en lockt 1 brute-forcer iedereen).
+app.set("trust proxy", "loopback")
+app.disable("x-powered-by") // 2026-06-03 cleanup — hide Express signature
+
+// Security headers (helmet). CSP staat UIT tot we de inline-scripts/styles auditen
+// — anders breken marketing-pages. HSTS + X-Frame + X-Content-Type-Options
+// + Referrer-Policy zijn safe defaults. 2026-06-10 SEC-2.
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+}))
+
+// CORS: alleen eigen domeinen + same-origin/server-to-server (geen Origin-header).
+// Cross-origin van vreemde sites = geblokkeerd. 2026-06-10 SEC-2.
+const ALLOWED_ORIGINS = new Set([
+  "https://transfer4cars.com",
+  "https://www.transfer4cars.com",
+  "https://cardatax.com",
+  "https://www.cardatax.com",
+])
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true)
+    if (ALLOWED_ORIGINS.has(origin)) return cb(null, true)
+    // Vreemde origin: geen CORS-header zetten — browser blokkeert dan zelf.
+    // Geen Error gooien, anders krijgen we 500's in de logs op elke probe.
+    cb(null, false)
+  },
+  credentials: true,
+}))
+
+// CSRF-equivalent: Origin/Referer-check op state-changing methodes (2026-06-11 SEC-6).
+// Browsers sturen Origin verplicht op cross-origin POST/PUT/DELETE/PATCH. Als de header
+// er IS maar niet in ALLOWED_ORIGINS staat = third-party site → 403. Server-side calls
+// (curl/mobile-app/health-check) hebben geen Origin én geen Referer = OK. Dit dekt het
+// gat dat klassieke CSRF-tokens zouden dichten, maar past beter bij ons JWT-Bearer
+// auth-model (geen auth-cookies = klassieke CSRF al grotendeels geneutraliseerd).
+app.use((req, res, next) => {
+  const m = req.method.toUpperCase()
+  if (m === "GET" || m === "HEAD" || m === "OPTIONS") return next()
+  const origin = req.headers.origin
+  const referer = req.headers.referer || req.headers.referrer
+  if (!origin && !referer) return next() // server-side caller
+  if (origin && ALLOWED_ORIGINS.has(origin)) return next()
+  if (referer) {
+    try {
+      const u = new URL(referer)
+      if (ALLOWED_ORIGINS.has(u.origin)) return next()
+    } catch {}
+  }
+  return res.status(403).json({ ok: false, error: "Origin niet toegestaan" })
+})
+app.use((req, res, next) => {
+  // Route-level parser handles /api/extended-taxatie with 50mb limit
+  if (req.path === '/api/extended-taxatie') return next();
+  return express.json({ limit: '10mb' })(req, res, next);
+})
 const PORT = process.env.PORT || 3000
 
 // ══════════════════════════════════════════════
@@ -45,12 +104,24 @@ function releaseLock() {
     if (existingPid && existingPid !== process.pid) {
       let alive = false
       try { process.kill(existingPid, 0); alive = true } catch {}
+      // 2026-06-11: extra check tegen PID-recycling. Een levende PID die niet ONZE
+      // server.js is = stale lock (bv. apt-daemon krijgt na crash recycled PID toegewezen).
+      let isOurServer = false
       if (alive) {
+        try {
+          const cmdline = fs.readFileSync(`/proc/${existingPid}/cmdline`, 'utf8')
+          // cmdline is null-separated; zoek naar server.js in het pad
+          isOurServer = cmdline.includes("server.js") && cmdline.includes("node")
+        } catch { isOurServer = false }
+      }
+      if (alive && isOurServer) {
         const msg = `[LOCK] FATAL: t4c-server al actief als PID ${existingPid} (lock: ${LOCK_PATH}). Refuse tweede instance — voorkomt DB race condition.`
         console.error(msg)
         try { writeLog("errors.log", msg) } catch {}
         try { fs.writeFileSync(path.join(CRASH_DIR, "CRASH.txt"), `${new Date().toISOString()}\n${msg}\n`) } catch {}
         process.exit(1)
+      } else if (alive && !isOurServer) {
+        console.warn(`[LOCK] Stale lock (PID ${existingPid} bestaat maar is geen t4c-server, vermoedelijk PID-recycling) — overschrijven`)
       } else {
         console.warn(`[LOCK] Stale lock (PID ${existingPid} bestaat niet) — overschrijven`)
       }
@@ -90,6 +161,22 @@ process.on("exit", (code) => {
   }
 })
 
+// Graceful shutdown: PM2/systemd sturen SIGTERM bij stop/restart. Default node-exit zou de DB
+// niet opslaan en de sql.js in-memory state verliezen. We forceSave + release lock + exit clean.
+// Voorkomt ook zombies bij `pm2 restart` (kill_timeout default 1.6s was te kort).
+let _shuttingDown = false
+function gracefulShutdown(signal) {
+  if (_shuttingDown) return
+  _shuttingDown = true
+  console.log(`[SHUTDOWN] ${signal} ontvangen — saving DB + release lock`)
+  try { forceSave() } catch(e) { console.error("[SHUTDOWN] forceSave error:", e.message) }
+  try { releaseLock() } catch(e) { console.error("[SHUTDOWN] releaseLock error:", e.message) }
+  console.log("[SHUTDOWN] klaar, exit(0)")
+  process.exit(0)
+}
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"))
+process.on("SIGINT", () => gracefulShutdown("SIGINT"))
+
 // ── Request logging middleware ──
 app.use((req, res, next) => {
   _serverStats.requestCount = (_serverStats.requestCount || 0) + 1
@@ -106,28 +193,95 @@ app.use((req, res, next) => {
   next()
 })
 
+// ── Login rate-limit: voorkomt brute-force op accounts.
+// 5 mislukte pogingen per IP in 15 min → 15 min lockout. Successful login = reset.
+const _loginAttempts = new Map() // IP → { fails, firstFailAt, lockedUntil }
+const RL_WINDOW_MS = 15 * 60 * 1000
+const RL_MAX_FAILS = 5
+function loginRateCheck(ip) {
+  const now = Date.now()
+  const rec = _loginAttempts.get(ip)
+  if (rec?.lockedUntil && rec.lockedUntil > now) {
+    return { ok: false, retryAfter: Math.ceil((rec.lockedUntil - now) / 1000) }
+  }
+  if (rec && now - rec.firstFailAt > RL_WINDOW_MS) _loginAttempts.delete(ip)
+  return { ok: true }
+}
+function loginRecordFail(ip) {
+  const now = Date.now()
+  const rec = _loginAttempts.get(ip) || { fails: 0, firstFailAt: now, lockedUntil: 0 }
+  rec.fails += 1
+  if (rec.fails === 1) rec.firstFailAt = now
+  if (rec.fails >= RL_MAX_FAILS) rec.lockedUntil = now + RL_WINDOW_MS
+  _loginAttempts.set(ip, rec)
+}
+function loginRecordSuccess(ip) { _loginAttempts.delete(ip) }
+// Cleanup stale entries elke 5 min
+setInterval(() => {
+  const now = Date.now()
+  for (const [ip, rec] of _loginAttempts) {
+    if (rec.lockedUntil < now && now - rec.firstFailAt > RL_WINDOW_MS) _loginAttempts.delete(ip)
+  }
+}, 5 * 60 * 1000).unref?.()
+
 // ── Login & auth check ──
+const { logAudit } = require("./lib/audit")
 app.post("/api/login", (req, res) => {
-  const { username, password } = req.body || {}
-  const user = verifyUser(username, password)
-  if (!user) return res.json({ ok: false, error: "Onjuiste inloggegevens" })
-  try { run("UPDATE users SET last_login=datetime('now') WHERE username=?", [user.username]) } catch {}
-  const fullUser = queryOne("SELECT id,username,name,role,email,phone FROM users WHERE username=?", [user.username])
-  const secret = auth.getSecret()
-  const jwt = require("jsonwebtoken")
-  const token = jwt.sign({ sub: user.username, role: user.role, name: user.name, userId: fullUser?.id || user.id }, secret, { expiresIn: "7d" })
-  res.json({ ok: true, token, user: { id: fullUser?.id, username: user.username, name: user.name, role: user.role, email: fullUser?.email || '' }, name: user.name, role: user.role, userId: fullUser?.id, email: fullUser?.email || '' })
+  try {
+    const ip = req.ip || req.connection?.remoteAddress || "unknown"
+    const gate = loginRateCheck(ip)
+    if (!gate.ok) {
+      res.set("Retry-After", String(gate.retryAfter))
+      logAudit({ action: "login_blocked", details: { reason: "rate_limit", username: req.body?.username || null }, req })
+      return res.status(429).json({ ok: false, error: `Te veel pogingen — probeer over ${Math.ceil(gate.retryAfter/60)} min opnieuw` })
+    }
+    const { username, password } = req.body || {}
+    // 2026-06-11 LOGIN-500-FIX: voorkom 500 bij missende body/fields
+    if (!username || !password || typeof username !== "string" || typeof password !== "string") {
+      return res.status(400).json({ ok: false, error: "Gebruikersnaam en wachtwoord vereist" })
+    }
+    const user = verifyUser(username, password)
+    if (!user) {
+      loginRecordFail(ip)
+      logAudit({ action: "login_failed", details: { username }, req })
+      return res.status(401).json({ ok: false, error: "Onjuiste inloggegevens" })
+    }
+    loginRecordSuccess(ip)
+    try { run("UPDATE users SET last_login=datetime('now') WHERE username=?", [user.username]) } catch {}
+    const fullUser = queryOne("SELECT id,username,name,role,email,phone FROM users WHERE username=?", [user.username])
+    const secret = auth.getSecret()
+    const jwt = require("jsonwebtoken")
+    const token = jwt.sign({ sub: user.username, role: user.role, name: user.name, userId: fullUser?.id || user.id }, secret, { expiresIn: "7d" })
+    logAudit({ userId: fullUser?.id || user.id, action: "login_success", details: { role: user.role }, req })
+    res.json({ ok: true, token, user: { id: fullUser?.id, username: user.username, name: user.name, role: user.role, email: fullUser?.email || '' }, name: user.name, role: user.role, userId: fullUser?.id, email: fullUser?.email || '' })
+  } catch(e) {
+    // Defensive: nooit 500 lekken naar de buitenwereld
+    try { writeLog("errors.log", "[LOGIN-500] " + e.message + " | body: " + JSON.stringify(req.body || {}).substring(0,200)) } catch {}
+    res.status(500).json({ ok: false, error: "Interne fout — probeer opnieuw" })
+  }
 })
 
 app.get("/api/me", (req, res) => {
   const token = (req.headers.authorization || "").replace("Bearer ", "")
   if (!token) return res.status(401).json({ error: "No token" })
+  if (auth.isRevoked(token)) return res.status(401).json({ error: "Token revoked" })
   try {
     const jwt = require("jsonwebtoken")
     const decoded = jwt.verify(token, auth.getSecret())
     const user = queryOne("SELECT id,username,name,role,email,phone FROM users WHERE username=?", [decoded.sub])
     res.json({ ok: true, username: decoded.sub, name: decoded.name, role: decoded.role, userId: user?.id || decoded.userId, email: user?.email || '', phone: user?.phone || '' })
   } catch { res.status(401).json({ error: "Invalid token" }) }
+})
+
+// Logout: revoke huidige JWT server-side + audit-log. Frontend clear localStorage parallel.
+app.post("/api/logout", (req, res) => {
+  const token = (req.headers.authorization || "").replace("Bearer ", "")
+  if (!token) return res.status(401).json({ ok: false, error: "Niet ingelogd" })
+  let userId = null
+  try { userId = require("jsonwebtoken").verify(token, auth.getSecret()).userId || null } catch {}
+  auth.revokeToken(token)
+  if (userId) logAudit({ userId, action: "logout", req })
+  res.json({ ok: true })
 })
 
 // ══════════════════════════════════════════════
@@ -148,15 +302,62 @@ app.use((req, res, next) => {
 })
 
 app.use("/m", express.static(path.join(__dirname, "..", "sites", "cardatax", "m"), { extensions: ["html"], setHeaders: (res,p) => { if(p.endsWith('.html')){res.set('Cache-Control','no-store')} } }))
-app.use("/admin", express.static(path.join(__dirname, "..", "sites", "cardatax", "admin"), { extensions: ["html"], setHeaders: (res,p) => { if(p.endsWith('.html')){res.set('Cache-Control','no-store')} } }))
 
-// Transfer4Cars domain
+// /admin/atx/ route PERMANENT VERWIJDERD 2026-06-11
+
+
+// /admin/klassiek/ — T4C Command Center (cardatax admin dashboard)
+app.use("/admin/klassiek", express.static(path.join(__dirname, "..", "sites", "cardatax", "admin"), {
+  extensions: ["html"],
+  setHeaders: (res, p) => {
+    res.set("X-Robots-Tag", "noindex, nofollow, noarchive")
+    if (p.endsWith(".html")) res.set("Cache-Control", "no-store")
+  }
+}))
+
+app.use("/admin", (req, res, next) => {
+  // Cardatax-admin mount: skip voor transfer4cars-host (die heeft eigen /admin/).
+  const host = (req.hostname || "").toLowerCase()
+  if (host.includes("transfer4cars")) return next()
+  return express.static(path.join(__dirname, "..", "sites", "cardatax", "admin"), {
+    extensions: ["html"],
+    setHeaders: (res, p) => {
+      res.set("X-Robots-Tag", "noindex, nofollow, noarchive")
+      if (p.endsWith(".html")) res.set("Cache-Control", "no-store")
+    }
+  })(req, res, next)
+})
+
+// SEO routes (sitemap + robots) — alleen voor T4C-domain. Moet vóór de catch-all
+// fallback zodat de transfer4cars-mount /sitemap.xml en /robots.txt niet hapt.
 app.use((req, res, next) => {
   if (req.site !== "transfer4cars") return next()
-  if (req.path.startsWith("/api/") || req.path.startsWith("/photos") || req.path.startsWith("/admin") || req.path.startsWith("/app")) return next()
+  if (req.path === "/sitemap.xml" || req.path === "/robots.txt") return require("./routes/seo")(req, res, next)
+  next()
+})
+
+// Transfer4Cars domain — whitelist-only static + fallback (2026-06-03 cleanup)
+const T4C_PUBLIC_PATHS = new Set([
+  "", "/", "/aanbod", "/aanbod/", "/auto", "/auto/", "/veilingen", "/veilingen/",
+  "/over-ons", "/diensten", "/transport", "/contact",
+  "/privacy", "/voorwaarden", "/dealer-worden",
+  "/sitemap.xml", "/robots.txt", "/pand.jpg", "/logo-cardatax.png"
+])
+app.use((req, res, next) => {
+  if (req.site !== "transfer4cars") return next()
+  if (req.path.startsWith("/api/") || req.path.startsWith("/photos") || req.path.startsWith("/app") || req.path.startsWith("/lyra-ai") || req.path.startsWith("/m/") || req.path.startsWith("/telex-inkoop") || req.path.startsWith("/admin/inbound") || req.path.startsWith("/admin/koppelingen") || req.path === "/health" || /^\/(inbound|inbound-detail|inbound-render)\.(js|css)$/.test(req.path) || req.path === "/admin.css" || req.path === "/admin.js" || req.path === "/admin/admin.css" || req.path === "/admin/admin.js") return next()
+  // Try static serve first (handles /aanbod/, /auto/, /veilingen/, assets)
   express.static(T4C_SALES_DIR, { extensions: ["html"] })(req, res, () => {
-    if (!req.path.includes(".")) res.sendFile(path.join(T4C_SALES_DIR, "index.html"))
-    else next()
+    // Static miss → whitelist fallback to homepage, else 404
+    const segments = req.path.split("/").filter(Boolean)
+    const top = "/" + (segments[0] || "")
+    if (T4C_PUBLIC_PATHS.has(top) || T4C_PUBLIC_PATHS.has(req.path)) {
+      if (!req.path.includes(".")) return res.sendFile(path.join(T4C_SALES_DIR, "index.html"))
+    }
+    // 404 — geen wildcard 200 meer
+    const fourOhFour = path.join(T4C_SALES_DIR, "404.html")
+    if (fs.existsSync(fourOhFour)) return res.status(404).sendFile(fourOhFour)
+    res.status(404).type("text/html").send("<!doctype html><html lang=\"nl\"><head><meta charset=\"utf-8\"><meta name=\"robots\" content=\"noindex\"><title>404 — Niet gevonden | Transfer4Cars</title></head><body style=\"font-family:system-ui,sans-serif;background:#060a0f;color:#a8b8cc;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center\"><div><h1 style=\"font-size:64px;color:#4ade80;margin:0\">404</h1><p>Pagina niet gevonden</p><p><a href=\"/\" style=\"color:#4ade80\">← terug naar Transfer4Cars</a></p></div></body></html>")
   })
 })
 
@@ -176,8 +377,7 @@ app.get('/app/', (req, res) => {
   const p = require('path')
   res.sendFile(p.join(__dirname, '..', 'sites', 'cardatax', 'app', 'index.html'))
 })
-// Localhost fallbacks
-app.use("/verkoop", express.static(T4C_SALES_DIR, { extensions: ["html"] }))
+// Localhost fallbacks (/verkoop schrapt — was duplicate mirror van T4C-domain, duplicate-content voor Google)
 app.use(express.static(CARDATAX_DIR, { extensions: ["html"], setHeaders: (res,p) => { if(p.endsWith(".html")){res.set("Cache-Control","no-store, no-cache, must-revalidate")} } }))
 app.use("/app", (req, res, next) => {
   if (req.path.match(/\.(js|css|svg|png|jpg|ico|woff|woff2|ttf)$/)) return next()
@@ -244,6 +444,131 @@ app.get("/app/*", (req, res) => {
 
     // Mount DV webhook (MUST be BEFORE 404 catch-all)
     try { const { setupDVWebhookRoutes } = require("./dv-webhook"); setupDVWebhookRoutes(app, { run, queryAll, queryOne, scheduleSave: forceSave }); console.log("[DV] Webhook mounted OK") } catch(e) { console.log("[DV] Not loaded:", e.message) }
+
+    // ═══ Lyra Server proxy — toegevoegd voor v1.1 ═══
+    async function lyraProxy(req, res) {
+      try {
+        const url = `http://127.0.0.1:3100${req.originalUrl}`
+        const headers = { ...req.headers }
+        delete headers.host
+        delete headers['content-length']
+
+        const fetchOpts = { method: req.method, headers }
+        if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
+          fetchOpts.body = JSON.stringify(req.body)
+          headers['content-type'] = 'application/json'
+        }
+
+        const lyraResp = await fetch(url, fetchOpts)
+
+        res.status(lyraResp.status)
+        lyraResp.headers.forEach((v, k) => {
+          if (!['content-encoding','transfer-encoding','connection'].includes(k.toLowerCase())) {
+            res.setHeader(k, v)
+          }
+        })
+
+        const buf = Buffer.from(await lyraResp.arrayBuffer())
+        res.send(buf)
+      } catch (e) {
+        console.error('[Lyra Proxy] Error:', e.message)
+        res.status(502).json({ ok: false, error: 'Lyra niet bereikbaar' })
+      }
+    }
+
+    app.use('/api/lyra', express.json({ limit: '500kb' }), lyraProxy)
+    app.use('/lyra-ai', lyraProxy)
+    // ═══ einde Lyra proxy ═══
+
+    // ═══ ATX-pipeline proxy (telex-inkoop portaal) ═══
+    async function atxProxy(req, res) {
+      try {
+        const url = `http://127.0.0.1:3110${req.originalUrl}`
+        const headers = { ...req.headers }
+        delete headers.host
+        delete headers['content-length']
+
+        const fetchOpts = { method: req.method, headers }
+        if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
+          fetchOpts.body = JSON.stringify(req.body)
+          headers['content-type'] = 'application/json'
+        }
+
+        const atxResp = await fetch(url, fetchOpts)
+        res.status(atxResp.status)
+        atxResp.headers.forEach((v, k) => {
+          if (!['content-encoding','transfer-encoding','connection'].includes(k.toLowerCase())) {
+            res.setHeader(k, v)
+          }
+        })
+        const buf = Buffer.from(await atxResp.arrayBuffer())
+        res.send(buf)
+      } catch (e) {
+        console.error('[ATX Proxy] Error:', e.message)
+        res.status(502).json({ ok: false, error: 'atx-pipeline niet bereikbaar' })
+      }
+    }
+
+    // PATCH 10 (2026-05-25): authMiddleware op API-routes voor security.
+    // HTML+CSS+JS routes blijven open — atx-pipeline JS doet client-side
+    // localStorage.t4c_token check + redirect naar /login. API-routes vereisen
+    // Bearer-token. /api/scraper/photos blijft open (foto-URLs zijn opaque +
+    // <img> kan geen Authorization-header sturen — TODO pre-signed URLs).
+    const { authMiddleware } = require('./lib/auth')
+
+    // ATX API routes — proxy naar atx-admin (3110)
+    // Geen authMiddleware op admin-panel routes (pagina is al achter /admin/ login)
+    app.use('/api/accounts', express.json(), atxProxy)
+    app.use('/api/watcher', atxProxy)
+    app.use('/api/scraper/photos', atxProxy)  // foto's publiek (opaque URLs)
+    app.use('/api/inbound', atxProxy)  // veiling-prep + inbound API
+    app.use('/api/scraper', atxProxy)
+    app.use('/api/taxatie', atxProxy)
+    app.use('/api/ga4', atxProxy)
+    app.get('/api/health', atxProxy)
+    app.use('/api/markt', atxProxy)
+    // Koppelingen-pagina (Autotelex credentials) — eigen route
+    app.get('/admin/koppelingen', (req, res) => {
+      req.url = '/admin/'
+      req.originalUrl = '/admin/'
+      atxProxy(req, res)
+    })
+    app.get('/admin/koppelingen/*', (req, res) => {
+      req.url = req.url.replace('/admin/koppelingen', '/admin')
+      req.originalUrl = req.originalUrl.replace('/admin/koppelingen', '/admin')
+      atxProxy(req, res)
+    })
+    // /health voor koppelingen-pagina status indicator
+    app.get('/health', atxProxy)
+
+    // HTML routes — geen server-side auth (skeleton bevat geen data)
+    app.get('/telex-inkoop', (req, res, next) => {
+      req.url = '/admin/inbound'
+      req.originalUrl = '/admin/inbound'
+      atxProxy(req, res)
+    })
+    app.get('/telex-inkoop/:id', (req, res, next) => {
+      req.url = '/admin/inbound/' + req.params.id
+      req.originalUrl = '/admin/inbound/' + req.params.id
+      atxProxy(req, res)
+    })
+
+    // API routes — authMiddleware vereist (data-exposure)
+    app.use("/admin/inbound", atxProxy)
+    app.use('/api/inbound', authMiddleware, express.json({ limit: '5mb' }), atxProxy)
+
+    // Static CSS/JS — geen data, geen auth nodig
+    app.use('/inbound.css', atxProxy)
+    app.use('/inbound.js', atxProxy)
+    app.use('/inbound-detail.css', atxProxy)
+    app.use('/inbound-detail.js', atxProxy)
+    app.use('/inbound-render.js', atxProxy)
+    app.use('/admin.css', atxProxy)
+    app.use('/admin.js', atxProxy)
+    // Relatieve paden vanuit /admin/koppelingen resolven naar /admin/admin.css etc
+    app.get('/admin/admin.css', (req, res) => { req.url = '/admin.css'; req.originalUrl = '/admin.css'; atxProxy(req, res) })
+    app.get('/admin/admin.js', (req, res) => { req.url = '/admin.js'; req.originalUrl = '/admin.js'; atxProxy(req, res) })
+    // ═══ einde ATX-pipeline proxy ═══
 
     // 404 catch-all for API (MUST be AFTER all route mounts)
     app.all("/api/*", (req, res) => { res.status(404).json({ ok: false, error: "Endpoint niet gevonden" }) })

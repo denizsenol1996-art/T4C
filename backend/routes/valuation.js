@@ -139,22 +139,50 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
     if (!(d.marketListings && d.marketListings.length)) {
       try {
         const mk = (d.make||'').toLowerCase(); let ml = (d.model||'').toLowerCase(); if (ml.startsWith(mk + ' ')) ml = ml.slice(mk.length + 1)
+        // patch 12b: fuel-filter op DB queries — hybride/diesel/benzine/elektrisch
+        const _dbFuel = (d.fuel||'').toLowerCase()
+        const _fuelKey = _dbFuel.includes('hybri') ? 'hybri' : _dbFuel.includes('elektr') ? 'elektr' : _dbFuel.includes('diesel') ? 'diesel' : _dbFuel.includes('benzine') ? 'benzine' : null
+        const _fuelClause = _fuelKey ? ' AND LOWER(fuel) LIKE ?' : ''
+        const _fuelParam = _fuelKey ? ['%' + _fuelKey + '%'] : []
+        if (_fuelKey) console.log('[DEALER-PRICE] DB query with fuel-filter:', _fuelKey)
+        // patch 13: freshness filter — progressief verruimen van 30d naar all
+        const _freshnessWindows = [
+          { days: 30, label: '30d' },
+          { days: 60, label: '60d' },
+          { days: 90, label: '90d' },
+          { days: null, label: 'all' },
+        ]
+        let _compFreshness = 'all'
         if (mk && ml) {
-          // Smart model matching: probeer exact, dan eerste woord, dan nummer-extractie
-          let dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, ml + '%', (d.year||2015)-2, (d.year||2015)+2])
+          // Smart model matching with freshness: probeer verste data eerst
+          let dbListings = []
+          for (const fw of _freshnessWindows) {
+            const freshClause = fw.days ? " AND last_seen > datetime('now', '-" + fw.days + " days')" : ''
+            dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0' + _fuelClause + freshClause + ' ORDER BY price ASC LIMIT 80', [mk, ml + '%', (d.year||2015)-2, (d.year||2015)+2, ..._fuelParam])
+            if (dbListings.length >= 5) { _compFreshness = fw.label; break }
+          }
+          if (dbListings.length < 5 && dbListings.length > 0) _compFreshness = 'all'
+          console.log('[COMP-FRESH]', mk, ml, _freshnessWindows.map(fw => fw.label + '=' + queryAll('SELECT COUNT(*) as c FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0' + _fuelClause + (fw.days ? " AND last_seen > datetime('now', '-" + fw.days + " days')" : ''), [mk, ml + '%', (d.year||2015)-2, (d.year||2015)+2, ..._fuelParam])[0]?.c).join(', '), '| used:', _compFreshness)
           // Fallback 1: eerste woord (maar niet als het een nummer is dat andere modellen matcht)
           if (dbListings.length < 3 && ml.includes(' ')) {
             const firstWord = ml.split(' ')[0]
             // Voorkom dat "3" matcht met "x3" — gebruik "3 %" ipv "3%"
             const safePattern = /^\d+$/.test(firstWord) ? firstWord + ' %' : firstWord + '%'
-            dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, safePattern, (d.year||2015)-2, (d.year||2015)+2])
+            // Fallback 1 with same freshness filter
+            for (const fw of _freshnessWindows) {
+              const freshClause = fw.days ? " AND last_seen > datetime('now', '-" + fw.days + " days')" : ''
+              dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0' + _fuelClause + freshClause + ' ORDER BY price ASC LIMIT 80', [mk, safePattern, (d.year||2015)-2, (d.year||2015)+2, ..._fuelParam])
+              if (dbListings.length >= 5) { _compFreshness = fw.label; break }
+            }
             if (dbListings.length > 0) console.log('[MODEL-MATCH] Fallback 1:', mk, ml, '->', safePattern, ':', dbListings.length, 'listings')
           }
           // Fallback 2: zoek in title (RDW zegt "3 SERIE", Marktplaats zegt "320d")
           if (dbListings.length < 3) {
             const numMatch = ml.match(/^(\d+)/)
             if (numMatch) {
-              const altListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND (COALESCE(model_normalized, model) LIKE ? OR COALESCE(model_normalized, model) LIKE ? OR title LIKE ?) AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50', [mk, numMatch[1] + '%', numMatch[1] + ' %', '%' + numMatch[1] + '%', (d.year||2015)-2, (d.year||2015)+2])
+              // Fallback 2 with freshness
+              const _fb2Fresh = _compFreshness !== 'all' && _compFreshness ? " AND last_seen > datetime('now', '-" + (_compFreshness === '30d' ? 30 : _compFreshness === '60d' ? 60 : 90) + " days')" : ''
+              const altListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND (COALESCE(model_normalized, model) LIKE ? OR COALESCE(model_normalized, model) LIKE ? OR title LIKE ?) AND year BETWEEN ? AND ? AND price > 0' + _fuelClause + _fb2Fresh + ' ORDER BY price ASC LIMIT 80', [mk, numMatch[1] + '%', numMatch[1] + ' %', '%' + numMatch[1] + '%', (d.year||2015)-2, (d.year||2015)+2, ..._fuelParam])
               // Filter: alleen als het model BEGINT met het nummer (voorkom x3 bij 3 serie)
               const filtered = altListings.filter(l => {
                 const m = (l.model||l.title||'').toLowerCase()
@@ -200,7 +228,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
           generation: d.generation || '',
           trim: d.trimLevel || d.subModel || '',
           bodyType: d.body || '',
-          fuel: _fuel.includes('diesel') ? 'Diesel' : _fuel.includes('benzine') ? 'Benzine' : _fuel.includes('elektr') ? 'Elektrisch' : d.fuel || '',
+          fuel: _fuel.includes('hybri') ? 'Hybride' : _fuel.includes('elektr') ? 'Elektrisch' : _fuel.includes('diesel') ? 'Diesel' : _fuel.includes('benzine') ? 'Benzine' : d.fuel || '',  // patch 12a: hybride/elektr VOOR benzine/diesel
           transmission: _transNorm ? _transNorm.charAt(0).toUpperCase() + _transNorm.slice(1) : '',
           year: d.year || 0, km: d.km || 0,
           powerHp: d.powerKw ? Math.round(d.powerKw * 1.36) : 0,
@@ -569,6 +597,15 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
           d.bijtelling ? 'Bijtelling: ' + d.bijtelling + '%' : null,
           d.topSpeed ? 'Topsnelheid: ' + d.topSpeed + ' km/h' : null,
           d.wamInsured === false ? '⚠ NIET WAM-VERZEKERD [stilstaand = risico]' : null,
+          // Technische staat (big-fix 2026-05-28)
+          d.motorStaat && d.motorStaat !== 'Goed' ? '!! MOTOR STAAT: ' + d.motorStaat.toUpperCase() + (d.motorStaat === 'Slecht' ? ' [ZWAAR WAARDE-DRUKKEND -30 tot -50%]' : ' [WAARDE-DRUKKEND -10 tot -20%]') : null,
+          d.chassisStaat && d.chassisStaat !== 'Goed' ? '!! AANDRIJFLIJN/CHASSIS: ' + d.chassisStaat.toUpperCase() + ' [WAARDE-DRUKKEND]' : null,
+          d.elektrischStaat && d.elektrischStaat !== 'Goed' ? '!! ELEKTRISCH: ' + d.elektrischStaat.toUpperCase() : null,
+          d.storingsmeldingvrij === false ? '!! STORINGSMELDING ACTIEF [WAARDE-DRUKKEND -5 tot -15%]' : null,
+          d.conditieExterieur === 'Slecht' ? '!! EXTERIEUR CONDITIE: SLECHT [WAARDE-DRUKKEND -10 tot -20%]' : (d.conditieExterieur === 'Gemiddeld' ? 'Exterieur conditie: gemiddeld [-5%]' : null),
+          d.conditieInterieur === 'Slecht' ? '!! INTERIEUR CONDITIE: SLECHT [-10%]' : (d.conditieInterieur === 'Gemiddeld' ? 'Interieur conditie: gemiddeld [-3%]' : null),
+          d.geurvrij === false ? '!! NIET GEURVRIJ (rokers/huisdier) [-5 tot -10%]' : null,
+          d.onderhoudshistorie === 'Niet aanwezig' ? '!! GEEN ONDERHOUDSHISTORIE [-5%]' : null,
         ].filter(Boolean).join('\n- ')
 
         // ── APK & KM history — detect fraud, patterns ──
@@ -778,14 +815,17 @@ PRIJSDEFINITIES:
 - inkoopLow/inkoopHigh: moet dealer ruimte geven voor marge, garantie, reconditioning, advertentie, stilstandrisico. 85-95% van handelswaarde
 
 EXTRA INSCHATTING:
-- reconEstimate: geschatte kosten verkoopklaar maken in euro's (technisch + optisch)
+- reconEstimate: geschatte kosten verkoopklaar maken in euro's (technisch + optisch). Wees REALISTISCH: motor slecht = €1.500-4.000, niet €650.
+- variantFactor: getal 0.0-2.0. Hoe verhoudt DEZE uitvoering zich tot het modelgemiddelde? 1.0 = gemiddeld, 0.5 = 50% goedkoper (bv. oude diesel), 1.5 = 50% duurder (bv. GTI/AMG). ESSENTIEEL voor correcte markt-referentie.
+- variantPositie: waarom wijkt deze variant af? (bv. "1.2 TDI Greenline is oude diesel, 40% onder gemiddelde Fabia door dalende diesel-vraag")
+- webReferenties: geef 2-3 ECHTE listings die je online vindt voor deze SPECIFIEKE variant met prijs, km en jaar. Als je geen exacte match vindt, zeg dat eerlijk.
 - sellSpeed: "snel" (<30d), "normaal" (30-60d), "langzaam" (60-120d), "specialistisch" (>120d)
 - facelift: "pre-facelift", "facelift", of "onbekend" — alleen als redelijk afleidbaar
 
 WAARDE-FACTOREN:
 - TRANSMISSIE: automaat +8-15% premium, +3-5% budget. Handgeschakeld omgekeerd
 - KM-IMPACT OP DEALER-VRAAGPRIJS:
-  * <50k km: +5-10% premium
+  * <50k km: +5-10% premium — MAAR NIET BIJ AUTO'S >15 JAAR OUD. Lage km bij oude auto betekent NIET hogere waarde. Leeftijdsveroudering (rubber, afdichtingen, elektronica, vloeistoffen) weegt zwaarder dan km. Behandel een 2001 auto met 32k km als een auto met 100-120k km qua prijsstelling.
   * 50-100k: marktgemiddelde
   * 100-150k: -5 tot -15%
   * 150-200k: -15 tot -25%
@@ -804,7 +844,7 @@ WAARDE-FACTOREN:
 - RECALLS: onopgelost = risico
 
 ANTWOORD UITSLUITEND IN JSON (geen markdown, geen backticks):
-{"verkoopadviees":12345,"handelswaarde":10800,"inkoopLow":9200,"inkoopHigh":10000,"confidence":75,"vehicleType":"B","sellSpeed":"normaal","reconEstimate":800,"facelift":"onbekend","reasoning":"max 3 zinnen NL","transmissieImpact":"beschrijf effect","riskFlags":[]}`
+{"verkoopadviees":12345,"handelswaarde":10800,"inkoopLow":9200,"inkoopHigh":10000,"confidence":75,"vehicleType":"B","sellSpeed":"normaal","reconEstimate":800,"facelift":"onbekend","reasoning":"max 3 zinnen NL","transmissieImpact":"beschrijf effect","riskFlags":[],"variantFactor":0.85,"variantPositie":"beschrijf hoe deze specifieke uitvoering zich verhoudt tot het modelgemiddelde en waarom","webReferenties":[{"bron":"Gaspedaal","prijs":12000,"km":95000,"jaar":2020}]}`
 
         const usrPrompt = `VOERTUIG:
 ${carDesc}
@@ -834,6 +874,8 @@ ${enrichedRef}
 ${fmlRef}
 
 ${priceHistoryDesc}
+REGIONAAL: Houd rekening met de locatie. Randstad (NH/ZH/Utrecht) = +3-5% hogere vraag. Noord/Oost Nederland = -3-5%. Grensregio = export-mogelijkheden naar DE/BE.
+
 Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
 
         console.log('[AI-FIRST] Calling GPT-5.4 + web search for', d.make, d.model, year, km + 'km')
@@ -1025,8 +1067,9 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
     const priceSource = (aiValidation && aiValidation.available && !aiValidation.sanityFailed) ? 'ai' : 'formula'
 
     // ═══ AUTO-SAVE TAXATIE (dataset opbouwen) ═══
+    let _saveResult = null;
     try {
-      stmts.saveTaxatie.run({
+      _saveResult = stmts.saveTaxatie.run({
         kenteken: d.plate || "", make: d.make || "", model: d.model || "",
         model_variant: d.subModel || d.trimLevel || "",
         year, fuel: d.fuel || "", km,
@@ -1093,6 +1136,39 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
 
     // Await model-lifecycle (al parallel gestart, hier wachten als nog niet klaar)
     const modelLifecycle = await _lifecyclePromise
+
+    // ═══ Lyra observation (async, non-blocking) ═══
+    try {
+      const { emitObservation } = require('../lib/lyra-emit');
+      emitObservation({
+        taxatie_id: _saveResult?.lastInsertRowid || null,
+        user_id: _userId,
+        kenteken: d.plate || null,
+        make: d.make || null,
+        model: d.model || null,
+        year: d.year || null,
+        km: d.km || null,
+        staat: null,
+        rijdt: null,
+        gpt_verkoop: finalVerkoop,
+        gpt_inkoop_low: finalInkoopLow,
+        gpt_inkoop_high: finalInkoopHigh,
+        gpt_handelswaarde: finalHandel,
+        gpt_max_bod: finalBod,
+        blend_source: priceSource,
+        data_weight: _auditDataWeight,
+        comp_count: compResult?.cleanCount || null,
+        comp_median: compResult?.marketMedian || null,
+        input_json: JSON.stringify(req.body || {}).substring(0, 4000),
+        output_json: JSON.stringify({
+          finalVerkoop, finalInkoopLow, finalInkoopHigh,
+          finalHandel, finalBod, priceSource, _auditDataWeight,
+        }).substring(0, 4000),
+      });
+    } catch (e) {
+      console.warn('[Lyra-emit] non-fatal:', e.message);
+    }
+    // ═══ einde Lyra observation ═══
 
     res.json({
       modelLifecycle,
@@ -1353,6 +1429,29 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
       needsReview = false
       priceSource = "expert_user_context"
       console.log("[QUICK-USER-CONTEXT]", v.make, v.model, ":", "staat=" + (staat || "-"), "rijdt=" + (rijdt || "-"), "→ bod=" + bodFinal)
+    }
+
+    // v10.20.8 — STAAT_SAFETY_NET: optional fitted staat-multiplier als safety-cap op expert bod.
+    // Benchmark op 662 dealer_feedback rows (2026-06-03) toonde top-10 missers zijn SLECHT/DEFECT
+    // cars met +400-1200% overshoot ("doorgerot", "schade", "uitlaat lek" — sold €100-€400 vs engine €1k-€9k).
+    // GPT-expert kreeg context maar overshoot toch — multiplier dient als hard safety-net.
+    // Multipliers uit config/snelle-taxatie-multipliers.json (655 cases, 5-fold CV mei 2026).
+    // NB: DEFECT 0.1902 is gefit op n=1 (low_confidence) — later aanscherpen wanneer >5 DEFECT-cases binnen.
+    // Feature-flagged: STAAT_SAFETY_NET=1 enabled, anders shadow-log only.
+    const _STAAT_SAFETY_MUL = { SLECHT: 0.6972, DEFECT: 0.1902 }
+    if (priceSource === "expert_user_context" && bodFinal > 0 && _STAAT_SAFETY_MUL[staat]) {
+      const _factor = _STAAT_SAFETY_MUL[staat]
+      const _adjustedBod = Math.round(bodFinal * _factor / 50) * 50
+      if (process.env.STAAT_SAFETY_NET === "1") {
+        console.log("[STAAT-SAFETY-NET applied]", v.make, v.model, "staat=" + staat,
+                    "factor=" + _factor, "bod", bodFinal, "→", _adjustedBod)
+        bodFinal = _adjustedBod
+        _bodAdjustment.staat_factor = _factor
+        priceSource = "expert_user_context_capped"
+      } else {
+        console.log("[STAAT-SAFETY-NET shadow]", v.make, v.model, "staat=" + staat,
+                    "factor=" + _factor, "current=" + bodFinal, "would_be=" + _adjustedBod)
+      }
     }
 
     // Geen post-multipliers meer; expert kreeg al staat+rijdt context.

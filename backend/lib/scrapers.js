@@ -147,7 +147,7 @@ async function scrapeAutoScout24BE(mk,ml,yr,c){
 }
 async function scrape2eHandsBE(mk,ml,yr,c){
   const m=mk.toLowerCase(),d=ml.toLowerCase()
-  return extractPrices(await safeFetch(`https://www.2dehands.be/l/auto-s/${m}-${d}/q/${m}+${d}+${yr}/`),c)
+  return extractPrices(await safeFetch(`https://www.2dehands.be/q/${m}+${d}+${yr}/`),c)
 }
 async function scrapeAutoScout24COM(mk,ml,yr,c){
   return extractPrices(await safeFetch(`https://www.autoscout24.com/lst/${mk.toLowerCase()}/${ml.toLowerCase()}?fregfrom=${yr}&fregto=${yr+1}&sort=price&desc=0&priceto=${c}`),c)
@@ -210,14 +210,14 @@ async function scrapeEcosia(mk,ml,yr,c){
 // ═══ TIER 6: DEALER GROUPS ═══
 async function scrapeVanMossel(mk,ml,yr,c){
   const m=mk.toLowerCase(),d=ml.toLowerCase()
-  let p=extractPrices(await safeFetch(`https://www.autobedrijfvanmossel.nl/occasions/?merk=${m}&model=${d}&bouwjaarvan=${yr}&bouwjaartot=${yr}`),c)
-  if(!p.length)p=extractPrices(await safeFetch(`https://www.autobedrijfvanmossel.nl/occasions/${m}/${d}/`),c)
+  let p=extractPrices(await safeFetch(`https://www.vanmossel.nl/occasions?merk=${m}&model=${d}`),c)
+  if(!p.length)p=extractPrices(await safeFetch(`https://www.vanmossel.nl/occasions?q=${m}+${d}+${yr}`),c)
   return p
 }
 async function scrapeLouwman(mk,ml,yr,c){
   const m=mk.toLowerCase(),d=ml.toLowerCase()
-  let p=extractPrices(await safeFetch(`https://www.louwman.nl/occasions/?merk=${m}&model=${d}&bouwjaarvan=${yr}&bouwjaartot=${yr}`),c)
-  if(!p.length)p=extractPrices(await safeFetch(`https://www.louwman.nl/occasions/${m}/${d}/`),c)
+  let p=extractPrices(await safeFetch(`https://www.louwman.nl/occasions?merk=${m}&model=${d}`),c)
+  if(!p.length)p=extractPrices(await safeFetch(`https://occasions.louwman.nl/zoeken?merk=${m}&model=${d}`),c)
   return p
 }
 async function scrapeWensink(mk,ml,yr,c){
@@ -268,8 +268,8 @@ async function scrapeAlphabet(mk,ml,yr,c){
 // ═══ TIER 8: EXTRA PLATFORMS ═══
 async function scrapeAutoTraderNL(mk,ml,yr,c){
   const m=mk.toLowerCase(),d=ml.toLowerCase()
-  let p=extractPrices(await safeFetch(`https://www.autotrader.nl/${m}/${d}/?bouwjaar=${yr}`),c)
-  if(!p.length)p=extractPrices(await safeFetch(`https://www.autotrader.nl/zoeken/?merk=${m}&model=${d}&bouwjaar_van=${yr}&bouwjaar_tot=${yr}`),c)
+  let p=extractPrices(await safeFetch(`https://www.autotrader.nl/auto/${m}/${d}/`),c)
+  if(!p.length)p=extractPrices(await safeFetch(`https://www.autotrader.nl/auto/${m}/${d}/?bouwjaar=${yr}`),c)
   return p
 }
 async function scrapeAutoFirstNL(mk,ml,yr,c){
@@ -300,7 +300,7 @@ function buildSearchUrls(mk, ml, yr) {
     { name: "DealerOccasions", icon: "DO", url: `https://www.dealeroccasions.nl/${m}/${d}/?bouwjaar=${yr}` },
     { name: "Mobile.de", icon: "DE", url: `https://suchen.mobile.de/fahrzeuge/search.html?dam=0&isSearchRequest=true&ms=${me};${de}&fr=${yr}:${yr+1}&ml=:150000&s=Automobile&sb=p&vc=Car` },
     { name: "AutoScout24.de", icon: "DE", url: `https://www.autoscout24.de/lst/${m}/${d}?fregfrom=${yr}&fregto=${yr+1}&sort=price&desc=0` },
-    { name: "2dehands.be", icon: "BE", url: `https://www.2dehands.be/l/auto-s/${m}-${d}/q/${m}+${d}+${yr}/` },
+    { name: "2dehands.be", icon: "BE", url: `https://www.2dehands.be/q/${m}+${d}+${yr}/` },
   ]
 }
 
@@ -318,6 +318,17 @@ function validate(prices,yr,mk){
 
 /* ── MARKET ──────────────────────────────── */
 
+
+async function scrapeAutoTrackBE(mk,ml,yr,c){
+  const m=mk.toLowerCase(),d=ml.toLowerCase()
+  let p=extractPrices(await safeFetch('https://www.autotrack.be/occasions/' + m + '/' + d),c)
+  return p
+}
+
+async function scrapeTradus(mk,ml,yr,c){
+  const m=mk.toLowerCase(),d=ml.toLowerCase()
+  return extractPrices(await safeFetch('https://www.tradus.com/nl/tweedehands/voertuigen/personenwagen/' + m + '/' + d),c)
+}
 module.exports = {
   scrapeMarktplaats, scrapeAutoScout24NL, scrapeAutoTrack, scrapeGaspedaal,
   scrapeAutowereld, scrapeViaBovag, scrapeAutoWeek, scrapeAutosNL,
@@ -330,6 +341,6 @@ module.exports = {
   scrapeVanMossel, scrapeLouwman, scrapeWensink, scrapeBroekhuis, scrapeHerwers,
   scrapePonCenter, scrapeZeeuwZeeuw, scrapeTerwolde, scrapeStam, scrapeMulder, scrapeHartgerink,
   scrapeLeasePlan, scrapeAthlon, scrapeArval, scrapeAlphabet,
-  scrapeAutoTraderNL, scrapeAutoFirstNL, scrapeBoschCarService, scrapeAutoScout24FR, scrapeAutoTraderUK,
+  scrapeAutoTraderNL, scrapeAutoFirstNL, scrapeAutoTrackBE, scrapeTradus, scrapeBoschCarService, scrapeAutoScout24FR, scrapeAutoTraderUK,
   buildSearchUrls, med, validate
 }

@@ -4,10 +4,64 @@
 <meta charset="UTF-8">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Transfer4Cars — Kwaliteitsoccasions & B2B Autohandel</title>
-<meta name="description" content="Transfer4Cars — B2B autohandel, kwaliteitsoccasions, import uit Europa.">
+<title>Transfer4Cars · B2B Autoveilingen & Occasions | Langeraar</title>
+<meta name="description" content="Transfer4Cars Langeraar: B2B-veilingen, kwaliteits-occasions en EU-import voor handelaren. Voorraad direct online, transport door NL en EU.">
 <meta name="theme-color" content="#060a0f">
+<meta name="author" content="Transfer4Cars">
 <link rel="icon" href="/m/favicon-32.png">
+<link rel="apple-touch-icon" href="/m/apple-touch-icon.png">
+<link rel="canonical" href="https://transfer4cars.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Transfer4Cars">
+<meta property="og:locale" content="nl_NL">
+<meta property="og:title" content="Transfer4Cars — B2B Autohandel & Veilingen | Langeraar">
+<meta property="og:description" content="Kwaliteitsoccasions, B2B-veilingen voor handelaren, import uit Europa. Voorraad direct online + transport door NL & EU.">
+<meta property="og:url" content="https://transfer4cars.com/">
+<meta property="og:image" content="https://transfer4cars.com/img/og-cover.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Transfer4Cars — B2B Autohandel & Veilingen">
+<meta name="twitter:description" content="Kwaliteitsoccasions, B2B-veilingen, EU-import. Voorraad online + transport NL & EU.">
+<meta name="twitter:image" content="https://transfer4cars.com/img/og-cover.jpg">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "AutoDealer",
+  "@id": "https://transfer4cars.com/#org",
+  "name": "Transfer4Cars",
+  "legalName": "JHVT Holding B.V.",
+  "url": "https://transfer4cars.com",
+  "logo": "https://transfer4cars.com/m/logo-cardatax-medium.png",
+  "image": "https://transfer4cars.com/img/og-cover.jpg",
+  "telephone": "+31687997168",
+  "email": "info@transfer4cars.com",
+  "vatID": "NL864657079B01",
+  "taxID": "88503925",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Woudsedijk 11B",
+    "postalCode": "2461 CR",
+    "addressLocality": "Langeraar",
+    "addressRegion": "Zuid-Holland",
+    "addressCountry": "NL"
+  },
+  "areaServed": ["NL","BE","DE"],
+  "currenciesAccepted": "EUR",
+  "paymentAccepted": "Bankoverschrijving, contant",
+  "openingHoursSpecification": [{
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+    "opens": "09:00",
+    "closes": "18:00"
+  }],
+  "sameAs": [
+    "https://wa.me/31687997168",
+    "https://instagram.com/Transfer4Cars",
+    "https://www.marktplaats.nl/u/transfer4cars/17478300/"
+  ]
+}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg0:#060a0f;--bg1:#080c12;--bg2:#0c1018;--bg3:#111620;--bg4:#161c28;--green:#4ade80;--green2:#22c55e;--green-dim:rgba(74,222,128,.08);--green-glow:rgba(74,222,128,.14);--text1:#f0f4f8;--text2:#a8b8cc;--text3:#5a6e84;--text4:#2d3a48;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.10);--border-green:rgba(74,222,128,.2);--radius:12px;--radius-lg:18px;--font:'Inter',system-ui,sans-serif;--head:'Plus Jakarta Sans',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;--shadow:0 4px 32px rgba(0,0,0,.5)}
@@ -201,6 +255,16 @@ footer{background:var(--bg1);border-top:1px solid var(--border);padding:52px 0 2
 .tr-result{background:var(--bg3);border-radius:var(--radius);padding:14px;margin-top:12px}
 [data-theme=light] .tr-result{background:var(--bg4)}
 </style>
+<!-- Google Analytics 4 -->
+<script src="/js/consent.js"></script>
+<script src="/js/user-nav.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ECSBWCG10K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-ECSBWCG10K');
+</script>
 </head>
 <body>
 
@@ -212,11 +276,7 @@ footer{background:var(--bg1);border-top:1px solid var(--border);padding:52px 0 2
       <span class="tb-badge">Ma–Vr 09:00–18:00</span>
     </div>
     <div class="tb-right">
-      <div class="lang-wrap">
-        <button class="lang-btn active" onclick="setLang('nl')">NL</button>
-        <button class="lang-btn" onclick="setLang('en')">EN</button>
-        <button class="lang-btn" onclick="setLang('de')">DE</button>
-      </div>
+      <!-- lang-wrap verborgen tot echte i18n is gebouwd (NL/EN/DE buttons deden alleen localStorage) -->
       <button class="theme-btn" onclick="toggleTheme()" id="themeBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
     </div>
   </div>
@@ -228,11 +288,13 @@ footer{background:var(--bg1);border-top:1px solid var(--border);padding:52px 0 2
     <div class="nav-links" id="navLinks">
       <a href="/aanbod/" class="nav-link">Voorraad</a>
       <a href="/veilingen/" class="nav-link hl">Veilingen</a>
+      <a href="#diensten" class="nav-link" data-scroll="diensten">Diensten</a>
       <a href="#over-ons" class="nav-link" data-scroll="over-ons">Over ons</a>
-      <a href="#b2b" class="nav-link" data-scroll="b2b">B2B</a>
-      <a href="#transport" class="nav-link" data-scroll="transport">Transport</a>
+      <a href="/verkoop/" class="nav-link">Verkoop</a>
+      <a href="/transport/" class="nav-link">Transport</a>
       <a href="#contact" class="nav-link" data-scroll="contact">Contact</a>
-      <button class="nav-cta" id="navCta" onclick="openM('login')">B2B Inloggen</button>
+      <!-- user-nav.js handles login/dropdown -->
+      <div id="user-area" style="display:inline-flex;align-items:center;gap:8px"></div>
     </div>
     <button class="hamburger" onclick="document.getElementById('navLinks').classList.toggle('open')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
   </div>
@@ -262,6 +324,72 @@ footer{background:var(--bg1);border-top:1px solid var(--border);padding:52px 0 2
     </div>
   </div>
 </section>
+
+<section style="padding:60px 0;border-top:1px solid var(--border);background:linear-gradient(180deg,rgba(0,230,138,.03) 0%,transparent 100%)">
+  <div class="container" style="text-align:center;max-width:680px">
+    <div style="font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:12px">Exclusief voor handelaren</div>
+    <h2 style="font-size:clamp(28px,4vw,38px);font-weight:800;letter-spacing:-1px;margin:0 0 14px">B2B <span style="color:var(--green)">Veilingen</span></h2>
+    <p style="color:var(--text3);font-size:16px;line-height:1.6;margin:0 0 28px">Bied op zorgvuldig geselecteerde occasions. Drie kanalen: 24-uurs, batch en vrije veiling. Exclusief voor geregistreerde autohandelaren.</p>
+    <div id="veiling-cta" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="/login/?next=/veilingen/" style="display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:var(--green);color:#001a0d;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none">Inloggen en bieden</a>
+      <a href="/aanmelden/" style="display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:transparent;color:var(--text1);border:1px solid var(--border2);border-radius:10px;font-weight:600;font-size:15px;text-decoration:none">Toegang aanvragen</a>
+    </div>
+  </div>
+</section>
+<!-- ONZE DIENSTEN — voor uitgelogde bezoekers, vervangt de uitgelichte voorraad -->
+<section class="section diensten" id="diensten">
+  <div class="container">
+    <div class="sh center">
+      <div class="gl"></div>
+      <h2>Onze <span>diensten</span></h2>
+      <p>Transfer4Cars is een B2B-platform voor erkende autohandelaren. Vier diensten onder één dak.</p>
+    </div>
+    <div class="dnst-grid">
+      <a class="dnst" href="/aanmelden/" data-svc="veilingen">
+        <div class="dnst__icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 22h20"/><path d="M14 9a3 3 0 0 0-3-3V3"/><path d="M5 8l4-4"/><path d="M11 6l-7 7 5 5 7-7"/><path d="M16 12l5 5"/></svg></div>
+        <h3>B2B Veilingen</h3>
+        <p>Bied live op kwaliteitsoccasions. Channels: 24h, batch en vrije zoek-veiling.</p>
+        <span class="dnst__cta">Toegang aanvragen →</span>
+      </a>
+      <a class="dnst" href="/aanmelden/" data-svc="voorraad">
+        <div class="dnst__icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+        <h3>B2B Voorraad</h3>
+        <p>Direct beschikbaar aanbod aan personen- en bedrijfsauto's. EU-import inclusief.</p>
+        <span class="dnst__cta">Toegang aanvragen →</span>
+      </a>
+      <a class="dnst" href="/verkoop/" data-svc="verkoop">
+        <div class="dnst__icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <h3>Auto Verkopen</h3>
+        <p>Verkoop je occasions snel aan ons. Bod binnen 24 uur, ophalen door heel NL.</p>
+        <span class="dnst__cta">Naar verkoop →</span>
+      </a>
+      <a class="dnst" href="/transport/" data-svc="transport">
+        <div class="dnst__icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+        <h3>Transport</h3>
+        <p>Eigen transport door heel Nederland en de EU. Transparante tarieven.</p>
+        <span class="dnst__cta">Bekijk tarieven →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+.diensten{padding:80px 0;border-top:1px solid var(--border)}
+.sh.center{text-align:center;display:flex;flex-direction:column;align-items:center;margin-bottom:48px}
+.sh.center .gl{width:40px;height:3px;background:var(--green);margin:0 0 16px;border-radius:2px}
+.sh.center h2{font-size:38px;margin:0 0 12px;font-weight:800;letter-spacing:-1px;color:var(--text1)}
+.sh.center h2 span{color:var(--green)}
+.sh.center p{color:var(--text2);font-size:16px;max-width:560px;margin:0}
+.dnst-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+@media(max-width:980px){.dnst-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:540px){.dnst-grid{grid-template-columns:1fr}}
+.dnst{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:10px;color:var(--text1);text-decoration:none;transition:transform .15s,border-color .15s,box-shadow .2s}
+.dnst:hover{transform:translateY(-3px);border-color:rgba(74,222,128,.25);box-shadow:0 12px 32px rgba(0,0,0,.3),0 0 0 1px rgba(74,222,128,.1)}
+.dnst__icon{width:48px;height:48px;border-radius:12px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.18);color:var(--green);display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+.dnst h3{font-size:17px;font-weight:700;margin:0;letter-spacing:-.3px;color:var(--text1)}
+.dnst p{color:var(--text2);font-size:13.5px;margin:0;line-height:1.55;flex:1}
+.dnst__cta{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--green);margin-top:8px;letter-spacing:.3px}
+</style>
 
 <!-- UITGELICHTE VOORRAAD -->
 <section class="section section-alt">
@@ -390,7 +518,7 @@ footer{background:var(--bg1);border-top:1px solid var(--border);padding:52px 0 2
       <div class="foot-col"><h4>Diensten</h4><a href="#b2b">B2B Inkoop</a><a href="#b2b">B2B Verkoop</a><a href="#b2b">Voorraadbeheer</a><a href="/veilingen/">Veilingen</a><a href="#transport">Transport</a></div>
       <div class="foot-col"><h4>Contact</h4><a href="tel:+31687997168">+31 6 87 99 71 68</a><a href="tel:+31642208084">+31 6 42 20 80 84</a><a href="mailto:info&#64;transfer4cars.com">info&#64;transfer4cars.com</a><a>Ter Aar, Nederland</a></div>
     </div>
-    <div class="foot-bottom"><p>© 2026 Transfer4Cars. All rights reserved.</p><div style="display:flex;gap:14px"><a href="#">Privacy</a><a href="#">Voorwaarden</a></div></div>
+    <div class="foot-bottom"><p>© 2026 Transfer4Cars · JHVT Holding B.V. · KvK 88503925</p><div style="display:flex;gap:14px"><a href="/privacy/">Privacy</a><a href="/voorwaarden/">Voorwaarden</a></div></div>
   </div>
 </footer>
 
@@ -422,7 +550,7 @@ footer{background:var(--bg1);border-top:1px solid var(--border);padding:52px 0 2
         <div class="fg"><label class="fl">E-mail *</label><input class="fi" type="email" required placeholder="info@garage.nl"></div>
         <div class="frow">
           <div class="fg"><label class="fl">Telefoon *</label><input class="fi" type="tel" required placeholder="06 12 34 56 78"></div>
-          <div class="fg"><label class="fl">KvK *</label><input class="fi" required placeholder="12345678" maxlength="8"></div>
+          <div class="fg"><label class="fl">KvK *</label><input class="fi" required pattern="\d{8}" inputmode="numeric" placeholder="12345678" maxlength="8" title="8-cijferig KvK-nummer (alleen cijfers)"></div>
         </div>
         <div id="rErr" style="display:none;color:#ef4444;font-size:13px;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px"></div>
         <button type="submit" class="btn-p" style="width:100%;justify-content:center" id="rBtn">Aanmelding versturen</button>
@@ -516,7 +644,7 @@ async function doLogin(e){
   try{
     const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:document.getElementById('lu').value,password:document.getElementById('lp').value})});
     const d=await r.json();
-    if(d.ok){localStorage.setItem('t4c_token',d.token);if(d.user)localStorage.setItem('t4c_user',JSON.stringify(d.user));closeM();window.location.href='/m/dashboard.html'}
+    if(d.ok){localStorage.setItem('t4c_token',d.token);if(d.user)localStorage.setItem('t4c_user',JSON.stringify(d.user));closeM();const role=(d.user&&d.user.role)||'';if(role==='admin'||role==='t4c'||role==='staff')window.location.href='/admin/';else if(role==='koper')window.location.href='/veilingen/';else window.location.href='/aanbod/'}
     else{err.textContent=d.error||'Onjuiste inloggegevens';err.style.display='block'}
   }catch{err.textContent='Verbindingsfout';err.style.display='block'}
 }
@@ -558,17 +686,21 @@ function renderTransport(){
 }
 function calcTr(){const km=parseInt(document.getElementById('trKm')?.value)||0;if(!km){document.getElementById('trResult').style.display='none';return}const b=km<50?95:km<100?135:km<200?175:km<400?225:285;const f=Math.round(km*.18);document.getElementById('trBase').textContent='€ '+b;document.getElementById('trFuel').textContent='€ '+f;document.getElementById('trTotal').textContent='€ '+(b+f);document.getElementById('trResult').style.display='block'}
 
-// AUTH NAV
-function updateNav(){
-  const tk=localStorage.getItem('t4c_token');const btn=document.getElementById('navCta');if(!btn)return;
-  if(tk){let u;try{u=JSON.parse(localStorage.getItem('t4c_user'))}catch{}btn.innerHTML=(u?.name||'Account')+' ▾';btn.onclick=null;let dd=document.getElementById('navDd');if(!dd){dd=document.createElement('div');dd.id='navDd';dd.style.cssText='display:none;position:absolute;top:56px;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:8px;min-width:190px;z-index:300;box-shadow:0 8px 32px rgba(0,0,0,.4)';dd.innerHTML='<a href="/app/" style="display:block;padding:9px 13px;color:var(--text2);border-radius:8px;font-size:13px;text-decoration:none">CarDatax Platform</a><a href="/aanbod/" style="display:block;padding:9px 13px;color:var(--text2);border-radius:8px;font-size:13px;text-decoration:none">Voorraad</a><a href="/veilingen/" style="display:block;padding:9px 13px;color:var(--text2);border-radius:8px;font-size:13px;text-decoration:none">Veilingen</a><a href="#transport" style="display:block;padding:9px 13px;color:var(--text2);border-radius:8px;font-size:13px;text-decoration:none">Transport</a><div style="border-top:1px solid var(--border);margin:4px 0"></div><a href="#" onclick="event.preventDefault();localStorage.removeItem(\'t4c_token\');localStorage.removeItem(\'t4c_user\');updateNav();renderTransport()" style="display:block;padding:9px 13px;color:#ef4444;border-radius:8px;font-size:13px;text-decoration:none">Uitloggen</a>';btn.parentElement.style.position='relative';btn.parentElement.appendChild(dd)}btn.onclick=e=>{e.stopPropagation();const d=document.getElementById('navDd');if(d)d.style.display=d.style.display==='block'?'none':'block'};document.addEventListener('click',()=>{const d=document.getElementById('navDd');if(d)d.style.display='none'})}else{btn.textContent='B2B Inloggen';btn.onclick=()=>openM('login')}}
-
 // SMOOTH SCROLL
 document.addEventListener('click',e=>{const a=e.target.closest('[data-scroll]');if(a){e.preventDefault();const el=document.getElementById(a.getAttribute('data-scroll'));if(el){el.scrollIntoView({behavior:'smooth'});document.getElementById('navLinks').classList.remove('open')}}});
 
 loadCars();
 renderTransport();
-updateNav();
+
+// Veilingen banner: swap knoppen op basis van login-status
+(function(){
+  var vc = document.getElementById("veiling-cta");
+  if (!vc) return;
+  var tk = localStorage.getItem("t4c_token");
+  if (tk) {
+    vc.innerHTML = '<a href="/veilingen/" style="display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:var(--green);color:#001a0d;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none">Bekijk actieve veilingen</a>';
+  }
+})();
 </script>
 </body>
 </html>
