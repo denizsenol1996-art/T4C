@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B2B-toegang aanvragen — Transfer4Cars</title>
+<meta name="description" content="Vraag toegang aan tot Transfer4Cars B2B-veilingen. Alleen voor geregistreerde autohandelaren.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b1216;--bg-2:#0f181d;--card:#121d23;
+  --line:rgba(255,255,255,.06);--line-2:rgba(255,255,255,.12);
+  --ink:#ecf0ed;--ink-2:#8a9591;--ink-3:#5a6663;
+  --green:#00e68a;--green-glow:rgba(0,230,138,.18);--red:#ef4444;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg)}
+body{font-family:var(--font);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}button{font-family:inherit;cursor:pointer}
+
+header{border-bottom:1px solid var(--line);background:rgba(11,18,22,.92);backdrop-filter:blur(20px)}
+.head-in{max-width:1320px;margin:0 auto;padding:18px 32px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:19px;font-weight:800;letter-spacing:-.5px;color:var(--ink)}
+.logo .num{color:var(--green);font-weight:900}
+.linkbtn{font-size:14px;color:var(--ink-2);font-weight:500;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;transition:color .15s}
+.linkbtn:hover{color:var(--ink)}
+
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:60px 24px;position:relative}
+main::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(0,230,138,.06),transparent 60%);pointer-events:none}
+.card{position:relative;width:100%;max-width:560px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:36px;box-shadow:0 24px 48px rgba(0,0,0,.4)}
+.eyebrow{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:inline-flex;align-items:center;gap:10px}
+.eyebrow::before{content:'';width:24px;height:1px;background:var(--green)}
+.card h1{font-size:28px;font-weight:800;letter-spacing:-.8px;margin:0 0 8px}
+.card .sub{color:var(--ink-2);font-size:14px;margin:0 0 24px;line-height:1.55}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.row{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--ink-3);text-transform:uppercase}
+.field label .req{color:var(--green)}
+.field input,.field textarea{background:rgba(0,0,0,.25);border:1px solid var(--line);color:var(--ink);padding:13px 16px;border-radius:12px;font-family:var(--font);font-size:15px;outline:none;transition:.15s;width:100%;resize:vertical}
+.field input:focus,.field textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,230,138,.1)}
+.field textarea{min-height:90px;font-family:var(--font)}
+.field .hint{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.3px;margin-top:2px}
+
+.notice{background:rgba(0,230,138,.05);border:1px solid rgba(0,230,138,.2);border-radius:12px;padding:14px 16px;font-size:13px;color:var(--ink-2);line-height:1.6;margin-bottom:20px}
+.notice b{color:var(--ink)}
+
+.cta{display:flex;align-items:center;justify-content:center;width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:700;background:var(--green);color:#001a0d;border:none;cursor:pointer;font-family:inherit;transition:.15s;margin-top:8px}
+.cta:hover{background:#0fff97;transform:translateY(-1px);box-shadow:0 6px 24px var(--green-glow)}
+.cta:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+.err{display:none;color:var(--red);background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);padding:10px 14px;border-radius:10px;font-size:13px;font-family:var(--mono);margin-bottom:12px}
+.err.show{display:block}
+.ok{display:none;text-align:center;padding:20px 0}
+.ok .icon{width:64px;height:64px;border-radius:50%;background:rgba(0,230,138,.08);border:1px solid rgba(0,230,138,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:var(--green)}
+.ok h2{font-size:22px;margin:0 0 8px;font-weight:800;letter-spacing:-.5px}
+.ok p{color:var(--ink-2);font-size:14.5px;margin:0 0 8px;line-height:1.7}
+.ok p b{color:var(--ink)}
+.ok .actions{margin-top:24px;display:flex;gap:10px;justify-content:center}
+.ok.show{display:block}
+
+.foot{margin-top:22px;text-align:center;font-size:14px;color:var(--ink-2)}
+.foot a{color:var(--green);font-weight:600}
+
+footer{border-top:1px solid var(--line);background:var(--bg-2);padding:24px 32px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+footer a{color:var(--ink-2)}footer a:hover{color:var(--green)}
+</style>
+<!-- Google Analytics 4 -->
+<script src="/js/consent.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ECSBWCG10K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-ECSBWCG10K');
+</script>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <a class="logo" href="/">TRANSFER<span class="num">4</span>CARS</a>
+    <a class="linkbtn" href="/login/">Inloggen</a>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div id="form-section">
+      <div class="eyebrow">B2B toegang aanvragen</div>
+      <h1>Aanvraag dealer-account</h1>
+      <p class="sub">Transfer4Cars is exclusief voor geregistreerde autohandelaren. Vul je bedrijfsgegevens in — we beoordelen je aanvraag en nemen binnen 24 uur contact op.</p>
+      <div class="notice">
+        <b>Wat we nodig hebben:</b> bedrijfsnaam, KvK-nummer en contactgegevens. Na goedkeuring sturen we je inloggegevens per e-mail.
+      </div>
+      <form id="reg-form" onsubmit="doReg(event)">
+        <div class="err" id="err"></div>
+        <div class="field">
+          <label>Bedrijfsnaam <span class="req">*</span></label>
+          <input id="bedrijf" required autocomplete="organization">
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>KvK-nummer <span class="req">*</span></label>
+            <input id="kvk" required pattern="\d{8}" inputmode="numeric" maxlength="8" placeholder="12345678">
+            <span class="hint">8 cijfers</span>
+          </div>
+          <div class="field">
+            <label>BTW-nummer <span class="req">*</span></label>
+            <input id="btw" required pattern="NL\d{9}B\d{2}" maxlength="14" placeholder="NL864657079B01" style="text-transform:uppercase">
+            <span class="hint">Format NL999999999B99</span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Functie</label>
+            <input id="functie" placeholder="Inkoper / Eigenaar / Verkoper">
+          </div>
+          <div class="field" style="visibility:hidden">
+            <label>&nbsp;</label>
+            <input disabled>
+          </div>
+        </div>
+        <div class="field">
+          <label>Contactpersoon <span class="req">*</span></label>
+          <input id="naam" required autocomplete="name">
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>E-mail <span class="req">*</span></label>
+            <input id="email" type="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label>Telefoon <span class="req">*</span></label>
+            <input id="telefoon" type="tel" autocomplete="tel" required placeholder="06 12 34 56 78">
+          </div>
+        </div>
+        <div class="field">
+          <label>Toelichting</label>
+          <textarea id="bericht" placeholder="Bijv. welk type voertuigen, verwacht volume, locatie..."></textarea>
+        </div>
+        <button type="submit" class="cta" id="btn">Aanvraag versturen</button>
+      </form>
+      <div class="foot">Al een account? <a href="/login/">Inloggen</a></div>
+    </div>
+
+    <div class="ok" id="ok">
+      <div class="icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2>Aanvraag ontvangen</h2>
+      <p>Bedankt! We hebben je aanvraag in goede orde ontvangen.</p>
+      <p>We controleren de bedrijfsgegevens en nemen <b>binnen 24 uur</b> contact op via e-mail of telefoon. Na goedkeuring ontvang je je inloggegevens.</p>
+      <div class="actions">
+        <a class="linkbtn" href="/">← Terug naar home</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>© 2026 Transfer4Cars · JHVT Holding B.V. · KvK 88503925 · <a href="/voorwaarden/">Voorwaarden</a> · <a href="/privacy/">Privacy</a></footer>
+
+<script>
+async function doReg(e){
+  e.preventDefault();
+  const err=document.getElementById("err"),btn=document.getElementById("btn");
+  err.classList.remove("show");btn.disabled=true;btn.textContent="Versturen…";
+  try{
+    const body={
+      bedrijf:document.getElementById("bedrijf").value,
+      kvk:document.getElementById("kvk").value,
+      btw:document.getElementById("btw").value.toUpperCase().replace(/\s/g,""),
+      naam:document.getElementById("naam").value,
+      email:document.getElementById("email").value,
+      telefoon:document.getElementById("telefoon").value,
+      functie:document.getElementById("functie").value,
+      bericht:document.getElementById("bericht").value
+    };
+    const r=await fetch("/api/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error||"Versturen mislukt");
+    // Bedrijfsnaam meenemen voor mooie display op bedankt-page
+    try{sessionStorage.setItem("t4c_aanmelding_bedrijf",body.bedrijf)}catch{}
+    location.href="/aanmelden/ontvangen/";
+  }catch(ex){
+    err.textContent=ex.message;err.classList.add("show");
+    btn.disabled=false;btn.textContent="Aanvraag versturen";
+  }
+}
+</script>
+</body>
+</html>

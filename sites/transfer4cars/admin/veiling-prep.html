@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Veiling voorbereiding — Transfer4Cars</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #07090e;
+      --card: #0d1117;
+      --card2: #111820;
+      --border: rgba(255,255,255,.06);
+      --border2: rgba(255,255,255,.10);
+      --t1: #eaf0f4;
+      --t2: #8696a4;
+      --t3: #404e5a;
+      --green: #00e68a;
+      --green-bg: rgba(0,230,138,.08);
+      --green-glow: rgba(0,230,138,.18);
+      --warn: #f59e0b;
+      --warn-bg: rgba(245,158,11,.08);
+      --red: #ef4444;
+      --red-bg: rgba(239,68,68,.08);
+      --plate-bg: #f5c518;
+      --f: 'Inter', system-ui, -apple-system, sans-serif;
+      --fh: 'Plus Jakarta Sans', var(--f);
+      --fm: 'JetBrains Mono', ui-monospace, monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--t1); font: 400 14px/1.55 var(--f); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+    /* NAV */
+    .nav { background: rgba(7,9,14,.88); backdrop-filter: blur(16px) saturate(160%); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+    .nav-in { max-width: 1200px; margin: 0 auto; padding: 0 20px; height: 52px; display: flex; align-items: center; gap: 16px; }
+    .nav-logo { font: 800 15px var(--fh); white-space: nowrap; }
+    .nav-logo b { color: var(--green); font-weight: 800; }
+    .nav-sep { width: 1px; height: 20px; background: var(--border2); }
+    .nav-label { font: 500 12px var(--fm); color: var(--t2); letter-spacing: .04em; }
+
+    /* PAGE */
+    .page { max-width: 1200px; margin: 0 auto; padding: 20px 20px 60px; display: grid; grid-template-columns: 1fr 300px; gap: 18px; align-items: start; }
+    .col-main { min-width: 0; }
+    .col-side { position: sticky; top: 68px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* PLATE — zelfde als /aanbod/ */
+    .plate { display: inline-flex; align-items: stretch; border-radius: 4px; overflow: hidden; border: 1.5px solid #0a0a0a; font-family: var(--fm); font-weight: 700; line-height: 1; height: 26px; box-shadow: 0 1px 3px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.15); }
+    .plate-nl { background: linear-gradient(180deg,#003399 0%,#002270 100%); color: #ffd700; font-size: 8px; letter-spacing: .5px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 4px; font-weight: 800; gap: 1px; }
+    .plate-nl b { color: #fff; font-size: 9px; letter-spacing: .5px; line-height: 1; }
+    .plate-nl span { font-size: 6px; letter-spacing: 1px; line-height: 1; }
+    .plate-num { background: linear-gradient(180deg,#f5c518 0%,#e6b300 100%); color: #0a0a0a; font-size: 13px; letter-spacing: 2px; display: flex; align-items: center; padding: 0 10px; text-transform: uppercase; font-weight: 800; }
+
+    /* HEADER */
+    .car-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .car-head-info { flex: 1; min-width: 0; }
+    .car-head h1 { font: 800 20px/1.2 var(--fh); letter-spacing: -.3px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .car-head-sub { font: 400 12px var(--f); color: var(--t2); }
+
+    /* TURNTABLE — zelfde als /app/ taxatie */
+    .turntable { position: relative; border-radius: 10px; overflow: hidden; background: linear-gradient(180deg,#1a1f2e,#0d1117); border: 1px solid var(--border); margin-bottom: 16px; }
+    .tt-track { display: flex; transition: transform .35s cubic-bezier(.25,.46,.45,.94); }
+    .tt-slide { min-width: 100%; position: relative; }
+    .tt-slide img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; }
+    .tt-label { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,.7); color: #fff; font: 700 10px var(--fm); text-transform: uppercase; letter-spacing: .5px; padding: 4px 10px; border-radius: 6px; }
+    .tt-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.12); color: #fff; font-size: 15px; display: flex; align-items: center; justify-content: center; z-index: 5; transition: .12s; cursor: pointer; }
+    .tt-btn:hover { background: rgba(0,0,0,.85); }
+    .tt-prev { left: 8px; }
+    .tt-next { right: 8px; }
+    .tt-dots { display: flex; justify-content: center; gap: 5px; padding: 8px 0 6px; }
+    .tt-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--t3); cursor: pointer; transition: .2s; }
+    .tt-dot.on { background: var(--green); transform: scale(1.3); }
+    .tt-loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; font: 500 11px var(--f); color: var(--t2); }
+    .tt-loading .mini-spin { width: 14px; height: 14px; border: 2px solid var(--green); border-top-color: transparent; border-radius: 50%; animation: s .6s linear infinite; }
+
+    /* SECTION */
+    .sec { background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+    .sec-h { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
+    .sec-h:hover { background: rgba(255,255,255,.01); }
+    .sec-t { font: 600 13px var(--fh); flex: 1; }
+    .sec-n { font: 600 10px var(--fm); padding: 1px 7px; border-radius: 12px; background: rgba(255,255,255,.04); color: var(--t2); margin-right: 8px; }
+    .sec-c { opacity: .3; transition: transform .15s; }
+    .sec-c svg { width: 12px; height: 12px; stroke: var(--t1); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .sec.shut .sec-c { transform: rotate(-90deg); }
+    .sec.shut .sec-b { display: none; }
+    .sec-b { padding: 14px 16px; }
+
+    /* SPEC GRID */
+    .sg { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 6px; }
+    .si { background: var(--card2); border: 1px solid var(--border); border-radius: 7px; padding: 9px 11px; }
+    .si-l { font: 600 9px var(--fm); color: var(--t3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+    .si-v { font: 600 12px var(--fm); color: var(--t1); }
+
+    /* OPNAME */
+    .og { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 6px; }
+    .oi { display: flex; align-items: center; gap: 8px; background: var(--card2); border: 1px solid var(--border); border-radius: 7px; padding: 8px 11px; }
+    .od { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .od.g { background: var(--green); box-shadow: 0 0 4px var(--green-glow); }
+    .od.y { background: var(--warn); }
+    .od.r { background: var(--red); }
+    .od.n { background: var(--t3); }
+    .ok { font-size: 11px; color: var(--t2); flex: 1; }
+    .ov { font: 600 11px var(--fm); }
+
+    /* INFO */
+    .ib { background: var(--card2); border: 1px solid var(--border); border-radius: 7px; padding: 10px 13px; font-size: 12px; color: var(--t2); line-height: 1.5; }
+    .ib + .ib { margin-top: 6px; }
+    .ib b { color: var(--t1); font-weight: 600; }
+
+    /* UITRUSTING */
+    .ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1px; }
+    .ul li { display: flex; align-items: baseline; gap: 6px; font-size: 11px; color: var(--t2); padding: 2px 0; }
+    .ul li::before { content: '✓'; color: var(--green); font-weight: 700; font-size: 10px; }
+
+    /* SIDEBAR */
+    .sb { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .sb-h { padding: 11px 14px; border-bottom: 1px solid var(--border); font: 700 12px var(--fh); }
+    .sb-b { padding: 14px; }
+
+    .fg { margin-bottom: 12px; }
+    .fg:last-child { margin-bottom: 0; }
+    .fl { display: block; font: 600 9px var(--fm); text-transform: uppercase; letter-spacing: .07em; color: var(--t2); margin-bottom: 5px; }
+    .fi, .fs {
+      width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 6px;
+      color: var(--t1); font: 600 13px var(--fm); padding: 8px 10px; outline: none; transition: .12s;
+    }
+    .fi:focus, .fs:focus { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-bg); }
+    .fs { -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238696a4' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px; }
+    .fh { font-size: 9px; color: var(--t3); margin-top: 3px; }
+
+    .lt { display: grid; grid-template-columns: repeat(3,1fr); gap: 5px; }
+    .lo { position: relative; }
+    .lo input { position: absolute; opacity: 0; pointer-events: none; }
+    .ll { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg); cursor: pointer; transition: .12s; }
+    .ll:hover { border-color: rgba(0,230,138,.2); }
+    .lo input:checked + .ll { border-color: var(--green); background: var(--green-bg); }
+    .ld { font: 700 15px var(--fm); line-height: 1; margin-bottom: 1px; }
+    .lo input:checked + .ll .ld { color: var(--green); }
+    .ls { font-size: 8px; color: var(--t2); text-transform: uppercase; letter-spacing: .05em; }
+    .lo input:checked + .ll .ls { color: var(--green); opacity: .7; }
+
+    .btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px 14px; border-radius: 7px; font: 700 12px var(--f); cursor: pointer; border: none; transition: .12s; }
+    .btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-g { background: var(--green); color: #000; }
+    .btn-g:hover { box-shadow: 0 2px 12px var(--green-glow); }
+    .btn-g:disabled { background: rgba(0,230,138,.12); color: rgba(0,230,138,.3); cursor: not-allowed; box-shadow: none; }
+    .btn-o { background: rgba(255,255,255,.04); border: 1px solid var(--border2); color: var(--t2); }
+    .btn-o:hover { color: var(--t1); background: rgba(255,255,255,.06); }
+    .btn + .btn { margin-top: 6px; }
+
+    .ldr { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 80px 20px; color: var(--t2); }
+    .sp { width: 28px; height: 28px; border: 2.5px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: s .6s linear infinite; }
+    @keyframes s { to { transform: rotate(360deg); } }
+
+    @media (max-width: 860px) {
+      .page { grid-template-columns: 1fr; }
+      .col-side { position: static; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <div class="nav-logo">Transfer<b>4</b>Cars</div>
+    <div class="nav-sep"></div>
+    <div class="nav-label" id="navLabel">Veiling voorbereiding</div>
+  </div>
+</nav>
+
+<div class="page" id="page" style="display:none">
+  <div class="col-main">
+
+    <div class="car-head">
+      <div class="car-head-info">
+        <h1 id="hTitle">—</h1>
+        <div class="car-head-sub" id="hSub">—</div>
+      </div>
+      <span class="plate" id="hPlate"><span class="plate-nl"><b>NL</b><span>★★★</span></span><span class="plate-num" id="hKent">—</span></span>
+    </div>
+
+    <div class="turntable" id="turntable">
+      <div class="tt-track" id="ttTrack">
+        <div class="tt-slide"><div style="width:100%;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;opacity:.15">
+          <svg viewBox="0 0 80 40" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.5" width="80" height="40"><rect x="5" y="15" width="70" height="20" rx="4"/><circle cx="20" cy="35" r="5"/><circle cx="60" cy="35" r="5"/><path d="M15 15 L25 5 L55 5 L65 15"/></svg>
+        </div></div>
+      </div>
+      <button class="tt-btn tt-prev" onclick="ttNav(-1)">‹</button>
+      <button class="tt-btn tt-next" onclick="ttNav(1)">›</button>
+      <div class="tt-dots" id="ttDots"></div>
+      <div class="tt-loading" id="ttLoading"><div class="mini-spin"></div><span>Studio foto's genereren...</span></div>
+    </div>
+
+    <div class="sec" id="s1">
+      <div class="sec-h" onclick="t('s1')"><div class="sec-t">Voertuiggegevens</div><div class="sec-c"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      <div class="sec-b" id="b1"></div>
+    </div>
+
+    <div class="sec" id="s2">
+      <div class="sec-h" onclick="t('s2')"><div class="sec-t">Schade-analyse</div><span class="sec-n" id="scN" style="display:none">0</span><div class="sec-c"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      <div class="sec-b" id="b2"></div>
+    </div>
+
+    <div class="sec" id="s3">
+      <div class="sec-h" onclick="t('s3')"><div class="sec-t">Technische staat</div><div class="sec-c"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      <div class="sec-b" id="b3"></div>
+    </div>
+
+    <div class="sec" id="s4">
+      <div class="sec-h" onclick="t('s4')"><div class="sec-t">Opmerkingen</div><div class="sec-c"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      <div class="sec-b" id="b4"></div>
+    </div>
+
+    <div class="sec shut" id="s5">
+      <div class="sec-h" onclick="t('s5')"><div class="sec-t">Uitrusting en opties</div><span class="sec-n" id="uiN" style="display:none">0</span><div class="sec-c"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      <div class="sec-b" id="b5"></div>
+    </div>
+
+  </div>
+
+  <div class="col-side">
+    <div class="sb">
+      <div class="sb-h">Veiling instellingen</div>
+      <div class="sb-b">
+        <div class="fg">
+          <label class="fl">Minimale prijs</label>
+          <input type="number" class="fi" id="inMin" placeholder="0" min="0" step="100" oninput="ck()" />
+          <div class="fh">Ondergrens — gaat niet weg onder dit bedrag</div>
+        </div>
+        <div class="fg">
+          <label class="fl">Type</label>
+          <select class="fs" id="selType">
+            <option value="24h">24-uurs veiling</option>
+            <option value="batch">Batch veiling</option>
+            <option value="vrij">Vrije veiling</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">Looptijd</label>
+          <div class="lt">
+            <div class="lo"><input type="radio" name="lt" id="r1" value="24"/><label class="ll" for="r1"><span class="ld">1</span><span class="ls">dag</span></label></div>
+            <div class="lo"><input type="radio" name="lt" id="r3" value="72" checked/><label class="ll" for="r3"><span class="ld">3</span><span class="ls">dagen</span></label></div>
+            <div class="lo"><input type="radio" name="lt" id="r7" value="168"/><label class="ll" for="r7"><span class="ld">7</span><span class="ls">dagen</span></label></div>
+          </div>
+        </div>
+        <button class="btn btn-g" id="btnS" disabled onclick="sv()">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Voorbereid opslaan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ldr" id="ldr"><div class="sp"></div><div>Laden...</div></div>
+
+<script>
+let jid=null,P={},J={};
+
+window.addEventListener('DOMContentLoaded',()=>{
+  jid=parseInt(new URLSearchParams(location.search).get('id'))||97;
+  go(jid);
+});
+
+async function go(id){
+  if(location.protocol!=='file:'){
+    try{
+      const tk=localStorage.getItem('t4c_token'),h=tk?{Authorization:'Bearer '+tk}:{};
+      const r=await fetch('/api/inbound/detail/'+id,{headers:h});
+      if(r.ok){const d=await r.json();const res=d.result||d.job||d;J={id:id,kenteken:res.kenteken||'',email_subject:res.email_subject||''};try{P=res.parsed||JSON.parse(res.parsed_json||'{}')}catch(e){}return draw(res);}
+    }catch(e){}
+  }
+  $('ldr').innerHTML='<div style="color:var(--red);text-align:center">Rapport #'+id+' kon niet geladen worden. Ben je ingelogd op transfer4cars.com?</div>';
+}
+
+function draw(tax){
+  const h=P.header||{},s=P.summary||{},k=J.kenteken||h.kenteken||'';
+  $('hTitle').textContent=h.voertuig_omschrijving||k;
+  $('hSub').textContent=[s.brandstof,s.transmissie,s.km_actueel?fN(s.km_actueel)+' km':'',s.datum_eerste_toelating?s.datum_eerste_toelating.split('-')[0]:'',s.carrosserie].filter(Boolean).join(' · ');
+  $('hKent').textContent=k.toUpperCase().replace(/[^A-Z0-9]/g,'-');
+  $('navLabel').textContent=h.voertuig_omschrijving||'Veiling voorbereiding';
+
+  genAuto(k); // turntable foto generatie starten
+  specs();
+  schade();
+  tech();
+  opm();
+  uit();
+
+  if(tax.bod_advies_max){$('inMin').value=Math.round(tax.bod_advies_max/100)*100;ck();}
+  $('ldr').style.display='none';
+  $('page').style.display='grid';
+}
+
+/* TURNTABLE — zelfde als /app/ */
+let ttIdx=0,ttImgs=[];
+function ttNav(dir){
+  if(!ttImgs.length)return;
+  ttIdx=((ttIdx+dir)%ttImgs.length+ttImgs.length)%ttImgs.length;
+  $('ttTrack').style.transform='translateX(-'+ttIdx*100+'%)';
+  document.querySelectorAll('.tt-dot').forEach((d,i)=>d.classList.toggle('on',i===ttIdx));
+}
+function ttGo(i){
+  ttIdx=i;
+  $('ttTrack').style.transform='translateX(-'+i*100+'%)';
+  document.querySelectorAll('.tt-dot').forEach((d,j)=>d.classList.toggle('on',j===i));
+}
+function buildTT(images){
+  const imgs=images;
+  ttImgs=imgs;ttIdx=0;
+  // Map photo labels van originele ATX foto's
+  const origPhotos=P.photos||[];
+  $('ttTrack').innerHTML=imgs.map((img,i)=>{
+    const label=origPhotos[i]?.positie||img.angle||('Foto '+(i+1));
+    return '<div class="tt-slide"><img src="'+e(img.url)+'?t='+Date.now()+'" alt="'+e(label)+'"><div class="tt-label">'+e(label)+'</div></div>';
+  }).join('');
+  $('ttDots').innerHTML=imgs.length>1?imgs.map((_,i)=>'<span class="tt-dot'+(i===0?' on':'')+'" onclick="ttGo('+i+')"></span>').join(''):'';
+  const tt=$('turntable');tt.querySelectorAll('.tt-btn').forEach(b=>b.style.display=imgs.length>1?'':'none');
+  $('ttLoading').style.display='none';
+  // Touch swipe
+  let sx=0,dx=0,sw=false;const track=$('ttTrack');
+  track.addEventListener('touchstart',ev=>{sx=ev.touches[0].clientX;dx=0;sw=true;track.style.transition='none';},{passive:true});
+  track.addEventListener('touchmove',ev=>{if(!sw)return;dx=ev.touches[0].clientX-sx;track.style.transform='translateX('+((-ttIdx*100)+(dx/track.parentElement.offsetWidth)*100)+'%)';},{passive:true});
+  track.addEventListener('touchend',()=>{if(!sw)return;sw=false;track.style.transition='transform .35s cubic-bezier(.25,.46,.45,.94)';if(Math.abs(dx)>40)ttNav(dx<0?1:-1);else ttNav(0);});
+}
+document.addEventListener('keydown',ev=>{if(ev.key==='ArrowLeft')ttNav(-1);if(ev.key==='ArrowRight')ttNav(1);});
+
+/* SPECS */
+function specs(){
+  const s=P.summary||{},m=P.algemeen?.motor||{},mt=P.algemeen?.maten||{},ml=P.algemeen?.milieu||{},d=P.algemeen?.data||{},pr=P.prijzen||{},o=P.opname?.overig||{};
+  const r=[
+    ['Bouwjaar',s.datum_eerste_toelating?.split('-')[0]],
+    ['Kilometerstand',s.km_actueel?fN(s.km_actueel)+' km':null],
+    ['Brandstof',s.brandstof],
+    ['Transmissie',s.transmissie?(s.transmissie+(m.versnellingen?' ('+m.versnellingen+')':'')):null],
+    ['Vermogen',s.vermogen_pk?s.vermogen_pk+' pk / '+s.vermogen_kw+' kW':null],
+    ['Carrosserie',s.carrosserie],
+    ['Deuren',s.aantal_deuren],
+    ['Kleur',pr.kleur_exterieur],
+    ['Interieur',[o.interieurkleur,o.bekleding].filter(Boolean).join(' / ')||null],
+    ['APK tot',fD(d.apk_vervaldatum)],
+    ['BTW / Marge',s.btw_marge],
+    ['Catalogusprijs',s.catalogusprijs_atx?'€ '+fN(s.catalogusprijs_atx):null],
+    ['Aandrijving',m.aandrijving],
+    ['Cilinderinhoud',m.cilindercapaciteit_cc?fN(m.cilindercapaciteit_cc)+' cc':null],
+    ['Koppel',m.koppel_nm?m.koppel_nm+' Nm':null],
+    ['Gewicht',mt.gewicht_kg?fN(mt.gewicht_kg)+' kg':null],
+    ['CO2',ml.co2_g_km?ml.co2_g_km+' g/km':null],
+    ['Emissieklasse',ml.emissieklasse],
+    ['Schadevrij',s.schadevrij===true?'Ja':s.schadevrij===false?'Nee':null],
+  ].filter(x=>x[1]!=null&&x[1]!=='');
+  $('b1').innerHTML='<div class="sg">'+r.map(x=>'<div class="si"><div class="si-l">'+e(x[0])+'</div><div class="si-v">'+e(String(x[1]))+'</div></div>').join('')+'</div>';
+}
+
+/* SCHADE */
+function schade(){
+  const sc=P.schade||{},items=sc.items||[];
+  let h='';
+  if(items.length){
+    $('scN').textContent=items.length;$('scN').style.display='inline-block';
+    h=items.map(i=>'<div class="ib"><b>'+e(i.onderdeel||i.locatie||'—')+'</b> — '+e(i.beschrijving||i.type||'—')+(i.kosten?' · € '+fN(i.kosten):'')+'</div>').join('');
+  }
+  if(sc.schade_opmerking) h+='<div class="ib"><b>Opmerking:</b> '+e(sc.schade_opmerking)+'</div>';
+  if(sc.bandenset_gemonteerd?.beschrijving) h+='<div class="ib"><b>Banden gemonteerd:</b> '+e(sc.bandenset_gemonteerd.beschrijving)+'</div>';
+  if(sc.bandenset_extra?.beschrijving) h+='<div class="ib"><b>Extra bandenset:</b> '+e(sc.bandenset_extra.beschrijving)+'</div>';
+  if(!h) h='<div class="ib" style="color:var(--green)">Geen schade geregistreerd — schadevrij.</div>';
+  $('b2').innerHTML=h;
+}
+
+/* TECH */
+function tech(){
+  const tc=P.opname?.techniek||{},ov=P.opname?.overig||{};
+  const r=[
+    ['Motor staat',tc.motor_staat],['Airco',tc.airco_werkt],['Storingsvrij',tc.storingsmeldingvrij],
+    ['Rijdbaar',tc.rijdbaar],['Aandrijflijn',tc.aandrijflijn_chassis_staat],['Elektrisch',tc.elektrisch_staat],
+    ['Sleutels',tc.aantal_sleutels],['Ontbrekend',tc.ontbrekende_items],
+    ['Exterieur',ov.conditie_exterieur],['Interieur',ov.conditie_interieur],['Ruiten',ov.conditie_ruiten],
+    ['Onderhoud',ov.onderhoudshistorie],['Geurvrij',ov.geurvrij],['Proefrit',ov.proefrit_gemaakt],
+    ['Boekjes',ov.instructieboekjes],['Gebruik',ov.gebruikt_als],
+  ].filter(x=>x[1]!=null&&x[1]!=='');
+  if(!r.length){$('b3').innerHTML='<div class="ib">Geen informatie.</div>';return;}
+  $('b3').innerHTML='<div class="og">'+r.map(x=>{const v=iv(x[1]);return '<div class="oi"><div class="od '+v.d+'"></div><div class="ok">'+e(x[0])+'</div><div class="ov">'+e(v.v)+'</div></div>';}).join('')+'</div>';
+}
+function iv(v){
+  if(v===true||v===1)return{d:'g',v:'Ja'};
+  if(v===false||v===0)return{d:'r',v:'Nee'};
+  const s=String(v).toLowerCase();
+  if(['goed','ja','werkend','normaal','volledig','geen ontbrekende'].some(x=>s.includes(x)))return{d:'g',v:String(v)};
+  if(['slecht','nee','defect','kapot'].some(x=>s.includes(x)))return{d:'r',v:String(v)};
+  if(['gemiddeld','matig','onvolledig'].some(x=>s.includes(x)))return{d:'y',v:String(v)};
+  return{d:'n',v:String(v)};
+}
+
+/* OPM */
+function opm(){
+  const i=P.uitrusting_intro||{};
+  let h='';
+  if(i.bod_opmerking&&i.bod_opmerking!=='Geen opmerking.') h+='<div class="ib"><b>Opmerking:</b> '+e(i.bod_opmerking)+'</div>';
+  if(i.uitrusting_summary) h+='<div class="ib"><b>Highlights:</b> '+e(i.uitrusting_summary)+'</div>';
+  if(!h) h='<div class="ib" style="color:var(--t3)">Geen opmerkingen.</div>';
+  $('b4').innerHTML=h;
+}
+
+/* UIT */
+function uit(){
+  const u=P.uitrusting||{};let all=[];
+  ['standaard','fabrikant','fabrieksopties','optiepakketten','accessoires','extra_toegevoegd'].forEach(k=>{
+    (u[k]||[]).forEach(s=>String(s).split(/\s{2,}/).forEach(p=>{if(p.trim())all.push(p.trim());}));
+  });
+  if(all.length){$('uiN').textContent=all.length;$('uiN').style.display='inline-block';$('b5').innerHTML='<ul class="ul">'+all.map(i=>'<li>'+e(i)+'</li>').join('')+'</ul>';}
+  else $('b5').innerHTML='<div class="ib">Geen uitrusting.</div>';
+}
+
+/* SAVE */
+function ck(){$('btnS').disabled=!(parseInt($('inMin').value)>0);}
+async function sv(){
+  const btn=$('btnS');btn.disabled=true;btn.textContent='Opslaan...';
+  const h=P.header||{},s=P.summary||{};
+  const payload={kenteken:J.kenteken||h.kenteken||'',minimumprijs:parseInt($('inMin').value),titel:h.voertuig_omschrijving||'',bouwjaar:s.datum_eerste_toelating?parseInt(s.datum_eerste_toelating.split('-')[0]):null,km:s.km_actueel||null,brandstof:s.brandstof||'',channel_type:$('selType').value,duur_uren:parseInt(document.querySelector('input[name="lt"]:checked')?.value||'72'),status:'voorbereid',atx_job_id:jid};
+  try{
+    const tk=localStorage.getItem('t4c_token'),hd={'Content-Type':'application/json'};if(tk)hd.Authorization='Bearer '+tk;
+    const r=await fetch('/api/veiling',{method:'POST',headers:hd,body:JSON.stringify(payload)});
+    const d=await r.json();
+    if(d.ok){btn.textContent='✓ Opgeslagen';setTimeout(()=>{location.href='/admin/';},1200);}
+    else{alert('Fout: '+(d.error||'Onbekend'));btn.disabled=false;btn.textContent='Voorbereid opslaan';}
+  }catch(err){alert('Fout: '+err.message);btn.disabled=false;btn.textContent='Voorbereid opslaan';}
+}
+
+/* FOTO GENERATIE — AI studio foto's met T4C kentekenplaat */
+async function genAuto(kent){
+  if(location.protocol==='file:')return;
+  const pc=kent.replace(/[^A-Z0-9]/gi,'').toUpperCase();
+  if(!pc)return;
+  const s=P.summary||{},pr=P.prijzen||{},o=P.opname?.overig||{};
+
+  // Extract make/model
+  let make='',model='';
+  const sub=J.email_subject||'';
+  const sm=sub.match(/:\s*\S+\s+(.*)/);
+  if(sm){const p=sm[1].trim().split(' ');make=p[0]||'';model=p.slice(1).join(' ').replace(/,\s*\d{4}$/,'')||'';}
+
+  try{
+    // 1. Check veiling foto cache eerst, dan standaard cache
+    try{
+      const vR=await fetch('/api/veiling-photos/'+pc);const vc=await vR.json();
+      if(vc.ok&&vc.photos?.length>0){
+        buildTT(vc.photos.map((p,i)=>({angle:'photo-'+(i+1),url:p.url})));
+        return;
+      }
+    }catch(e){}
+    try{
+      const cR=await fetch('/api/car-images/'+pc);const cache=await cR.json();
+      if(cache.ok&&cache.images?.length>0){
+        buildTT(cache.images.filter(i=>i.url));
+        return;
+      }
+    }catch(e){}
+    // 2. Genereer — loading state zichtbaar
+    $('ttLoading').style.display='flex';
+    const tk=localStorage.getItem('t4c_token'),hd={'Content-Type':'application/json'};
+    if(tk)hd.Authorization='Bearer '+tk;
+    const gR=await fetch('/api/generate-car-images',{method:'POST',headers:hd,body:JSON.stringify({
+      make:make,model:model,
+      year:s.datum_eerste_toelating?parseInt(s.datum_eerste_toelating.split('-')[0]):2020,
+      color:pr.kleur_exterieur||o.exterieur_hoofdkleur||'Grijs',
+      body:s.carrosserie||'Hatchback',
+      plate:kent,variant:'',generation:'',subModel:'',trimLevel:'',
+      allAngles:true,
+      referencePhotos:(P.photos||[]).filter(p=>p.url).map(p=>p.url),
+      photoPositions:(P.photos||[]).filter(p=>p.url).map(p=>p.positie||'')
+    })});
+    const gen=await gR.json();
+    if(gen.ok&&gen.images?.length) buildTT(gen.images.filter(i=>i.url));
+    else{$('ttLoading').innerHTML='<span style="color:var(--red)">Foto generatie mislukt</span>';}
+  }catch(err){console.error('[gen]',err);$('ttLoading').innerHTML='<span style="color:var(--red)">Fout bij genereren</span>';}
+}
+
+/* UTIL */
+function $(id){return document.getElementById(id);}
+function t(id){document.getElementById(id)?.classList.toggle('shut');}
+function fN(n){return Number(n).toLocaleString('nl-NL',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fD(v){if(!v)return null;const d=new Date(v);return isNaN(d)?v:d.toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+</body>
+</html>

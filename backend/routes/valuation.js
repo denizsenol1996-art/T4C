@@ -158,7 +158,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
           let dbListings = []
           for (const fw of _freshnessWindows) {
             const freshClause = fw.days ? " AND last_seen > datetime('now', '-" + fw.days + " days')" : ''
-            dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0' + _fuelClause + freshClause + ' ORDER BY price ASC LIMIT 80', [mk, ml + '%', (d.year||2015)-2, (d.year||2015)+2, ..._fuelParam])
+            dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0' + _fuelClause + freshClause + ' AND km > 0 ORDER BY ' + ((parseInt(d.km)||0) > 0 ? 'ABS(km - ' + (parseInt(d.km)||0) + ') ASC' : 'price ASC') + ' LIMIT 80', [mk, ml + '%', (d.year||2015)-2, (d.year||2015)+2, ..._fuelParam])
             if (dbListings.length >= 5) { _compFreshness = fw.label; break }
           }
           if (dbListings.length < 5 && dbListings.length > 0) _compFreshness = 'all'
@@ -171,7 +171,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
             // Fallback 1 with same freshness filter
             for (const fw of _freshnessWindows) {
               const freshClause = fw.days ? " AND last_seen > datetime('now', '-" + fw.days + " days')" : ''
-              dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0' + _fuelClause + freshClause + ' ORDER BY price ASC LIMIT 80', [mk, safePattern, (d.year||2015)-2, (d.year||2015)+2, ..._fuelParam])
+              dbListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0' + _fuelClause + freshClause + ' AND km > 0 ORDER BY ' + ((parseInt(d.km)||0) > 0 ? 'ABS(km - ' + (parseInt(d.km)||0) + ') ASC' : 'price ASC') + ' LIMIT 80', [mk, safePattern, (d.year||2015)-2, (d.year||2015)+2, ..._fuelParam])
               if (dbListings.length >= 5) { _compFreshness = fw.label; break }
             }
             if (dbListings.length > 0) console.log('[MODEL-MATCH] Fallback 1:', mk, ml, '->', safePattern, ':', dbListings.length, 'listings')
@@ -182,7 +182,7 @@ router.post("/api/dealer/price", express.json(), async (req, res) => {
             if (numMatch) {
               // Fallback 2 with freshness
               const _fb2Fresh = _compFreshness !== 'all' && _compFreshness ? " AND last_seen > datetime('now', '-" + (_compFreshness === '30d' ? 30 : _compFreshness === '60d' ? 60 : 90) + " days')" : ''
-              const altListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND (COALESCE(model_normalized, model) LIKE ? OR COALESCE(model_normalized, model) LIKE ? OR title LIKE ?) AND year BETWEEN ? AND ? AND price > 0' + _fuelClause + _fb2Fresh + ' ORDER BY price ASC LIMIT 80', [mk, numMatch[1] + '%', numMatch[1] + ' %', '%' + numMatch[1] + '%', (d.year||2015)-2, (d.year||2015)+2, ..._fuelParam])
+              const altListings = queryAll('SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND (COALESCE(model_normalized, model) LIKE ? OR COALESCE(model_normalized, model) LIKE ? OR title LIKE ?) AND year BETWEEN ? AND ? AND price > 0' + _fuelClause + _fb2Fresh + ' AND km > 0 ORDER BY ' + ((parseInt(d.km)||0) > 0 ? 'ABS(km - ' + (parseInt(d.km)||0) + ') ASC' : 'price ASC') + ' LIMIT 80', [mk, numMatch[1] + '%', numMatch[1] + ' %', '%' + numMatch[1] + '%', (d.year||2015)-2, (d.year||2015)+2, ..._fuelParam])
               // Filter: alleen als het model BEGINT met het nummer (voorkom x3 bij 3 serie)
               const filtered = altListings.filter(l => {
                 const m = (l.model||l.title||'').toLowerCase()
@@ -1116,6 +1116,9 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       console.log("[TAXATIE-SAVE]", d.make, d.model, year, "-> saved")
     } catch(saveErr) { console.log("[TAXATIE-SAVE] Error:", saveErr.message) }
 
+    // ═══ LEER-LUS: log de voorspelling per taxatie (additief, faalt stil, kan taxatie nooit breken) ═══
+    try { require('../lib/accuracy-loop').logPrediction({ taxatie_id: _saveResult && _saveResult.lastInsertRowid, our_price: finalBod, gpt_price: _auditAiVerkoop }); } catch(e) {}
+
     // Auto-queue model voor crawler (hogere prioriteit)
     try {
       const mk = (d.make||'').toLowerCase(), ml = (d.model||'').toLowerCase().replace(new RegExp('^' + mk + '\s+'), '')
@@ -1170,7 +1173,27 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
     }
     // ═══ einde Lyra observation ═══
 
+    // ── Kanaal-eerst (additief, DISPLAY-only): afzetkanaal + datazekerheid + courantheid ──
+    // Frozen pricing onaangeraakt — bod blijft finalBod. Kanaal is extra intelligentie boven de prijs.
+    let _channel = null;
+    try {
+      const { enrichTaxatie } = require('../lib/channel-engine');
+      _channel = enrichTaxatie({
+        vehicle: {
+          make: d.make, model: d.model, year: d.year, km: d.km,
+          fuel: d.fuel || d.brandstof, body: d.body || d.body_type,
+          isImport: d.importFlag || d.import,
+          massa_ledig_voertuig: d.massa_ledig_voertuig || d.massaLedig || d.weight,
+          modelVariant: d.modelVariant || d.subModel, engineLabel: d.engineLabel,
+          napOordeel: d.napOordeel, kentekenSoort: d.kentekenSoort,
+        },
+        market: { listings: Array.isArray(d.marketListings) ? d.marketListings : [] },
+        base: { verkoopadviees: finalVerkoop, handelswaarde: finalHandel, internetPrijs: (typeof finalInternet !== 'undefined' ? finalInternet : finalVerkoop) },
+      });
+    } catch (e) { console.warn('[channel] non-fatal:', e.message); }
+
     res.json({
+      channel: _channel,
       modelLifecycle,
       verkoopadviees: finalVerkoop, handelswaarde: finalHandel,
       inkoopLow: finalInkoopLow, inkoopHigh: finalInkoopHigh,
@@ -1277,7 +1300,7 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
     if (mk && ml) {
       try {
         dbListings = queryAll(
-          "SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY price ASC LIMIT 50",
+          "SELECT title, price, km, source, dealer as sellerType, first_seen, days_on_market, options, transmission, fuel FROM market_listings WHERE make=? AND COALESCE(model_normalized, model) LIKE ? AND year BETWEEN ? AND ? AND price > 0 ORDER BY " + ((parseInt(v.km)||0) > 0 ? 'ABS(km - ' + (parseInt(v.km)||0) + ') ASC' : 'price ASC') + " LIMIT 50",
           [mk, ml + "%", (v.year||2015)-2, (v.year||2015)+2]
         )
       } catch(e) { console.log("[QUICK-PRICE] listings query error:", e.message) }

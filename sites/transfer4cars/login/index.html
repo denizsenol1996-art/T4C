@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inloggen — Transfer4Cars</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b1216;--bg-2:#0f181d;--card:#121d23;
+  --line:rgba(255,255,255,.06);--line-2:rgba(255,255,255,.12);
+  --ink:#ecf0ed;--ink-2:#8a9591;--ink-3:#5a6663;
+  --green:#00e68a;--green-glow:rgba(0,230,138,.18);--red:#ef4444;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg)}
+body{font-family:var(--font);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+
+header{border-bottom:1px solid var(--line);background:rgba(11,18,22,.92);backdrop-filter:blur(20px)}
+.head-in{max-width:1320px;margin:0 auto;padding:18px 32px}
+.logo{font-size:19px;font-weight:800;letter-spacing:-.5px;color:var(--ink)}
+.logo .num{color:var(--green);font-weight:900}
+
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:60px 24px;position:relative}
+main::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(0,230,138,.06),transparent 60%);pointer-events:none}
+.card{position:relative;width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:36px;box-shadow:0 24px 48px rgba(0,0,0,.4)}
+.card h1{font-size:28px;font-weight:800;letter-spacing:-.8px;margin:0 0 6px}
+.card .sub{color:var(--ink-2);font-size:14px;margin:0 0 24px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--ink-3);text-transform:uppercase}
+.field input{background:rgba(0,0,0,.25);border:1px solid var(--line);color:var(--ink);padding:13px 16px;border-radius:12px;font-family:var(--font);font-size:15px;outline:none;transition:border-color .15s,box-shadow .15s}
+.field input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,230,138,.1)}
+.cta{display:flex;align-items:center;justify-content:center;width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:700;background:var(--green);color:#001a0d;border:none;cursor:pointer;font-family:inherit;transition:.15s;margin-top:8px}
+.cta:hover{background:#0fff97;transform:translateY(-1px);box-shadow:0 6px 24px var(--green-glow)}
+.cta:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+.err{display:none;color:var(--red);background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);padding:10px 14px;border-radius:10px;font-size:13px;font-family:var(--mono);margin-bottom:12px}
+.err.show{display:block}
+.foot{margin-top:24px;text-align:center;font-size:14px;color:var(--ink-2)}
+.foot a{color:var(--green);font-weight:600}
+
+footer{border-top:1px solid var(--line);background:var(--bg-2);padding:24px 32px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+footer a{color:var(--ink-2)}footer a:hover{color:var(--green)}
+</style>
+<!-- Google Analytics 4 -->
+<script src="/js/consent.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ECSBWCG10K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-ECSBWCG10K');
+</script>
+</head>
+<body>
+
+<header>
+  <div class="head-in"><a class="logo" href="/">TRANSFER<span class="num">4</span>CARS</a></div>
+</header>
+
+<main>
+  <div class="card">
+    <h1>Inloggen</h1>
+    <p class="sub">Welkom terug. Log in om mee te bieden op veilingen.</p>
+    <form id="login-form" onsubmit="doLogin(event)">
+      <div class="err" id="err"></div>
+      <div class="field"><label>Gebruikersnaam</label><input id="u" autocomplete="username" required></div>
+      <div class="field"><label>Wachtwoord</label><input id="p" type="password" autocomplete="current-password" required></div>
+      <button type="submit" class="cta" id="btn">Inloggen</button>
+    </form>
+    <div class="foot">Nog geen account? <a href="/aanmelden/">Account aanvragen</a></div>
+  </div>
+</main>
+
+<footer>© 2026 Transfer4Cars · KvK 88503925 · <a href="/voorwaarden/">Voorwaarden</a> · <a href="/privacy/">Privacy</a></footer>
+
+<script>
+const nextUrl=new URLSearchParams(location.search).get("next")||"/veilingen/";
+async function doLogin(e){
+  e.preventDefault();
+  const err=document.getElementById("err"),btn=document.getElementById("btn");
+  err.classList.remove("show");btn.disabled=true;btn.textContent="Inloggen…";
+  try{
+    const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      username:document.getElementById("u").value,password:document.getElementById("p").value
+    })});
+    const d=await r.json();
+    if(!d.ok){throw new Error(d.error||"Onjuiste inloggegevens")}
+    localStorage.setItem("t4c_token",d.token);
+    if(d.user)localStorage.setItem("t4c_user",JSON.stringify(d.user));
+    const role=(d.user&&d.user.role)||"";
+    if(role==="admin"||role==="t4c"||role==="staff")location.href="/admin/";
+    else location.href=nextUrl;
+  }catch(ex){
+    err.textContent=ex.message;err.classList.add("show");
+    btn.disabled=false;btn.textContent="Inloggen";
+  }
+}
+</script>
+</body>
+</html>

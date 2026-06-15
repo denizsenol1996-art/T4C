@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Veiling — Transfer4Cars</title>
+<meta name="robots" content="noindex,follow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="/js/user-nav.js"></script>
+<style>
+:root{
+  --bg:#0b1216;
+  --bg-2:#0f181d;
+  --card:#121d23;
+  --card-2:#17242b;
+  --line:rgba(255,255,255,.06);
+  --line-2:rgba(255,255,255,.12);
+  --ink:#ecf0ed;
+  --ink-2:#8a9591;
+  --ink-3:#5a6663;
+  --green:#00e68a;
+  --green-d:#00cc7a;
+  --green-glow:rgba(0,230,138,.18);
+  --warn:#f59e0b;
+  --red:#ef4444;
+  --plate:#f5c518;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg)}
+body{font-family:var(--font);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;padding:0}
+img{display:block;max-width:100%}
+
+/* HEADER */
+header{
+  border-bottom:1px solid var(--line);
+  background:rgba(11,18,22,.92);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  position:sticky;top:0;z-index:50;
+}
+.head-in{max-width:1320px;margin:0 auto;padding:18px 32px;display:flex;align-items:center;gap:48px}
+.logo{font-size:19px;font-weight:800;letter-spacing:-.5px;color:var(--ink)}
+.logo b{font-weight:900}
+.logo .num{color:var(--green);font-weight:900}
+nav.primary{display:flex;gap:32px;flex:1}
+nav.primary a{font-size:14px;color:var(--ink-2);font-weight:500;transition:color .15s}
+nav.primary a:hover{color:var(--ink)}
+nav.primary a.active{color:var(--green)}
+.user{display:flex;align-items:center;gap:14px}
+.user .name{font-size:13px;color:var(--ink-2);font-family:var(--mono)}
+.linkbtn{font-size:14px;color:var(--ink-2);font-weight:500;transition:color .15s;background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
+.linkbtn:hover{color:var(--ink)}
+.cta{display:inline-flex;align-items:center;justify-content:center;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:700;background:var(--green);color:#001a0d;transition:background .15s,transform .1s,box-shadow .2s;font-family:inherit;border:none;cursor:pointer}
+.cta:hover{background:#0fff97;transform:translateY(-1px);box-shadow:0 6px 24px var(--green-glow)}
+.cta:active{transform:translateY(0)}
+.cta:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.ghost{display:inline-flex;align-items:center;justify-content:center;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:600;background:transparent;color:var(--ink);border:1px solid var(--line-2);transition:border-color .15s,background .15s;font-family:inherit;cursor:pointer}
+.ghost:hover{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.03)}
+
+/* BREADCRUMB */
+.crumbs{max-width:1320px;margin:0 auto;padding:18px 32px 0;font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.5px}
+.crumbs a{color:var(--ink-2);transition:color .15s}
+.crumbs a:hover{color:var(--green)}
+
+/* LOADING + ERROR */
+.loading,.alert-err{max-width:1320px;margin:32px auto;padding:0 32px;font-family:var(--mono);font-size:13px;letter-spacing:.5px;color:var(--ink-3)}
+.alert-err{color:var(--red);padding:18px 24px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;margin-left:auto;margin-right:auto;width:calc(100% - 64px)}
+
+/* TITLE STRIP */
+.title-strip{max-width:1320px;margin:24px auto 0;padding:0 32px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.title-strip h1{font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-1.2px;margin:0;line-height:1.05;color:var(--ink)}
+.plate{font-family:var(--mono);font-weight:700;font-size:15px;letter-spacing:1.5px;background:var(--plate);color:#0a0a0a;padding:5px 12px;border-radius:5px;border:1px solid rgba(0,0,0,.2);text-transform:uppercase}
+.title-strip .vmeta{font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.5px;text-transform:uppercase;width:100%;margin-top:6px;display:flex;gap:14px;align-items:center}
+.status-pill{display:inline-flex;align-items:center;padding:4px 10px;border-radius:6px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.status-pill.actief{background:rgba(0,230,138,.08);color:var(--green);border:1px solid rgba(0,230,138,.2)}
+.status-pill.gewonnen{background:rgba(255,255,255,.05);color:var(--ink-2);border:1px solid var(--line-2)}
+.status-pill.gepland{background:rgba(245,158,11,.08);color:var(--warn);border:1px solid rgba(245,158,11,.25)}
+
+/* HERO */
+.hero{max-width:1320px;margin:24px auto 0;padding:0 32px;display:grid;grid-template-columns:1.5fr 1fr;gap:24px;align-items:start}
+@media(max-width:980px){.hero{grid-template-columns:1fr}}
+
+.gallery{position:relative;border-radius:18px;overflow:hidden;background:var(--card);border:1px solid var(--line);box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.gallery__main{position:relative;aspect-ratio:16/10;background:#0a0e10;cursor:zoom-in}
+.gallery__main img{width:100%;height:100%;object-fit:cover;display:block}
+.gallery__main .nophoto{display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink-3);font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase}
+.gallery__counter{position:absolute;bottom:14px;right:14px;background:rgba(11,18,22,.85);backdrop-filter:blur(8px);border:1px solid var(--line-2);padding:5px 11px;border-radius:999px;font-family:var(--mono);font-size:11px;color:var(--ink);z-index:2}
+.gallery__nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;background:rgba(11,18,22,.7);backdrop-filter:blur(8px);border:1px solid var(--line-2);border-radius:50%;color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;z-index:2;cursor:pointer;transition:.15s}
+.gallery__nav:hover{background:var(--green);color:#001a0d;border-color:var(--green)}
+.gallery__nav.prev{left:14px}.gallery__nav.next{right:14px}
+.gallery__thumbs{display:flex;gap:6px;padding:10px;background:#0a0e10;overflow-x:auto}
+.gallery__thumbs button{flex:0 0 84px;aspect-ratio:16/10;padding:0;border:2px solid transparent;border-radius:8px;background:var(--card-2);cursor:pointer;overflow:hidden;transition:border-color .15s}
+.gallery__thumbs button img{width:100%;height:100%;object-fit:cover;display:block}
+.gallery__thumbs button.active{border-color:var(--green);box-shadow:0 0 12px rgba(0,230,138,.3)}
+
+/* CMD = bid command center */
+.cmd{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:24px;
+  display:flex;flex-direction:column;gap:20px;
+  position:sticky;top:96px;height:max-content;
+  box-shadow:0 12px 40px rgba(0,0,0,.3);
+}
+.cmd__countdown{
+  text-align:center;
+  padding:20px;
+  border-radius:14px;
+  background:rgba(245,158,11,.06);
+  border:1px solid rgba(245,158,11,.18);
+}
+.cmd__countdown .lbl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:2px;color:var(--warn);text-transform:uppercase}
+.cmd__countdown .val{font-family:var(--mono);font-size:36px;font-weight:600;color:var(--ink);letter-spacing:.5px;line-height:1.1;margin-top:6px;font-variant-numeric:tabular-nums}
+.cmd__countdown.urgent{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);animation:pulse-urgent 1.4s infinite}
+.cmd__countdown.urgent .lbl,.cmd__countdown.urgent .val{color:var(--red)}
+@keyframes pulse-urgent{0%,100%{opacity:1}50%{opacity:.55}}
+
+.cmd__prices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pp{padding:14px;border-radius:12px;background:rgba(0,230,138,.04);border:1px solid rgba(0,230,138,.12)}
+.pp.exp{background:rgba(255,255,255,.02);border-color:var(--line)}
+.pp .lbl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--ink-3);text-transform:uppercase}
+.pp .val{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--green);letter-spacing:-.5px;margin-top:4px;line-height:1;font-variant-numeric:tabular-nums}
+.pp.exp .val{color:var(--ink);font-weight:500;font-size:20px}
+.pp .bids{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:6px;letter-spacing:.5px}
+
+.cmd__form{display:flex;flex-direction:column;gap:10px}
+.cmd__form label{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--ink-3);text-transform:uppercase}
+.bidinput{
+  display:flex;align-items:stretch;gap:8px;
+  background:rgba(0,0,0,.25);
+  border:1.5px solid var(--line-2);
+  border-radius:12px;padding:4px;
+  transition:border-color .15s,box-shadow .15s;
+}
+.bidinput:focus-within{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,230,138,.1)}
+.bidinput .euro{padding:0 14px;display:flex;align-items:center;color:var(--ink-3);font-family:var(--mono);font-size:18px;font-weight:600}
+.bidinput input{flex:1;background:transparent;border:none;outline:none;color:var(--ink);font-family:var(--mono);font-size:22px;font-weight:600;padding:12px 4px 12px 0;letter-spacing:-.3px;width:100%;-moz-appearance:textfield}
+.bidinput input::-webkit-outer-spin-button,.bidinput input::-webkit-inner-spin-button{-webkit-appearance:none}
+.bidhint{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.3px}
+.bidhint b{color:var(--ink-2);font-weight:500}
+
+.quickbids{display:flex;gap:6px;flex-wrap:wrap}
+.quickbid{padding:6px 12px;border-radius:8px;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink-2);background:rgba(255,255,255,.04);border:1px solid var(--line);transition:.15s;cursor:pointer}
+.quickbid:hover{color:var(--green);border-color:var(--green);background:rgba(0,230,138,.08)}
+
+.cmd .cta,.cmd .ghost{width:100%}
+.cmd__login-cta{display:flex;flex-direction:column;gap:10px;text-align:center}
+.cmd__login-cta p{margin:0;color:var(--ink-2);font-size:14px}
+.cmd__login-cta .hint{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.3px}
+.cmd__login-cta .hint a{color:var(--green)}
+
+/* DETAIL SECTIONS */
+.section{max-width:1320px;margin:32px auto 0;padding:0 32px}
+.sec-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:24px}
+@media(max-width:980px){.sec-grid{grid-template-columns:1fr}}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px}
+.panel h3{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:2px;color:var(--ink-3);text-transform:uppercase;margin:0 0 18px;display:flex;align-items:center;gap:10px}
+
+.specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:18px}
+.specs .sp .lbl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--ink-3);text-transform:uppercase;margin-bottom:3px}
+.specs .sp .val{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--ink)}
+
+.histlist{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto}
+.histlist::-webkit-scrollbar{width:6px}
+.histlist::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
+.hi{
+  display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+  padding:11px 14px;border-radius:10px;
+  background:rgba(255,255,255,.02);border:1px solid var(--line);
+  font-family:var(--mono);font-size:13px;
+}
+.hi.top{
+  background:linear-gradient(135deg,rgba(0,230,138,.1),rgba(0,230,138,.02));
+  border-color:rgba(0,230,138,.3);
+  box-shadow:0 0 20px rgba(0,230,138,.06);
+}
+.hi .who{color:var(--ink-2);font-size:11px;letter-spacing:.5px}
+.hi .who b{color:var(--ink);font-weight:600}
+.hi .when{color:var(--ink-3);font-size:10px;letter-spacing:.3px}
+.hi .am{color:var(--green);font-weight:700;font-size:15px;letter-spacing:-.2px;text-align:right;font-variant-numeric:tabular-nums}
+.hi.top .am{font-size:17px}
+
+.empty-hist{font-family:var(--mono);font-size:12px;color:var(--ink-3);text-align:center;padding:30px 0;letter-spacing:.5px}
+.hist-foot{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);text-align:center}
+.hist-foot .hint{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.3px}
+
+.desc{color:var(--ink);font-size:14.5px;line-height:1.7;margin:0;white-space:pre-line}
+
+.trust-strip{border-top:1px solid var(--line);margin-top:32px;background:var(--bg-2)}
+.trust-strip__in{max-width:1320px;margin:0 auto;padding:18px 32px;display:flex;justify-content:center;gap:32px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--ink-2);letter-spacing:.5px}
+.trust{display:inline-flex;align-items:center;gap:6px}
+.trust svg{color:var(--green);flex-shrink:0}
+
+/* Mini-stats boven quickbids */
+.cmd__sub{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.3px;text-transform:uppercase}
+.cmd__sub .it{text-align:center}
+.cmd__sub .it b{display:block;color:var(--ink);font-size:15px;font-weight:600;margin-bottom:2px;letter-spacing:-.2px;text-transform:none}
+.cmd__section-lbl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--ink-3);text-transform:uppercase;margin-top:4px}
+
+/* LIGHTBOX */
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:200;display:none;align-items:center;justify-content:center;padding:30px;backdrop-filter:blur(8px)}
+.lb.show{display:flex}
+.lb img{max-width:100%;max-height:100%;display:block;border-radius:8px}
+.lb__close{position:absolute;top:20px;right:20px;width:42px;height:42px;background:rgba(255,255,255,.08);border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;transition:.15s}
+.lb__close:hover{background:var(--green);color:#001a0d}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;padding:14px 22px;border-radius:12px;font-weight:600;font-size:14px;box-shadow:0 12px 40px rgba(0,0,0,.5);transform:translateY(100px);opacity:0;transition:all .25s;z-index:200;backdrop-filter:blur(20px)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{background:rgba(0,230,138,.95);color:#001a0d}
+.toast.err{background:rgba(239,68,68,.95);color:#fff}
+
+footer{border-top:1px solid var(--line);margin-top:48px;background:var(--bg-2)}
+.foot-in{max-width:1320px;margin:0 auto;padding:32px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+.foot-in a{color:var(--ink-2)}
+.foot-in a:hover{color:var(--green)}
+
+.hamburger{display:none;background:transparent;border:none;color:var(--ink);padding:6px;cursor:pointer;align-items:center;justify-content:center;border-radius:8px;transition:background .15s}
+.hamburger:hover{background:rgba(255,255,255,.04)}
+.mob-menu{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-2);border-bottom:1px solid var(--line);padding:14px 24px;flex-direction:column;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:49}
+.mob-menu.open{display:flex}
+.mob-menu a{padding:12px 8px;font-size:15px;color:var(--ink-2);border-radius:8px;transition:.15s}
+.mob-menu a:hover,.mob-menu a.active{color:var(--green);background:rgba(0,230,138,.06)}
+
+@media(max-width:980px){
+  /* Bid-cmd niet meer sticky op mobile */
+  .cmd{position:static;top:auto}
+}
+
+@media(max-width:640px){
+  header{position:relative}
+  .head-in{padding:14px 18px;gap:14px}
+  nav.primary{display:none}
+  .hamburger{display:inline-flex}
+  .user .name{display:none}
+  .crumbs,.title-strip,.hero,.section,.foot-in,.trust-strip__in{padding-left:18px;padding-right:18px}
+  .title-strip h1{font-size:26px}
+  .cmd__countdown .val{font-size:30px}
+  .cmd__prices{grid-template-columns:1fr;gap:8px}
+  .pp .val{font-size:24px}
+  .specs{grid-template-columns:repeat(2,1fr);gap:14px}
+  .trust-strip__in{flex-direction:column;gap:10px;text-align:center}
+}
+</style>
+<!-- Google Analytics 4 -->
+<script src="/js/consent.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ECSBWCG10K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-ECSBWCG10K');
+</script>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <a class="logo" href="/">TRANSFER<span class="num">4</span>CARS</a>
+    <nav class="primary">
+      <a href="/aanbod/">Voorraad</a>
+      <a href="/veilingen/" class="active">Veilingen</a>
+      <a href="/#over-ons">Over ons</a>
+      <a href="/#b2b">B2B</a>
+      <a href="/transport/">Transport</a>
+      <a href="/#contact">Contact</a>
+    </nav>
+    <div class="user" id="user-area"></div>
+    <button class="hamburger" aria-label="Menu" onclick="document.getElementById('mob-menu').classList.toggle('open')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  <nav id="mob-menu" class="mob-menu">
+    <a href="/aanbod/">Voorraad</a>
+    <a href="/veilingen/" class="active">Veilingen</a>
+    <a href="/transport/">Transport</a>
+    <a href="/verkoop/">Verkoop</a>
+  </nav>
+</header>
+
+<div class="crumbs"><a href="/veilingen/">← Alle veilingen</a></div>
+
+<div id="login-wall" style="display:none">
+  <div style="max-width:560px;margin:80px auto;padding:40px 32px;background:var(--card);border:1px solid var(--line);border-radius:18px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.4)">
+    <div style="width:56px;height:56px;border-radius:50%;background:rgba(0,230,138,.08);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--green)">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </div>
+    <h2 style="font-size:22px;font-weight:800;letter-spacing:-.5px;margin:0 0 8px">Account vereist</h2>
+    <p style="color:var(--ink-2);font-size:14px;margin:0 0 24px;line-height:1.6">Veilingen zijn exclusief voor geregistreerde autohandelaren. Vraag toegang aan met je bedrijfsgegevens — we nemen binnen 24 uur contact op.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a class="ghost" id="wall-login" href="/login/" style="flex:1;min-width:140px">Inloggen</a>
+      <a class="cta" href="/aanmelden/" style="flex:1;min-width:140px">Toegang aanvragen</a>
+    </div>
+  </div>
+</div>
+
+<div id="loading" class="loading">Veiling laden…</div>
+<div id="error" class="alert-err" style="display:none"></div>
+
+<div id="content" style="display:none">
+
+<div class="title-strip">
+  <h1 id="title">—</h1>
+  <span class="plate" id="plate"></span>
+  <div class="vmeta" id="vmeta"></div>
+</div>
+
+<section class="hero">
+  <div class="gallery">
+    <div class="gallery__main" id="gal-main">
+      <div id="main-photo"><div class="nophoto">— geen foto's —</div></div>
+    </div>
+    <div class="gallery__thumbs" id="thumbs" style="display:none"></div>
+  </div>
+
+  <aside class="cmd">
+    <div id="cd-pill" class="cmd__countdown">
+      <div class="lbl">Tijd resterend</div>
+      <div class="val" id="cd-val">—</div>
+    </div>
+    <div class="cmd__prices">
+      <div class="pp">
+        <div class="lbl">Huidig bod</div>
+        <div class="val" id="huidig">—</div>
+        <div class="bids" id="bidscount">— biedingen</div>
+      </div>
+      <div class="pp exp">
+        <div class="lbl">Verwacht</div>
+        <div class="val" id="verwacht">—</div>
+      </div>
+    </div>
+    <div id="bid-area"></div>
+  </aside>
+</section>
+
+<section class="section sec-grid">
+  <div>
+    <div class="panel">
+      <h3>Specificaties</h3>
+      <div id="specs" class="specs"></div>
+    </div>
+    <div class="panel" id="desc-panel" style="margin-top:16px;display:none">
+      <h3>Omschrijving</h3>
+      <p id="desc" class="desc"></p>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Biedhistorie</h3>
+    <ul id="history" class="histlist">
+      <li class="empty-hist">— nog geen biedingen —</li>
+    </ul>
+    <div class="hist-foot" id="hist-foot">
+      <span class="hint">Geef een eerste bod en wees als eerste.</span>
+    </div>
+  </div>
+</section>
+
+<section class="trust-strip">
+  <div class="trust-strip__in">
+    <div class="trust"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> 100% Transparant</div>
+    <div class="trust">Exclusief voor B2B-handelaren</div>
+    <div class="trust">Transport door heel NL &amp; EU</div>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div class="foot-in">
+    <div>© 2026 Transfer4Cars · KvK 88503925</div>
+    <div><a href="/voorwaarden/">Voorwaarden</a> · <a href="/privacy/">Privacy</a></div>
+  </div>
+</footer>
+
+<div id="lightbox" class="lb">
+  <button class="lb__close" onclick="closeLB()">✕</button>
+  <img id="lb-img">
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const token=localStorage.getItem("t4c_token");
+const user=JSON.parse(localStorage.getItem("t4c_user")||"{}");
+const veilingId=new URL(location.href).searchParams.get("id");
+
+function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function fmtEur(n){return n?"€ "+Number(n).toLocaleString("nl-NL"):"—";}
+function fmtTime(iso){if(!iso)return"—";const d=new Date(iso);return d.toLocaleDateString("nl-NL",{day:"2-digit",month:"short"})+" "+d.toLocaleTimeString("nl-NL",{hour:"2-digit",minute:"2-digit"})}
+function urgent(eind){return(new Date(eind)-new Date())<5*60*1000}
+
+t4cUserNav("user-area", { currentPath: "/veilingen/detail/" });
+
+let currentV=null,cdTimer=null,photos=[],curIdx=0;
+
+function startCountdown(eind){
+  const el=document.getElementById("cd-val"),pill=document.getElementById("cd-pill");
+  const tick=()=>{
+    const d=new Date(eind)-new Date();
+    if(d<=0){el.textContent="AFGELOPEN";pill.classList.remove("urgent");return}
+    const h=Math.floor(d/3600000),m=Math.floor((d%3600000)/60000),s=Math.floor((d%60000)/1000);
+    let txt;
+    if(h>=24)txt=Math.floor(h/24)+"d "+(h%24).toString().padStart(2,"0")+":"+m.toString().padStart(2,"0");
+    else txt=h.toString().padStart(2,"0")+":"+m.toString().padStart(2,"0")+":"+s.toString().padStart(2,"0");
+    el.textContent=txt;
+    pill.classList.toggle("urgent",urgent(eind));
+  };
+  tick();
+  return setInterval(tick,1000);
+}
+
+async function loadDetail(){
+  if(!veilingId){showErr("Geen veiling-ID in URL.");return}
+  try{
+    const r=await fetch("/api/veiling/"+encodeURIComponent(veilingId));
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error||"Niet gevonden");
+    currentV=d.veiling;
+    render(d.veiling);
+  }catch(e){showErr(e.message)}
+}
+
+function showErr(msg){
+  document.getElementById("loading").style.display="none";
+  const el=document.getElementById("error");
+  el.textContent="Fout: "+msg;el.style.display="";
+}
+
+function render(v){
+  document.getElementById("loading").style.display="none";
+  document.getElementById("content").style.display="";
+
+  const naam=(((v.merk||"")+" "+(v.model||"")).trim()||v.titel||v.kenteken);
+  document.title=naam+" — Transfer4Cars";
+  document.getElementById("title").textContent=naam;
+  const pl=document.getElementById("plate");
+  if(v.kenteken){pl.textContent=v.kenteken;pl.style.display=""}else pl.style.display="none";
+  document.getElementById("vmeta").innerHTML=
+    `<span>Veiling #${v.id}</span>`
+    + (v.ronde>1?`<span>· Ronde ${v.ronde}</span>`:"")
+    + ` <span class="status-pill ${esc(v.status)}">${esc(v.status)}</span>`;
+
+  photos=(v.fotos||[]).map(p=>p.filename);
+  renderPhotos();
+
+  const car=v.auto||{};
+  const specs=[
+    {l:"Bouwjaar",v:v.bouwjaar||car.year},
+    {l:"Km-stand",v:(v.km||car.km)?Number(v.km||car.km).toLocaleString("nl-NL")+" km":null},
+    {l:"Brandstof",v:v.brandstof||car.fuel},
+    {l:"Kleur",v:v.kleur||car.color},
+    {l:"Carrosserie",v:car.body},
+    {l:"Vermogen",v:car.power_hp?car.power_hp+" pk":(car.power_kw?car.power_kw+" kW":null)},
+    {l:"Transmissie",v:car.transmission},
+    {l:"APK tot",v:car.apk_until},
+    {l:"VIN",v:car.vin}
+  ].filter(s=>s.v);
+  document.getElementById("specs").innerHTML=specs.map(s=>
+    `<div class="sp"><div class="lbl">${esc(s.l)}</div><div class="val">${esc(s.v)}</div></div>`
+  ).join("");
+
+  const beschrijving=v.beschrijving||car.beschrijving;
+  if(beschrijving){
+    document.getElementById("desc").textContent=beschrijving;
+    document.getElementById("desc-panel").style.display="";
+  }
+
+  document.getElementById("huidig").textContent=fmtEur(v.huidige_bod||v.startprijs||0);
+  document.getElementById("verwacht").textContent=v.verwachte_prijs?fmtEur(v.verwachte_prijs):"—";
+  document.getElementById("bidscount").textContent=(v.aantal_biedingen||0)+" "+((v.aantal_biedingen===1)?"bod":"biedingen");
+
+  if(cdTimer)clearInterval(cdTimer);
+  cdTimer=startCountdown(v.eind_datum);
+
+  renderBidForm(v);
+  renderHistory(v.biedingen||[]);
+  injectJsonLd(v);
+}
+
+function renderPhotos(){
+  if(!photos.length)return;
+  showPhoto(0);
+  if(photos.length>1){
+    const th=document.getElementById("thumbs");
+    th.style.display="";
+    th.innerHTML=photos.slice(0,20).map((p,i)=>
+      `<button class="${i===0?'active':''}" data-idx="${i}"><img src="/photos/${esc(p)}" loading="lazy"></button>`
+    ).join("");
+    th.onclick=e=>{const b=e.target.closest("button");if(b)showPhoto(Number(b.dataset.idx));};
+    const main=document.getElementById("gal-main");
+    if(!main.querySelector(".gallery__nav")){
+      main.insertAdjacentHTML("beforeend",
+        `<button class="gallery__nav prev" onclick="event.stopPropagation();navPhoto(-1)">‹</button>
+         <button class="gallery__nav next" onclick="event.stopPropagation();navPhoto(1)">›</button>
+         <div class="gallery__counter" id="counter">1/${photos.length}</div>`);
+    }
+  }
+}
+
+function showPhoto(i){
+  curIdx=i;
+  const url=photos[i];
+  document.getElementById("main-photo").innerHTML=`<img src="/photos/${esc(url)}" alt="">`;
+  document.querySelectorAll("#thumbs button").forEach((b,idx)=>b.classList.toggle("active",idx===i));
+  const c=document.getElementById("counter");if(c)c.textContent=(i+1)+"/"+photos.length;
+}
+
+function navPhoto(d){const n=(curIdx+d+photos.length)%photos.length;showPhoto(n)}
+
+document.getElementById("gal-main").addEventListener("click",e=>{
+  if(e.target.closest(".gallery__nav"))return;
+  if(!photos.length)return;
+  openLB(curIdx);
+});
+
+function openLB(i){
+  curIdx=i;
+  document.getElementById("lb-img").src="/photos/"+photos[i];
+  document.getElementById("lightbox").classList.add("show");
+  document.body.style.overflow="hidden";
+}
+function closeLB(){document.getElementById("lightbox").classList.remove("show");document.body.style.overflow=""}
+
+document.addEventListener("keydown",e=>{
+  if(document.getElementById("lightbox").classList.contains("show")){
+    if(e.key==="Escape")closeLB();
+    if(e.key==="ArrowLeft"){curIdx=(curIdx-1+photos.length)%photos.length;document.getElementById("lb-img").src="/photos/"+photos[curIdx];showPhoto(curIdx)}
+    if(e.key==="ArrowRight"){curIdx=(curIdx+1)%photos.length;document.getElementById("lb-img").src="/photos/"+photos[curIdx];showPhoto(curIdx)}
+  }
+});
+
+function renderBidForm(v){
+  const area=document.getElementById("bid-area");
+  if(v.status!=="actief"){area.innerHTML=`<div class="bidhint" style="text-align:center;padding:14px">Deze veiling is <b>${esc(v.status)}</b>.</div>`;return}
+  if(!token){
+    const aantal=v.aantal_biedingen||0;
+    area.innerHTML=`
+      <div class="cmd__sub">
+        <div class="it"><b>${aantal}</b>${aantal===1?'bod':'biedingen'}</div>
+        <div class="it"><b>0</b>in watchlist</div>
+      </div>
+      <div class="cmd__login-cta">
+        <a class="cta" href="/login/?next=${encodeURIComponent(location.pathname+location.search)}">Inloggen om te bieden →</a>
+        <div class="hint">Nog geen account? <a href="/aanmelden/">Toegang aanvragen →</a></div>
+      </div>`;
+    return;
+  }
+  const huidig=Number(v.huidige_bod||0),startp=Number(v.startprijs||0);
+  const minBod=Math.max(huidig,startp)+100;
+  const aantal=v.aantal_biedingen||0;
+  area.innerHTML=`
+    <div class="cmd__sub">
+      <div class="it"><b>${aantal}</b>${aantal===1?'bod':'biedingen'}</div>
+      <div class="it"><b>0</b>in watchlist</div>
+    </div>
+    <form id="bid-form" class="cmd__form">
+      <label>Jouw bod</label>
+      <div class="bidinput">
+        <span class="euro">€</span>
+        <input id="bedrag" type="number" min="${minBod}" step="100" value="${minBod}" required>
+      </div>
+      <div class="bidhint">Minimaal <b>€ ${minBod.toLocaleString("nl-NL")}</b> (huidig + €100)</div>
+      <div class="cmd__section-lbl">Snelle stappen</div>
+      <div class="quickbids">
+        <button type="button" class="quickbid" data-add="100">+€100</button>
+        <button type="button" class="quickbid" data-add="250">+€250</button>
+        <button type="button" class="quickbid" data-add="500">+€500</button>
+        <button type="button" class="quickbid" data-add="1000">+€1.000</button>
+      </div>
+      <button type="submit" class="cta">Plaats bod →</button>
+      <button id="watch-btn" type="button" class="ghost">+ Watchlist</button>
+    </form>`;
+  document.getElementById("bid-form").addEventListener("submit",placeBid);
+  document.getElementById("watch-btn").addEventListener("click",addWatcher);
+  document.querySelectorAll(".quickbid").forEach(b=>b.addEventListener("click",()=>{
+    const inp=document.getElementById("bedrag");
+    inp.value=Number(inp.value||minBod)+Number(b.dataset.add);
+  }));
+}
+
+function renderHistory(bids){
+  const ul=document.getElementById("history");
+  if(!bids.length){ul.innerHTML=`<li class="empty-hist">— nog geen biedingen —</li>`;return}
+  ul.innerHTML=bids.slice(0,30).map((b,i)=>`
+    <li class="hi ${i===0?'top':''}">
+      <div>
+        <div class="who"><b>${esc(b.username||("bieder #"+(b.user_id||"?")))}</b></div>
+        <div class="when">${fmtTime(b.created_at)}</div>
+      </div>
+      <div class="am">${fmtEur(b.bedrag)}</div>
+    </li>`).join("");
+}
+
+async function placeBid(e){
+  e.preventDefault();
+  const bedrag=parseFloat(document.getElementById("bedrag").value);
+  try{
+    const r=await fetch("/api/veiling/"+veilingId+"/bied",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+      body:JSON.stringify({bedrag})
+    });
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error||"Bod afgewezen");
+    toast("Bod van "+fmtEur(bedrag)+" geplaatst ✓","ok");
+    await loadDetail();
+  }catch(err){toast(err.message,"err")}
+}
+
+async function addWatcher(){
+  try{
+    const r=await fetch("/api/veiling/watch",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+      body:JSON.stringify({veiling_id:Number(veilingId)})
+    });
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error||"Niet gelukt");
+    toast("Toegevoegd aan watchlist","ok");
+  }catch(e){toast(e.message,"err")}
+}
+
+function toast(msg,kind){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.className="toast "+(kind||"ok");
+  t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),3000);
+}
+
+function injectJsonLd(v){
+  const naam=(((v.merk||"")+" "+(v.model||"")).trim()||v.titel||v.kenteken);
+  const ld={
+    "@context":"https://schema.org",
+    "@type":"Vehicle",
+    "name":naam,
+    "brand":v.merk?{"@type":"Brand","name":v.merk}:undefined,
+    "model":v.model||undefined,
+    "vehicleModelDate":v.bouwjaar?String(v.bouwjaar):undefined,
+    "mileageFromOdometer":v.km?{"@type":"QuantitativeValue","value":v.km,"unitCode":"KMT"}:undefined,
+    "fuelType":v.brandstof||undefined,
+    "color":v.kleur||undefined,
+    "offers":v.status==="actief"?{
+      "@type":"Offer","url":location.href,"priceCurrency":"EUR",
+      "price":v.huidige_bod||v.startprijs||0,
+      "availability":"https://schema.org/InStock",
+      "validThrough":v.eind_datum,
+      "seller":{"@type":"AutoDealer","name":"Transfer4Cars"}
+    }:undefined
+  };
+  Object.keys(ld).forEach(k=>ld[k]===undefined&&delete ld[k]);
+  let el=document.getElementById("v-jsonld");
+  if(!el){el=document.createElement("script");el.id="v-jsonld";el.type="application/ld+json";document.head.appendChild(el)}
+  el.textContent=JSON.stringify(ld);
+}
+
+/* SSE real-time bid updates met polling fallback */
+let _sse=null,_sseRetry=0,_pollFallback=null;
+function connectSSE(){
+  if(!veilingId)return;
+  try{
+    _sse=new EventSource("/api/veiling/"+encodeURIComponent(veilingId)+"/stream");
+    _sse.addEventListener("open",()=>{_sseRetry=0;if(_pollFallback){clearInterval(_pollFallback);_pollFallback=null}});
+    _sse.addEventListener("bid",e=>{
+      loadDetail();
+      try{const d=JSON.parse(e.data);if(d.anti_snipe)toast("Anti-snipe: +2 min toegevoegd","ok")}catch{}
+    });
+    _sse.addEventListener("error",()=>{
+      _sseRetry++;
+      if(_sseRetry>3&&!_pollFallback){
+        try{_sse.close()}catch{}
+        _pollFallback=setInterval(loadDetail,5000);
+      }
+    });
+  }catch{_pollFallback=setInterval(loadDetail,5000)}
+}
+
+if(!token){
+  document.getElementById("loading").style.display="none";
+  document.getElementById("login-wall").style.display="";
+  const nextUrl=location.pathname+location.search;
+  document.getElementById("wall-login").href="/login/?next="+encodeURIComponent(nextUrl);
+}else{
+  loadDetail();
+  connectSSE();
+}
+</script>
+</body>
+</html>

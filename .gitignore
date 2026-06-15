@@ -37,3 +37,14 @@ backend/test-*.js
 # Security + grote artefacten (hardening 2026-06-13)
 secrets/
 FULL-STATE-BACKUPS/
+
+# Schoonmaak-traject 2026-06-15 — patch/staging restjes & verworpen design-backups
+*PATCH-READY
+*.STAGED-*
+*-APPLY.md
+*.dna-dark-*
+*.two-tone-*
+*.auto1-stijl-discarded*
+wal-poc/
+backend/db.bsqlite.js
+*-discarded-*

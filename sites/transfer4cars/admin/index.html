@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin — Transfer4Cars</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="/js/user-nav.js"></script>
+<style>
+:root{
+  --bg:#0b1216;--bg2:#0f181d;--card:#121d23;--card2:#17242b;
+  --line:rgba(255,255,255,.06);--line2:rgba(255,255,255,.12);
+  --ink:#ecf0ed;--ink2:#8a9591;--ink3:#5a6663;
+  --green:#00e68a;--green-d:#00cc7a;--green-glow:rgba(0,230,138,.18);
+  --warn:#f59e0b;--red:#ef4444;
+  --font:'Inter',system-ui,sans-serif;
+  --head:'Plus Jakarta Sans',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;-webkit-font-smoothing:antialiased;min-height:100vh;overflow:hidden}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+select{font-family:inherit}
+
+/* TOP HEADER */
+.top-header{border-bottom:1px solid var(--line);background:rgba(11,18,22,.95);backdrop-filter:saturate(180%) blur(20px);position:sticky;top:0;z-index:50;height:56px;flex-shrink:0}
+.top-header-in{height:100%;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo-wrap{display:flex;align-items:center;gap:10px}
+.logo{font-size:18px;font-weight:800;letter-spacing:-.5px;font-family:var(--head)}.logo .n{color:var(--green);font-weight:900}
+.logo-badge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;background:rgba(0,230,138,.12);color:var(--green);border:1px solid rgba(0,230,138,.25);padding:3px 8px;border-radius:6px}
+
+/* BODY LAYOUT */
+.body-wrap{display:flex;height:calc(100vh - 56px);overflow:hidden}
+
+/* SIDEBAR */
+.sb{width:260px;background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;overflow-x:hidden}
+.sb-inner{padding:12px 0 0;flex:1}
+.sb-section{padding:16px 20px 6px;font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--mono)}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 20px;margin:1px 8px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;color:var(--ink2);transition:.15s;border:1px solid transparent;user-select:none}
+.sb-item:hover{color:var(--ink);background:rgba(255,255,255,.03)}
+.sb-item.on{color:var(--green);background:rgba(0,230,138,.06);border-color:rgba(0,230,138,.12)}
+.sb-item svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;opacity:.55;transition:.15s}
+.sb-item.on svg{opacity:1}
+.sb-badge{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:700;min-width:20px;text-align:center;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.07);color:var(--ink2)}
+.sb-item.on .sb-badge{background:rgba(0,230,138,.15);color:var(--green)}
+.sb-item.sb-badge-red .sb-badge{background:rgba(239,68,68,.12);color:var(--red)}
+.sb-footer{padding:12px 8px 16px;border-top:1px solid var(--line);margin-top:auto}
+.sb-footer-link{display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:10px;font-size:13px;color:var(--ink3);transition:.15s}
+.sb-footer-link:hover{color:var(--ink2);background:rgba(255,255,255,.03)}
+.sb-footer-link svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;opacity:.6}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;overflow-x:hidden}
+.main-inner{padding:32px 40px;min-height:100%}
+.panel-title{font-family:var(--head);font-size:24px;font-weight:800;letter-spacing:-.6px;margin-bottom:24px}
+
+/* IFRAME PANELS */
+.iframe-panel{display:none;height:calc(100vh - 56px);overflow:hidden}
+.iframe-panel.on{display:flex;flex-direction:column}
+.iframe-panel iframe{width:100%;flex:1;border:none}
+
+/* STATS ROW */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;transition:.15s}
+.stat:hover{border-color:var(--line2)}
+.stat .v{font-family:var(--mono);font-size:24px;font-weight:700;margin-bottom:2px}
+.stat .l{font-size:11px;color:var(--ink2);text-transform:uppercase;letter-spacing:.08em}
+
+/* FILTER BAR */
+.filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.filter-bar select,.filter-bar input{padding:8px 12px;background:var(--card);border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:13px;outline:none;transition:.15s}
+.filter-bar select:focus,.filter-bar input:focus{border-color:var(--green)}
+.filter-bar input{flex:1;min-width:160px}
+.filter-bar select option{background:var(--card2)}
+
+/* TABLE */
+.t-wrap{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:24px}
+.t-wrap table{width:100%;border-collapse:collapse;font-size:13px}
+.t-wrap th{padding:11px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--line);font-family:var(--mono);white-space:nowrap}
+.t-wrap td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+.t-wrap tr:last-child td{border-bottom:0}
+.t-wrap tr:hover td{background:rgba(255,255,255,.015)}
+.t-wrap .mono{font-family:var(--mono);font-size:12px}
+.t-wrap .actions{display:flex;gap:6px;align-items:center}
+
+/* FORM */
+.form-wrap{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:20px}
+.form-wrap h3{font-family:var(--head);font-size:16px;font-weight:700;margin-bottom:18px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.form-row-1{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:14px}
+.field label{display:block;font-size:11px;color:var(--ink2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:13px;font-family:inherit;outline:none;transition:.15s}
+.field textarea{resize:vertical;min-height:80px}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green)}
+.field select option{background:var(--card2)}
+.form-actions{display:flex;gap:10px;align-items:center;margin-top:18px;flex-wrap:wrap}
+
+/* BUTTONS */
+.btn-g{padding:9px 20px;background:var(--green);color:#001a0d;border-radius:9px;font-weight:700;font-size:13px;border:0;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn-g:hover{background:#0fff97;transform:translateY(-1px)}
+.btn-o{padding:9px 20px;background:transparent;color:var(--ink);border:1px solid var(--line2);border-radius:9px;font-weight:600;font-size:13px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn-o:hover{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.03)}
+.btn-d{padding:7px 14px;background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-weight:600;font-size:12px;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn-d:hover{background:rgba(239,68,68,.18)}
+.btn-sm{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600}
+.btn-edit{padding:6px 12px;background:rgba(255,255,255,.06);color:var(--ink2);border:1px solid transparent;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
+.btn-edit:hover{border-color:var(--line2);color:var(--ink)}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:700;font-family:var(--mono);white-space:nowrap}
+.badge-g{background:rgba(0,230,138,.12);color:var(--green)}
+.badge-w{background:rgba(245,158,11,.12);color:var(--warn)}
+.badge-r{background:rgba(239,68,68,.12);color:var(--red)}
+.badge-b{background:rgba(99,179,237,.12);color:#63b3ed}
+.badge-grey{background:rgba(255,255,255,.07);color:var(--ink2)}
+
+/* CARD LIST */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:12px;transition:.15s}
+.card:hover{border-color:var(--line2)}
+.card h4{font-family:var(--head);font-size:15px;font-weight:700;margin-bottom:4px}
+.card-meta{font-size:13px;color:var(--ink2);display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:10px}
+.card-meta span{display:flex;align-items:center;gap:4px}
+.card-body{font-size:14px;line-height:1.6;color:var(--ink2);margin-bottom:12px;white-space:pre-wrap;word-break:break-word}
+.card-actions{display:flex;gap:8px;align-items:center}
+
+/* PANEL */
+.panel{display:none}
+.panel.on{display:block}
+
+/* PLACEHOLDER */
+.placeholder-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:32px 28px}
+.placeholder-card h2{font-family:var(--head);font-size:20px;font-weight:800;margin-bottom:10px}
+.placeholder-card p{color:var(--ink2);font-size:14px;line-height:1.6}
+
+/* GATE */
+.gate{max-width:460px;margin:80px auto;padding:36px;background:var(--card);border:1px solid var(--line);border-radius:18px;text-align:center}
+.gate h2{font-family:var(--head);font-size:22px;font-weight:800;margin-bottom:10px}
+.gate p{color:var(--ink2);margin-bottom:24px;font-size:14px}
+.gate .btns{display:flex;gap:10px;justify-content:center}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--card2);border:1px solid var(--line2);border-radius:12px;padding:13px 22px;font-size:14px;z-index:9999;display:none;box-shadow:0 8px 32px rgba(0,0,0,.5);max-width:340px}
+
+/* PHOTO UPLOAD SECTION */
+.photo-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.photo-thumb{position:relative;width:100px;height:72px;border-radius:8px;overflow:hidden;background:var(--bg2);border:1px solid var(--line)}
+.photo-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-thumb .del-photo{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:4px;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.photo-upload-area{border:2px dashed var(--line2);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:.15s;color:var(--ink3);font-size:13px}
+.photo-upload-area:hover{border-color:var(--green);color:var(--green)}
+.photo-upload-area input{display:none}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:40px 20px;color:var(--ink3)}
+.empty svg{margin-bottom:12px;opacity:.3;display:block;margin-left:auto;margin-right:auto}
+.empty p{font-size:14px}
+
+/* MOBILE */
+@media(max-width:900px){
+  body{overflow:auto}
+  .body-wrap{flex-direction:column;height:auto;overflow:visible}
+  .sb{width:100%;height:auto;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;overflow-x:auto;overflow-y:hidden}
+  .sb-inner{display:flex;flex-direction:row;padding:8px;flex:1;align-items:center;overflow-x:auto}
+  .sb-section{display:none}
+  .sb-item{white-space:nowrap;padding:8px 14px;margin:0 2px;flex-shrink:0}
+  .sb-footer{display:none}
+  .main{overflow:visible}
+  .main-inner{padding:20px 16px}
+  .iframe-panel{height:calc(100vh - 200px)}
+  .form-row,.form-row-3{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .t-wrap{overflow-x:auto}
+}
+@media(max-width:600px){
+  .top-header-in{padding:0 16px}
+  .stats{grid-template-columns:1fr 1fr}
+  .filter-bar{gap:6px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP HEADER -->
+<div class="top-header">
+  <div class="top-header-in">
+    <div class="logo-wrap">
+      <a class="logo" href="/">TRANSFER<span class="n">4</span>CARS</a>
+      <span class="logo-badge">ADMIN</span>
+    </div>
+    <div id="user-area"></div>
+  </div>
+</div>
+
+<!-- GATE (shown when not logged in or wrong role) -->
+<div id="gate" style="display:none">
+  <div class="gate">
+    <h2>Toegang geweigerd</h2>
+    <p>Je hebt adminrechten nodig om dit dashboard te bekijken. Log in met een admin-account.</p>
+    <div class="btns">
+      <a href="/login/?next=/admin/" class="btn-g">Inloggen</a>
+      <a href="/" class="btn-o">Naar site</a>
+    </div>
+  </div>
+</div>
+
+<!-- APP (shown when auth OK) -->
+<div id="app" style="display:none">
+<div class="body-wrap">
+
+  <!-- SIDEBAR -->
+  <aside class="sb">
+    <div class="sb-inner">
+
+      <div class="sb-section">Beheer</div>
+
+      <div class="sb-item on" data-panel="veilingen" id="nav-veilingen">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/><path d="M14 14.5V16h-4v-1.5C10 12.57 11.57 11 13.5 11S17 12.57 17 14.5V16"/><path d="M8.293 9.707l1.414-1.414"/><path d="M12.293 5.707l1.414-1.414"/></svg>
+        Veilingen
+      </div>
+
+      <div class="sb-item" data-panel="inbox" id="nav-inbox">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Inbox
+        <span class="sb-badge" id="inbox-badge" style="display:none">0</span>
+      </div>
+
+      <div class="sb-item" data-panel="transport" id="nav-transport">
+        <svg viewBox="0 0 24 24" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Transport
+      </div>
+
+      <div class="sb-section">Tools</div>
+
+      <div class="sb-item" data-panel="analytics" id="nav-analytics">
+        <svg viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><path d="M2 20h20"/></svg>
+        Analytics
+      </div>
+
+      <div class="sb-item" data-panel="taxatie" id="nav-taxatie">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Taxatie-rapporten
+      </div>
+
+      <div class="sb-item" data-panel="klassiek" id="nav-klassiek">
+        <svg viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8,21 12,17 16,21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Command Center
+      </div>
+
+      <div class="sb-section">Systeem</div>
+
+      <div class="sb-item" data-panel="instellingen" id="nav-instellingen">
+        <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Instellingen
+      </div>
+
+    </div>
+
+    <div class="sb-footer">
+      <a href="/" class="sb-footer-link">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Naar site →
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="main" id="main-area">
+
+    <!-- ======= VEILINGEN PANEL ======= -->
+    <div class="panel on" id="p-veilingen">
+      <div class="main-inner">
+        <div class="panel-title">Veilingen</div>
+
+        <!-- Stats -->
+        <div class="stats">
+          <div class="stat"><div class="v" id="stat-actief">—</div><div class="l">Actief</div></div>
+          <div class="stat"><div class="v" id="stat-afgelopen">—</div><div class="l">Afgelopen</div></div>
+          <div class="stat"><div class="v" id="stat-biedingen">—</div><div class="l">Biedingen</div></div>
+          <div class="stat"><div class="v" id="stat-hoogste">—</div><div class="l">Hoogste bod</div></div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <select id="f-status" onchange="filterVeilingen()">
+            <option value="">Alle statussen</option>
+            <option value="actief">Actief</option>
+            <option value="afgelopen">Afgelopen</option>
+            <option value="concept">Concept</option>
+            <option value="geannuleerd">Geannuleerd</option>
+          </select>
+          <select id="f-kanaal" onchange="filterVeilingen()">
+            <option value="">Alle kanalen</option>
+            <option value="24h">24u</option>
+            <option value="batch">Batch</option>
+            <option value="free">Vrij</option>
+          </select>
+          <input type="text" id="f-search" placeholder="Zoek op kenteken, merk, model…" oninput="filterVeilingen()">
+          <button class="btn-g" onclick="openVeilingForm(null)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nieuwe veiling
+          </button>
+        </div>
+
+        <!-- Veiling form (hidden by default) -->
+        <div class="form-wrap" id="veiling-form-wrap" style="display:none">
+          <h3 id="form-title">Nieuwe veiling</h3>
+          <input type="hidden" id="edit-id" value="">
+
+          <div class="form-row">
+            <div class="field"><label>Kanaal</label>
+              <select id="vf-kanaal">
+                <option value="24h">24 uur</option>
+                <option value="batch">Batch</option>
+                <option value="free">Vrij</option>
+              </select>
+            </div>
+            <div class="field"><label>Kenteken</label><input type="text" id="vf-kenteken" placeholder="AA-123-B" style="text-transform:uppercase"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Titel</label><input type="text" id="vf-titel" placeholder="Bijv. BMW 320d xDrive – 2021"></div>
+            <div class="field"><label>Merk</label><input type="text" id="vf-merk" placeholder="BMW"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Model</label><input type="text" id="vf-model" placeholder="320d"></div>
+            <div class="field"><label>Bouwjaar</label><input type="number" id="vf-bouwjaar" placeholder="2021" min="1900" max="2099"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Kilometerstand</label><input type="number" id="vf-km" placeholder="45000"></div>
+            <div class="field"><label>Brandstof</label>
+              <select id="vf-brandstof">
+                <option value="">— selecteer —</option>
+                <option value="benzine">Benzine</option>
+                <option value="diesel">Diesel</option>
+                <option value="elektrisch">Elektrisch</option>
+                <option value="hybride">Hybride</option>
+                <option value="lpg">LPG</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Kleur</label><input type="text" id="vf-kleur" placeholder="Zwart metallic"></div>
+            <div class="field"></div>
+          </div>
+          <div class="form-row-1">
+            <div class="field"><label>Beschrijving</label><textarea id="vf-beschrijving" rows="4" placeholder="Uitgebreide beschrijving van het voertuig…"></textarea></div>
+          </div>
+          <div class="form-row-3">
+            <div class="field"><label>Startprijs (€)</label><input type="number" id="vf-startprijs" placeholder="5000" min="0"></div>
+            <div class="field"><label>Verwachte prijs (€)</label><input type="number" id="vf-verwacht" placeholder="12000" min="0"></div>
+            <div class="field"><label>Minimumprijs / Reserve (€)</label><input type="number" id="vf-reserve" placeholder="9500" min="0"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Startdatum</label><input type="datetime-local" id="vf-start-datum"></div>
+            <div class="field"><label>Einddatum</label><input type="datetime-local" id="vf-eind-datum"></div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-g" onclick="saveVeiling()">Opslaan</button>
+            <button class="btn-o" onclick="closeVeilingForm()">Annuleren</button>
+          </div>
+
+          <!-- Photo section (shown after save) -->
+          <div id="photo-section" style="display:none;margin-top:24px;padding-top:20px;border-top:1px solid var(--line)">
+            <div style="font-family:var(--head);font-size:14px;font-weight:700;margin-bottom:12px">Foto's</div>
+            <div class="photo-grid" id="photo-grid"></div>
+            <label class="photo-upload-area" id="photo-upload-area">
+              <input type="file" id="photo-input" multiple accept="image/*" onchange="uploadPhotos(this)">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin:0 auto 8px;display:block;opacity:.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Klik of sleep foto's hierheen
+            </label>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="t-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Auto</th>
+                <th>Kanaal</th>
+                <th>Status</th>
+                <th>Start €</th>
+                <th>Verwacht €</th>
+                <th>Reserve €</th>
+                <th>Bod €</th>
+                <th>Eind</th>
+                <th>Biedingen</th>
+                <th>Acties</th>
+              </tr>
+            </thead>
+            <tbody id="veilingen-tbody">
+              <tr><td colspan="11" style="text-align:center;padding:32px;color:var(--ink3)">Laden…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= INBOX PANEL ======= -->
+    <div class="panel" id="p-inbox">
+      <div class="main-inner">
+        <div class="panel-title">Inbox</div>
+        <div id="inbox-list"><div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><p>Laden…</p></div></div>
+      </div>
+    </div>
+
+    <!-- ======= IFRAME PANELS ======= -->
+    <div class="iframe-panel" id="p-transport">
+      <iframe src="/admin/transport/" title="Transport" id="iframe-transport"></iframe>
+    </div>
+    <div class="iframe-panel" id="p-analytics">
+      <iframe src="/admin/analytics/" title="Analytics" id="iframe-analytics"></iframe>
+    </div>
+    <div class="iframe-panel" id="p-taxatie">
+      <iframe src="/telex-inkoop/" title="Taxatie-rapporten" id="iframe-taxatie"></iframe>
+    </div>
+    <div class="iframe-panel" id="p-klassiek">
+      <iframe src="/admin/klassiek/" title="Command Center" id="iframe-klassiek"></iframe>
+    </div>
+
+    <!-- ======= INSTELLINGEN PANEL ======= -->
+    <div class="panel" id="p-instellingen">
+      <div class="main-inner">
+        <div class="panel-title">Instellingen</div>
+        <div class="placeholder-card">
+          <h2>Systeeminstellingen</h2>
+          <p>Systeeminstellingen worden hier toegevoegd.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// AUTH CHECK
+// ============================================================
+var T = localStorage.getItem('t4c_token');
+var U = {};
+try { U = JSON.parse(localStorage.getItem('t4c_user') || '{}'); } catch(e) {}
+var ALLOWED_ROLES = ['admin', 'staff', 't4c'];
+var H = { 'Authorization': 'Bearer ' + T, 'Content-Type': 'application/json' };
+
+function hasAccess() {
+  if (!T || !U.role) return false;
+  return ALLOWED_ROLES.indexOf(U.role) !== -1;
+}
+
+if (!hasAccess()) {
+  document.getElementById('gate').style.display = '';
+  document.getElementById('app').style.display = 'none';
+} else {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = '';
+  init();
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function toast(msg, ok) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = ok !== false ? 'var(--green)' : 'var(--red)';
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() { t.style.display = 'none'; }, 3500);
+}
+
+function esc(s) {
+  return String(s || '').replace(/[&<>"]/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+
+function fmt(n) {
+  if (!n && n !== 0) return '—';
+  return Number(n).toLocaleString('nl-NL');
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  try {
+    var d = new Date(s);
+    return d.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch(e) { return s; }
+}
+
+function fmtDateTime(s) {
+  if (!s) return '—';
+  try {
+    var d = new Date(s);
+    return d.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: '2-digit' }) +
+      ' ' + d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  } catch(e) { return s; }
+}
+
+function statusBadge(s) {
+  var map = {
+    'actief': 'badge-g',
+    'afgelopen': 'badge-grey',
+    'concept': 'badge-w',
+    'voorbereid': 'badge-w',
+    'geannuleerd': 'badge-r',
+    'nieuw': 'badge-b',
+    'afgehandeld': 'badge-g',
+    'open': 'badge-w'
+  };
+  return '<span class="badge ' + (map[s] || 'badge-grey') + '">' + esc(s || '—') + '</span>';
+}
+
+function kanaalBadge(k) {
+  var map = { '24h': 'badge-b', 'batch': 'badge-w', 'free': 'badge-grey' };
+  return '<span class="badge ' + (map[k] || 'badge-grey') + '">' + esc(k || '—') + '</span>';
+}
+
+// ============================================================
+// SIDEBAR NAVIGATION
+// ============================================================
+var currentPanel = 'veilingen';
+var iframeLoaded = {};
+
+function navigate(panel) {
+  // Hide all panels
+  var panels = document.querySelectorAll('.panel, .iframe-panel');
+  for (var i = 0; i < panels.length; i++) {
+    panels[i].classList.remove('on');
+  }
+  // Remove active from all nav items
+  var items = document.querySelectorAll('.sb-item');
+  for (var j = 0; j < items.length; j++) {
+    items[j].classList.remove('on');
+  }
+  // Show target panel
+  var targetPanel = document.getElementById('p-' + panel);
+  if (targetPanel) targetPanel.classList.add('on');
+  // Highlight nav item
+  var navItem = document.getElementById('nav-' + panel);
+  if (navItem) navItem.classList.add('on');
+
+  currentPanel = panel;
+
+  // Lazy-load iframes
+  if (['transport', 'analytics', 'taxatie', 'klassiek'].indexOf(panel) !== -1) {
+    if (!iframeLoaded[panel]) {
+      iframeLoaded[panel] = true;
+      // iframe src is already set in HTML, nothing extra needed
+    }
+  }
+
+  // Load inbox on navigate
+  if (panel === 'inbox') {
+    loadInbox();
+  }
+}
+
+// Bind sidebar clicks
+var sbItems = document.querySelectorAll('.sb-item[data-panel]');
+for (var si = 0; si < sbItems.length; si++) {
+  (function(item) {
+    item.addEventListener('click', function() {
+      navigate(item.getAttribute('data-panel'));
+    });
+  })(sbItems[si]);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  loadInboxCount();
+  loadVeilingen();
+}
+
+// ============================================================
+// VEILINGEN
+// ============================================================
+var allVeilingen = [];
+var editingId = null;
+
+function loadVeilingen() {
+  fetch('/api/admin/veilingen', { headers: H })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      allVeilingen = d.veilingen || [];
+      computeVeilingenStats(allVeilingen);
+      renderVeilingenTable(allVeilingen);
+    })
+    .catch(function() {
+      document.getElementById('veilingen-tbody').innerHTML =
+        '<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--red)">Fout bij laden van veilingen.</td></tr>';
+    });
+}
+
+function computeVeilingenStats(list) {
+  var actief = 0, afgelopen = 0, totalBiedingen = 0, hoogste = 0;
+  for (var i = 0; i < list.length; i++) {
+    var v = list[i];
+    if (v.status === 'actief') actief++;
+    if (v.status === 'afgelopen') afgelopen++;
+    var nb = parseInt(v.aantal_biedingen) || 0;
+    totalBiedingen += nb;
+    var bod = parseFloat(v.hoogste_bod || v.huidig_bod || 0);
+    if (bod > hoogste) hoogste = bod;
+  }
+  document.getElementById('stat-actief').textContent = actief;
+  document.getElementById('stat-afgelopen').textContent = afgelopen;
+  document.getElementById('stat-biedingen').textContent = totalBiedingen;
+  document.getElementById('stat-hoogste').textContent = hoogste > 0 ? ('€' + fmt(hoogste)) : '—';
+}
+
+function filterVeilingen() {
+  var status = document.getElementById('f-status').value;
+  var kanaal = document.getElementById('f-kanaal').value;
+  var search = document.getElementById('f-search').value.toLowerCase();
+  var filtered = allVeilingen.filter(function(v) {
+    if (status && v.status !== status) return false;
+    if (kanaal && v.kanaal !== kanaal) return false;
+    if (search) {
+      var haystack = ((v.titel || '') + ' ' + (v.merk || '') + ' ' + (v.model || '') + ' ' + (v.kenteken || '')).toLowerCase();
+      if (haystack.indexOf(search) === -1) return false;
+    }
+    return true;
+  });
+  renderVeilingenTable(filtered);
+}
+
+function renderVeilingenTable(list) {
+  var tbody = document.getElementById('veilingen-tbody');
+  if (!list || list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11"><div class="empty" style="padding:32px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg><p>Geen veilingen gevonden.</p></div></td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var v = list[i];
+    var autoLabel = esc((v.merk || '') + ' ' + (v.model || ''));
+    if (v.kenteken) autoLabel += ' <span class="mono" style="color:var(--ink2)">' + esc(v.kenteken) + '</span>';
+    var bod = v.hoogste_bod || v.huidig_bod;
+    html += '<tr>';
+    html += '<td class="mono" style="color:var(--ink3)">#' + esc(v.id) + '</td>';
+    html += '<td>' + autoLabel + (v.titel ? '<div style="font-size:12px;color:var(--ink3);margin-top:2px">' + esc(v.titel) + '</div>' : '') + '</td>';
+    html += '<td>' + kanaalBadge(v.kanaal) + '</td>';
+    html += '<td>' + statusBadge(v.status) + '</td>';
+    html += '<td class="mono">' + (v.startprijs ? ('€' + fmt(v.startprijs)) : '—') + '</td>';
+    html += '<td class="mono">' + (v.verwachte_prijs ? ('€' + fmt(v.verwachte_prijs)) : '—') + '</td>';
+    html += '<td class="mono">' + (v.minimumprijs ? ('€' + fmt(v.minimumprijs)) : '—') + '</td>';
+    html += '<td class="mono" style="color:var(--green);font-weight:700">' + (bod ? ('€' + fmt(bod)) : '—') + '</td>';
+    html += '<td style="font-size:12px;color:var(--ink2)">' + fmtDateTime(v.eind_datum) + '</td>';
+    html += '<td class="mono">' + (v.aantal_biedingen || 0) + '</td>';
+    html += '<td><div class="actions">';
+    if (v.atx_job_id) html += '<a class="btn-edit btn-sm" href="/admin/veiling-prep?id=' + v.atx_job_id + '" style="background:rgba(0,230,138,.1);color:var(--green);border-color:rgba(0,230,138,.2)">Bekijk</a>';
+    if (v.status === 'voorbereid') html += '<button class="btn-edit btn-sm" onclick="activeerVeiling(' + v.id + ')" style="background:var(--green);color:#000">Activeer</button>';
+    html += '<button class="btn-edit btn-sm" onclick="openVeilingForm(' + v.id + ')">Edit</button><button class="btn-d btn-sm" onclick="deleteVeiling(' + v.id + ')">Verwijder</button></div></td>';
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function openVeilingForm(id) {
+  editingId = id;
+  var wrap = document.getElementById('veiling-form-wrap');
+  wrap.style.display = 'block';
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('photo-section').style.display = 'none';
+
+  if (!id) {
+    document.getElementById('form-title').textContent = 'Nieuwe veiling';
+    document.getElementById('edit-id').value = '';
+    clearVeilingForm();
+    return;
+  }
+
+  document.getElementById('form-title').textContent = 'Veiling bewerken #' + id;
+  document.getElementById('edit-id').value = id;
+
+  // Find veiling in allVeilingen
+  var found = null;
+  for (var i = 0; i < allVeilingen.length; i++) {
+    if (String(allVeilingen[i].id) === String(id)) { found = allVeilingen[i]; break; }
+  }
+  if (found) {
+    fillVeilingForm(found);
+    // Show photos
+    document.getElementById('photo-section').style.display = '';
+    loadPhotos(id);
+  }
+}
+
+function fillVeilingForm(v) {
+  document.getElementById('vf-kanaal').value = v.kanaal || '24h';
+  document.getElementById('vf-kenteken').value = v.kenteken || '';
+  document.getElementById('vf-titel').value = v.titel || '';
+  document.getElementById('vf-merk').value = v.merk || '';
+  document.getElementById('vf-model').value = v.model || '';
+  document.getElementById('vf-bouwjaar').value = v.bouwjaar || '';
+  document.getElementById('vf-km').value = v.km || '';
+  document.getElementById('vf-brandstof').value = v.brandstof || '';
+  document.getElementById('vf-kleur').value = v.kleur || '';
+  document.getElementById('vf-beschrijving').value = v.beschrijving || '';
+  document.getElementById('vf-startprijs').value = v.startprijs || '';
+  document.getElementById('vf-verwacht').value = v.verwachte_prijs || '';
+  document.getElementById('vf-reserve').value = v.minimumprijs || '';
+  // datetime-local format: yyyy-MM-ddTHH:mm
+  if (v.start_datum) {
+    try { document.getElementById('vf-start-datum').value = new Date(v.start_datum).toISOString().slice(0, 16); } catch(e) {}
+  }
+  if (v.eind_datum) {
+    try { document.getElementById('vf-eind-datum').value = new Date(v.eind_datum).toISOString().slice(0, 16); } catch(e) {}
+  }
+}
+
+function clearVeilingForm() {
+  var fields = ['vf-kenteken','vf-titel','vf-merk','vf-model','vf-bouwjaar','vf-km','vf-kleur','vf-beschrijving','vf-startprijs','vf-verwacht','vf-reserve','vf-start-datum','vf-eind-datum'];
+  for (var i = 0; i < fields.length; i++) {
+    document.getElementById(fields[i]).value = '';
+  }
+  document.getElementById('vf-kanaal').value = '24h';
+  document.getElementById('vf-brandstof').value = '';
+}
+
+function closeVeilingForm() {
+  document.getElementById('veiling-form-wrap').style.display = 'none';
+  editingId = null;
+}
+
+function saveVeiling() {
+  var id = document.getElementById('edit-id').value;
+  var payload = {
+    kanaal: document.getElementById('vf-kanaal').value,
+    kenteken: document.getElementById('vf-kenteken').value.toUpperCase(),
+    titel: document.getElementById('vf-titel').value,
+    merk: document.getElementById('vf-merk').value,
+    model: document.getElementById('vf-model').value,
+    bouwjaar: parseInt(document.getElementById('vf-bouwjaar').value) || null,
+    km: parseInt(document.getElementById('vf-km').value) || null,
+    brandstof: document.getElementById('vf-brandstof').value,
+    kleur: document.getElementById('vf-kleur').value,
+    beschrijving: document.getElementById('vf-beschrijving').value,
+    startprijs: parseFloat(document.getElementById('vf-startprijs').value) || null,
+    verwachte_prijs: parseFloat(document.getElementById('vf-verwacht').value) || null,
+    minimumprijs: parseFloat(document.getElementById('vf-reserve').value) || null,
+    start_datum: document.getElementById('vf-start-datum').value || null,
+    eind_datum: document.getElementById('vf-eind-datum').value || null
+  };
+
+  var method = id ? 'PUT' : 'POST';
+  var url = id ? '/api/veiling/' + id : '/api/veiling';
+
+  fetch(url, { method: method, headers: H, body: JSON.stringify(payload) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok || d.id || d.veiling) {
+        toast(id ? 'Veiling bijgewerkt' : 'Veiling aangemaakt');
+        var newId = id || (d.id || (d.veiling && d.veiling.id));
+        if (!id && newId) {
+          document.getElementById('edit-id').value = newId;
+          editingId = newId;
+          document.getElementById('form-title').textContent = 'Veiling bewerken #' + newId;
+          document.getElementById('photo-section').style.display = '';
+          loadPhotos(newId);
+        }
+        loadVeilingen();
+      } else {
+        toast('Fout: ' + (d.error || d.message || 'onbekend'), false);
+      }
+    })
+    .catch(function() { toast('Verbindingsfout', false); });
+}
+
+function deleteVeiling(id) {
+  if (!confirm('Veiling #' + id + ' verwijderen? Dit kan niet ongedaan worden.')) return;
+  fetch('/api/veiling/' + id, { method: 'DELETE', headers: H })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        toast('Veiling verwijderd');
+        loadVeilingen();
+        if (String(editingId) === String(id)) closeVeilingForm();
+      } else {
+        toast('Fout: ' + (d.error || 'onbekend'), false);
+      }
+    })
+    .catch(function() { toast('Verbindingsfout', false); });
+}
+
+// ============================================================
+// PHOTOS
+// ============================================================
+function loadPhotos(veilingId) {
+  fetch('/api/veiling/' + veilingId + '/photos', { headers: H })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var photos = d.photos || [];
+      renderPhotoGrid(veilingId, photos);
+    })
+    .catch(function() { document.getElementById('photo-grid').innerHTML = '<span style="color:var(--ink3);font-size:13px">Fout bij laden foto\'s</span>'; });
+}
+
+function renderPhotoGrid(veilingId, photos) {
+  var grid = document.getElementById('photo-grid');
+  if (!photos.length) { grid.innerHTML = ''; return; }
+  var html = '';
+  for (var i = 0; i < photos.length; i++) {
+    var fn = photos[i].filename || photos[i];
+    html += '<div class="photo-thumb">';
+    html += '<img src="/uploads/veilingen/' + esc(String(veilingId)) + '/' + esc(fn) + '" alt="">';
+    html += '<button class="del-photo" title="Verwijder" onclick="deletePhoto(' + veilingId + ',\'' + esc(fn) + '\')" aria-label="Verwijder foto">×</button>';
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function deletePhoto(veilingId, filename) {
+  if (!confirm('Foto verwijderen?')) return;
+  fetch('/api/admin/veiling/' + veilingId + '/photos/' + encodeURIComponent(filename), { method: 'DELETE', headers: H })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) { toast('Foto verwijderd'); loadPhotos(veilingId); }
+      else toast('Fout: ' + (d.error || 'onbekend'), false);
+    })
+    .catch(function() { toast('Verbindingsfout', false); });
+}
+
+function uploadPhotos(input) {
+  var veilingId = document.getElementById('edit-id').value;
+  if (!veilingId) { toast('Sla de veiling eerst op', false); return; }
+  var files = input.files;
+  if (!files || !files.length) return;
+  var photos = [];
+  var pending = files.length;
+
+  function tryUpload() {
+    if (photos.length !== files.length) return;
+    fetch('/api/admin/veiling/' + veilingId + '/photos', {
+      method: 'POST',
+      headers: H,
+      body: JSON.stringify({ photos: photos })
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.ok) { toast("Foto's geüpload"); loadPhotos(veilingId); input.value = ''; }
+        else toast('Fout: ' + (d.error || 'onbekend'), false);
+      })
+      .catch(function() { toast('Upload mislukt', false); });
+  }
+
+  for (var i = 0; i < files.length; i++) {
+    (function(file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var dataUrl = e.target.result;
+        var b64 = dataUrl.split(',')[1];
+        photos.push({ filename: file.name, data_base64: b64 });
+        if (photos.length === files.length) tryUpload();
+      };
+      reader.readAsDataURL(file);
+    })(files[i]);
+  }
+}
+
+// ============================================================
+// INBOX
+// ============================================================
+function loadInboxCount() {
+  fetch('/api/contact-requests/count', { headers: H })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var count = d.nieuw || 0;
+      var badge = document.getElementById('inbox-badge');
+      if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = '';
+        var navInbox = document.getElementById('nav-inbox');
+        if (navInbox) navInbox.classList.add('sb-badge-red');
+      } else {
+        badge.style.display = 'none';
+      }
+    })
+    .catch(function() {});
+}
+
+function loadInbox() {
+  var list = document.getElementById('inbox-list');
+  list.innerHTML = '<div class="empty"><p>Laden…</p></div>';
+  fetch('/api/contact-requests', { headers: H })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var items = d.items || [];
+      if (!items.length) {
+        list.innerHTML = '<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><p>Geen berichten gevonden.</p></div>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < items.length; i++) {
+        var m = items[i];
+        html += '<div class="card" id="msg-' + m.id + '">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:8px">';
+        html += '<div>';
+        html += '<h4>' + esc(m.naam || '—') + '</h4>';
+        html += '<div class="card-meta">';
+        if (m.email) html += '<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' + esc(m.email) + '</span>';
+        if (m.telefoon) html += '<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.69 9.5 19.79 19.79 0 011.65 1c-.11-1.2.75-2.24 1.95-2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L7.91 6.1a16 16 0 006 6l.91-.91a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 13.5z"/></svg>' + esc(m.telefoon) + '</span>';
+        if (m.bedrijf) html += '<span>' + esc(m.bedrijf) + '</span>';
+        html += '</div>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
+        if (m.type) html += statusBadge(m.type);
+        html += statusBadge(m.status || 'nieuw');
+        html += '<span style="font-size:11px;color:var(--ink3);font-family:var(--mono)">' + fmtDate(m.created_at) + '</span>';
+        html += '</div>';
+        html += '</div>';
+        if (m.bericht) html += '<div class="card-body">' + esc(m.bericht) + '</div>';
+        html += '<div class="card-actions">';
+        if (m.status !== 'afgehandeld') {
+          html += '<button class="btn-g btn-sm" onclick="markAfgehandeld(' + m.id + ')">Markeer afgehandeld</button>';
+        } else {
+          html += '<span style="font-size:12px;color:var(--green);font-family:var(--mono)">✓ Afgehandeld</span>';
+        }
+        html += '</div>';
+        html += '</div>';
+      }
+      list.innerHTML = html;
+    })
+    .catch(function() {
+      list.innerHTML = '<div class="empty"><p style="color:var(--red)">Fout bij laden van berichten.</p></div>';
+    });
+}
+
+function markAfgehandeld(id) {
+  fetch('/api/contact-requests/' + id, {
+    method: 'PUT',
+    headers: H,
+    body: JSON.stringify({ status: 'afgehandeld' })
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        toast('Gemarkeerd als afgehandeld');
+        // Update card in-place
+        var card = document.getElementById('msg-' + id);
+        if (card) {
+          var btn = card.querySelector('.btn-g');
+          if (btn) {
+            btn.parentNode.innerHTML = '<span style="font-size:12px;color:var(--green);font-family:var(--mono)">✓ Afgehandeld</span>';
+          }
+          // Update status badge - find badge-w/badge-b near status
+          var badges = card.querySelectorAll('.badge');
+          for (var i = 0; i < badges.length; i++) {
+            if (badges[i].textContent === 'nieuw' || badges[i].textContent === 'open') {
+              badges[i].className = 'badge badge-g';
+              badges[i].textContent = 'afgehandeld';
+            }
+          }
+        }
+        loadInboxCount();
+      } else {
+        toast('Fout: ' + (d.error || 'onbekend'), false);
+      }
+    })
+    .catch(function() { toast('Verbindingsfout', false); });
+}
+
+// Activeer voorbereide veiling
+function activeerVeiling(id) {
+  if (!confirm('Veiling #' + id + ' activeren? De veiling wordt live gezet.')) return;
+  fetch('/api/veiling/' + id, {
+    method: 'PUT', headers: H,
+    body: JSON.stringify({ status: 'actief', start_datum: new Date().toISOString(), eind_datum: new Date(Date.now() + 72*3600000).toISOString() })
+  }).then(function(r){return r.json()}).then(function(d) {
+    if (d.ok) { toast('Veiling geactiveerd!'); loadVeilingen(); }
+    else toast(d.error || 'Fout', 'fail');
+  }).catch(function(e) { toast(e.message, 'fail'); });
+}
+
+</script>
+</body>
+</html>

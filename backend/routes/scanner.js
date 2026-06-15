@@ -156,7 +156,6 @@ router.post("/api/inspecties", authMiddleware, async (req, res) => {
   try {
     const { kenteken, overall_score, paint_score, body_score, total_cost,
             damages, summary, photos, gpt_raw, frames_captured, scan_duration } = req.body
-    const { run, queryOne } = require('./db')
     const result = run(
       `INSERT INTO inspecties (kenteken, user_id, overall_score, paint_score, body_score,
         total_cost, damages, summary, photos, gpt_raw, frames_captured, scan_duration, status)

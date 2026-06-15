@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transport-planner — Transfer4Cars Admin</title>
+<meta name="robots" content="noindex,nofollow,noarchive">
+<link rel="stylesheet" href="/css/transfer4cars.css">
+<script src="/js/admin-toast.js" defer></script>
+<style>
+  .admin-bar { display:flex; gap:var(--space-3); align-items:center; flex-wrap:wrap; margin-bottom:var(--space-4); }
+  .admin-bar select, .admin-bar input {
+    background:var(--bg-3); border:1px solid var(--border); color:var(--text-0);
+    padding:var(--space-2) var(--space-3); border-radius:var(--r-sm); font-size:14px;
+  }
+  .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:var(--space-3); margin-bottom:var(--space-5); }
+  .stat-box { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--space-4); }
+  .stat-box .lbl { font-size:12px; color:var(--text-2); text-transform:uppercase; letter-spacing:0.05em; }
+  .stat-box .val { font-size:24px; font-weight:700; color:var(--text-0); margin-top:4px; }
+
+  .badge--pending { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .badge--booked { background: rgba(59,130,246,0.15); color: var(--info); }
+  .badge--in_transit { background: rgba(168,85,247,0.15); color: #a855f7; }
+  .badge--delivered { background: rgba(74,222,128,0.15); color: var(--accent); }
+
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none;
+    align-items: center; justify-content: center; z-index: 100; padding: var(--space-4); }
+  .modal-bg.is-open { display: flex; }
+  .modal { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--r-md);
+    padding: var(--space-5); max-width: 540px; width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { margin-top: 0; }
+</style>
+</head>
+<body>
+
+<header class="t4c-header">
+  <a class="t4c-header__logo" href="/">Transfer<b>4Cars</b> <span style="font-size:12px;color:var(--text-2);font-weight:400;margin-left:8px">ADMIN</span></a>
+  <nav class="t4c-header__nav">
+    <a href="/admin/">Veilingen</a>
+    <a href="/admin/inbox/" style="display:inline-flex;align-items:center;gap:6px">Inbox <span id="inbox-badge" style="display:none;min-width:18px;height:18px;padding:0 6px;border-radius:9px;background:#00e68a;color:#001a0d;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;align-items:center;justify-content:center;line-height:1">0</span></a>
+    <a href="/admin/transport/" style="color:var(--accent)">Transport</a>
+    <a href="/admin/analytics/">Analytics</a>
+    <a href="/telex-inkoop/">Taxatie-rapporten</a>
+    <a href="/admin/klassiek/">Command Center</a>
+    <a href="/">Site</a>
+  </nav>
+  <div class="t4c-header__user">
+    <span id="userlabel" class="muted" style="font-size:13px"></span>
+    <button class="btn btn--ghost btn--sm" onclick="logout()">Uitloggen</button>
+  </div>
+</header>
+
+<main class="t4c-main">
+  <div id="auth-gate" class="alert alert--error hidden">
+    Geen toegang. <a href="/login/?next=/admin/transport/" style="color:var(--accent);text-decoration:underline">Inloggen</a>
+  </div>
+
+  <div id="admin-ui" class="hidden">
+
+    <div class="stat-grid">
+      <div class="stat-box"><div class="lbl">Wachtend</div><div class="val" id="s-pending">—</div></div>
+      <div class="stat-box"><div class="lbl">Geboekt</div><div class="val" id="s-booked">—</div></div>
+      <div class="stat-box"><div class="lbl">Onderweg</div><div class="val" id="s-in_transit">—</div></div>
+      <div class="stat-box"><div class="lbl">Geleverd</div><div class="val" id="s-delivered">—</div></div>
+    </div>
+
+    <h1>Transport-planner</h1>
+    <p class="muted">Gewonnen veilingen met transport-status. Klik een rij om planning bij te werken.</p>
+
+    <div class="admin-bar">
+      <select id="f-status">
+        <option value="">Alle statussen</option>
+        <option value="pending" selected>Wachtend</option>
+        <option value="booked">Geboekt</option>
+        <option value="in_transit">Onderweg</option>
+        <option value="delivered">Geleverd</option>
+      </select>
+      <input id="f-q" type="search" placeholder="Zoek koper/kenteken/merk…">
+      <span class="flex-1"></span>
+      <span class="muted" id="last-load" style="font-size:12px"></span>
+    </div>
+
+    <div id="loading" class="muted">Laden…</div>
+    <table id="t-table" class="t4c-table hidden">
+      <thead>
+        <tr>
+          <th>V#</th><th>Auto</th><th>Koper</th>
+          <th class="text-r">Bod €</th><th class="text-r">Kosten €</th>
+          <th>Keuze</th><th>Status</th><th>Leverdatum</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="t-tbody"></tbody>
+    </table>
+
+  </div>
+</main>
+
+<!-- Edit modal -->
+<div id="modal" class="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2 id="modal-title">Transport bijwerken</h2>
+    <form id="t-form" class="t4c-form">
+      <input type="hidden" id="t-id">
+      <div class="t4c-field">
+        <label>Status</label>
+        <select id="t-status" required>
+          <option value="pending">Wachtend</option>
+          <option value="booked">Geboekt</option>
+          <option value="in_transit">Onderweg</option>
+          <option value="delivered">Geleverd</option>
+        </select>
+      </div>
+      <div class="t4c-field">
+        <label>Keuze / route</label>
+        <input id="t-keuze" type="text" placeholder="Bijv. ‘Eigen wagen, route NL-Z’">
+      </div>
+      <div class="t4c-field">
+        <label>Kosten (€)</label>
+        <input id="t-kosten" type="number" min="0" step="10">
+      </div>
+      <div class="t4c-field">
+        <label>Leverdatum</label>
+        <input id="t-lever" type="datetime-local">
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="btn btn--primary">Opslaan</button>
+        <button type="button" class="btn btn--outline" onclick="closeModal()">Annuleren</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<footer class="t4c-footer">Transfer4Cars Admin &middot; <a href="/admin/">Veilingen</a> &middot; <a href="/">Site</a></footer>
+
+<script>
+const token = localStorage.getItem("t4c_token");
+const user = JSON.parse(localStorage.getItem("t4c_user") || "{}");
+const ALLOWED = ["admin","staff","t4c"];
+
+if (!token || !ALLOWED.includes(user.role)) {
+  document.getElementById("auth-gate").classList.remove("hidden");
+} else {
+  document.getElementById("admin-ui").classList.remove("hidden");
+  document.getElementById("userlabel").textContent = (user.name || user.username) + " (" + user.role + ")";
+  loadList();
+  setInterval(loadList, 30000);
+}
+
+function logout() { localStorage.clear(); location.href = "/login/"; }
+
+async function api(path, opts = {}) {
+  opts.headers = Object.assign({"Content-Type":"application/json","Authorization":"Bearer " + token}, opts.headers || {});
+  const r = await fetch(path, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || ("HTTP " + r.status));
+  return data;
+}
+
+let items = [];
+
+async function loadList() {
+  try {
+    const data = await api("/api/admin/veilingen");
+    const all = data.veilingen || data.items || [];
+    // Alleen veilingen met winnaar (gewonnen, verkocht of actieve transport-status)
+    items = all.filter(v => v.winnaar_user_id || ["booked","in_transit","delivered"].includes(v.transport_status));
+    renderStats();
+    renderTable();
+    document.getElementById("last-load").textContent = "geladen " + new Date().toLocaleTimeString("nl-NL");
+  } catch (e) {
+    document.getElementById("loading").textContent = "Fout: " + e.message;
+  }
+}
+
+function renderStats() {
+  document.getElementById("s-pending").textContent = items.filter(v => (v.transport_status || "pending") === "pending").length;
+  document.getElementById("s-booked").textContent = items.filter(v => v.transport_status === "booked").length;
+  document.getElementById("s-in_transit").textContent = items.filter(v => v.transport_status === "in_transit").length;
+  document.getElementById("s-delivered").textContent = items.filter(v => v.transport_status === "delivered").length;
+}
+
+function renderTable() {
+  const status = document.getElementById("f-status").value;
+  const q = document.getElementById("f-q").value.trim().toLowerCase();
+  const filtered = items.filter(v => {
+    const s = v.transport_status || "pending";
+    if (status && s !== status) return false;
+    if (q) {
+      const hay = (v.kenteken + " " + (v.merk||"") + " " + (v.model||"") + " " + (v.winnaar_username||"")).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById("loading").classList.add("hidden");
+  document.getElementById("t-table").classList.remove("hidden");
+  const tbody = document.getElementById("t-tbody");
+  tbody.innerHTML = filtered.map(v => {
+    const s = v.transport_status || "pending";
+    return `
+      <tr>
+        <td>#${v.id}</td>
+        <td><strong>${esc(v.merk||"")} ${esc(v.model||"")}</strong><br><small class="muted">${esc(v.kenteken||"")} · ${v.bouwjaar||"—"}</small></td>
+        <td>${esc(v.winnaar_username || ("user #" + (v.winnaar_user_id||"?")))}</td>
+        <td class="text-r">${fmt(v.winnaar_bod || v.huidige_bod)}</td>
+        <td class="text-r">${v.transport_kosten ? fmt(v.transport_kosten) : "—"}</td>
+        <td>${esc(v.transport_keuze || "—")}</td>
+        <td><span class="badge badge--${s}">${labelStatus(s)}</span></td>
+        <td>${v.leverdatum ? formatDT(v.leverdatum) : "—"}</td>
+        <td><button class="btn btn--ghost btn--sm" onclick="openModal(${v.id})">Bewerken</button></td>
+      </tr>`;
+  }).join("") || `<tr><td colspan="9" class="text-c muted">Geen items met deze filter.</td></tr>`;
+}
+
+function labelStatus(s) { return ({pending:"Wachtend",booked:"Geboekt",in_transit:"Onderweg",delivered:"Geleverd"})[s] || s; }
+function fmt(n) { return n ? "€ " + Number(n).toLocaleString("nl-NL") : "—"; }
+function esc(s) { return String(s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function formatDT(iso) { if (!iso) return "—"; const d = new Date(iso); return d.toLocaleDateString("nl-NL") + " " + d.toLocaleTimeString("nl-NL",{hour:"2-digit",minute:"2-digit"}); }
+function toLocal(d) { const z=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+"T"+z(d.getHours())+":"+z(d.getMinutes()); }
+
+function openModal(id) {
+  const v = items.find(x => x.id === id);
+  if (!v) return;
+  document.getElementById("modal-title").textContent = "Transport veiling #" + id;
+  document.getElementById("t-id").value = id;
+  document.getElementById("t-status").value = v.transport_status || "pending";
+  document.getElementById("t-keuze").value = v.transport_keuze || "";
+  document.getElementById("t-kosten").value = v.transport_kosten || "";
+  document.getElementById("t-lever").value = v.leverdatum ? toLocal(new Date(v.leverdatum)) : "";
+  document.getElementById("modal").classList.add("is-open");
+}
+
+function closeModal() { document.getElementById("modal").classList.remove("is-open"); }
+
+document.getElementById("t-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("t-id").value;
+  const body = {
+    transport_status: document.getElementById("t-status").value,
+    transport_keuze: document.getElementById("t-keuze").value.trim(),
+    transport_kosten: parseFloat(document.getElementById("t-kosten").value) || 0,
+    leverdatum: document.getElementById("t-lever").value ? new Date(document.getElementById("t-lever").value).toISOString() : null
+  };
+  try {
+    await api("/api/veiling/" + id, { method: "PUT", body: JSON.stringify(body) });
+    closeModal();
+    await loadList();
+  } catch (err) { t4cToast("Fout: " + err.message, "err"); }
+});
+
+document.getElementById("f-status").addEventListener("change", renderTable);
+document.getElementById("f-q").addEventListener("input", renderTable);
+</script>
+</body>
+</html>

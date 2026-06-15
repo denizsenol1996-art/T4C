@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analytics — Transfer4Cars Admin</title>
+<meta name="robots" content="noindex,nofollow,noarchive">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b1216;--bg-2:#0f181d;--card:#121d23;--card-2:#17242b;
+  --line:rgba(255,255,255,.06);--line-2:rgba(255,255,255,.12);
+  --ink:#ecf0ed;--ink-2:#8a9591;--ink-3:#5a6663;
+  --green:#00e68a;--green-glow:rgba(0,230,138,.18);
+  --warn:#f59e0b;--red:#ef4444;--blue:#4a9eff;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg)}
+body{font-family:var(--font);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;padding:0}
+
+header{border-bottom:1px solid var(--line);background:rgba(11,18,22,.92);backdrop-filter:blur(20px);position:sticky;top:0;z-index:50}
+.head-in{max-width:1320px;margin:0 auto;padding:18px 32px;display:flex;align-items:center;gap:32px}
+.logo{font-size:18px;font-weight:800;letter-spacing:-.4px;color:var(--ink)}
+.logo .num{color:var(--green);font-weight:900}
+.logo .tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--ink-3);margin-left:8px;text-transform:uppercase}
+nav.primary{display:flex;gap:8px;flex:1}
+nav.primary a{font-size:14px;color:var(--ink-2);font-weight:500;padding:8px 14px;border-radius:8px;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+nav.primary a:hover{color:var(--ink);background:rgba(255,255,255,.04)}
+nav.primary a.active{color:var(--green);background:rgba(0,230,138,.08)}
+nav.primary .badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 6px;border-radius:9px;background:var(--green);color:#001a0d;font-family:var(--mono);font-size:10px;font-weight:700}
+.user{display:flex;align-items:center;gap:14px}
+.user .name{font-family:var(--mono);font-size:13px;color:var(--ink-2)}
+.linkbtn{font-size:14px;color:var(--ink-2);font-weight:500;background:none;border:none;cursor:pointer;font-family:inherit}
+.linkbtn:hover{color:var(--ink)}
+
+.intro{max-width:1320px;margin:36px auto 20px;padding:0 32px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.intro h1{font-size:32px;font-weight:800;letter-spacing:-1px;margin:0;line-height:1.05}
+.intro .sub{color:var(--ink-2);font-size:14px;font-family:var(--mono);letter-spacing:.3px;margin-top:6px}
+.ga-link{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:10px;background:rgba(74,158,255,.08);border:1px solid rgba(74,158,255,.25);color:var(--blue);font-size:13px;font-weight:600;transition:.15s}
+.ga-link:hover{background:rgba(74,158,255,.15)}
+
+.section-title{max-width:1320px;margin:32px auto 14px;padding:0 32px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--ink-3);text-transform:uppercase}
+
+.stats{max-width:1320px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:8px}
+@media(max-width:880px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.stat .lbl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--ink-3);text-transform:uppercase;margin-bottom:6px}
+.stat .val{font-family:var(--mono);font-size:28px;font-weight:600;color:var(--ink);letter-spacing:-.5px;line-height:1}
+.stat .val.green{color:var(--green)}
+.stat .val.amber{color:var(--warn)}
+.stat .val.blue{color:var(--blue)}
+.stat .delta{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:6px;letter-spacing:.3px}
+.stat .delta b{color:var(--ink-2)}
+
+.grid-2{max-width:1320px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px}
+@media(max-width:880px){.grid-2{grid-template-columns:1fr}}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px}
+.panel h2{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;color:var(--ink-3);text-transform:uppercase;margin:0 0 16px;display:flex;align-items:center;justify-content:space-between}
+.panel h2 .meta{color:var(--ink-3);font-weight:500}
+
+.action-list{display:flex;flex-direction:column;gap:6px}
+.action-row{display:grid;grid-template-columns:1fr auto;gap:14px;padding:9px 12px;background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:8px;align-items:center}
+.action-row .name{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.action-row .count{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--green);font-variant-numeric:tabular-nums}
+
+.recent-list{display:flex;flex-direction:column;gap:4px;max-height:520px;overflow-y:auto}
+.recent-list::-webkit-scrollbar{width:6px}
+.recent-list::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
+.recent-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;padding:8px 10px;background:rgba(0,0,0,.15);border:1px solid var(--line);border-radius:6px;align-items:center;font-family:var(--mono);font-size:11px}
+.recent-row .id{color:var(--ink-3);min-width:32px}
+.recent-row .name{color:var(--ink-2)}
+.recent-row .name b{color:var(--ink);font-weight:600}
+.recent-row .time{color:var(--ink-3);font-size:10px}
+
+.loading,.empty{padding:40px;text-align:center;color:var(--ink-3);font-family:var(--mono);font-size:12px;letter-spacing:.5px}
+
+.info-card{max-width:1320px;margin:32px auto 60px;padding:24px 32px;background:rgba(74,158,255,.04);border:1px solid rgba(74,158,255,.2);border-radius:14px;display:flex;gap:18px;align-items:flex-start}
+.info-card svg{color:var(--blue);flex-shrink:0;margin-top:2px}
+.info-card h3{font-size:15px;font-weight:700;margin:0 0 6px}
+.info-card p{color:var(--ink-2);font-size:13px;line-height:1.6;margin:0 0 8px}
+.info-card a{color:var(--blue);font-weight:600}
+.info-card code{font-family:var(--mono);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;font-size:11px;color:var(--green)}
+
+@media(max-width:640px){
+  .head-in{padding:14px 18px;gap:14px;flex-wrap:wrap}
+  nav.primary{order:3;flex-basis:100%;justify-content:space-between;gap:4px;overflow-x:auto}
+  nav.primary a{padding:6px 10px;font-size:13px}
+  .intro,.stats,.grid-2,.section-title,.info-card{padding-left:18px;padding-right:18px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <a class="logo" href="/admin/">TRANSFER<span class="num">4</span>CARS<span class="tag">ADMIN</span></a>
+    <nav class="primary">
+      <a href="/admin/">Veilingen</a>
+      <a href="/admin/inbox/">Inbox <span class="badge" id="nav-badge" style="display:none">0</span></a>
+      <a href="/admin/transport/">Transport</a>
+      <a href="/admin/analytics/" class="active">Analytics</a>
+      <a href="/telex-inkoop/">Taxatie-rapporten</a>
+      <a href="/admin/klassiek/">Command Center</a>
+      <a href="/">Site</a>
+    </nav>
+    <div class="user" id="user-area"></div>
+  </div>
+</header>
+
+<section class="intro">
+  <div>
+    <h1>Analytics</h1>
+    <div class="sub">Server-side metrics + Google Analytics integratie</div>
+  </div>
+  <a class="ga-link" href="https://analytics.google.com/analytics/web/" target="_blank" rel="noopener">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 3l3 0 0 0 0 18-3 0 0-18z"/><path d="M10 9l3 0 0 0 0 12-3 0 0-12z"/><path d="M2 15l3 0 0 0 0 6-3 0 0-6z"/></svg>
+    Open GA4 Dashboard
+  </a>
+</section>
+
+<div class="section-title">B2B Aanmeldingen</div>
+<div class="stats">
+  <div class="stat"><div class="lbl">Vandaag</div><div class="val green" id="aanm-day">—</div></div>
+  <div class="stat"><div class="lbl">Deze week</div><div class="val" id="aanm-week">—</div></div>
+  <div class="stat"><div class="lbl">Maand</div><div class="val" id="aanm-month">—</div></div>
+  <div class="stat"><div class="lbl">Totaal</div><div class="val" id="aanm-total">—</div></div>
+</div>
+<div class="stats" style="margin-top:14px">
+  <div class="stat"><div class="lbl">Nog te beoordelen</div><div class="val amber" id="aanm-nieuw">—</div></div>
+  <div class="stat"><div class="lbl">Goedgekeurd</div><div class="val green" id="aanm-ok">—</div></div>
+  <div class="stat"><div class="lbl">Afgewezen</div><div class="val" id="aanm-rej">—</div></div>
+  <div class="stat"><div class="lbl">Conversie ratio</div><div class="val blue" id="aanm-conv">—</div></div>
+</div>
+
+<div class="section-title">Veilingen &amp; biedingen</div>
+<div class="stats">
+  <div class="stat"><div class="lbl">Actieve veilingen</div><div class="val green" id="veil-actief">—</div></div>
+  <div class="stat"><div class="lbl">Gewonnen (week)</div><div class="val" id="veil-week">—</div></div>
+  <div class="stat"><div class="lbl">Biedingen 24u</div><div class="val" id="bid-day">—</div></div>
+  <div class="stat"><div class="lbl">Biedingen totaal</div><div class="val" id="bid-total">—</div></div>
+</div>
+
+<div class="section-title">Gebruikers</div>
+<div class="stats">
+  <div class="stat"><div class="lbl">Totaal accounts</div><div class="val" id="user-total">—</div></div>
+  <div class="stat"><div class="lbl">Actieve dealers</div><div class="val green" id="user-kopers">—</div></div>
+  <div class="stat"><div class="lbl">Logins deze week</div><div class="val blue" id="user-active">—</div></div>
+  <div class="stat"><div class="lbl">Active rate</div><div class="val" id="user-rate">—</div></div>
+</div>
+
+<div class="grid-2" style="margin-top:24px">
+  <div class="panel">
+    <h2>Top acties (7d) <span class="meta" id="top-meta">—</span></h2>
+    <div id="top-actions" class="action-list"></div>
+  </div>
+  <div class="panel">
+    <h2>Recente activiteit <span class="meta" id="recent-meta">—</span></h2>
+    <div id="recent" class="recent-list"></div>
+  </div>
+</div>
+
+<div class="info-card">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+  <div>
+    <h3>Google Analytics 4 — actief op site</h3>
+    <p>GA4 tracking-ID <code>G-ECSBWCG10K</code> staat geïnstalleerd op alle 11 publieke pages. Realtime bezoeken, sessions, devices en geografische data zie je op de <a href="https://analytics.google.com/" target="_blank" rel="noopener">GA4 dashboard</a>.</p>
+    <p>Conversies (B2B aanmeldingen) firen automatisch op <code>/aanmelden/ontvangen/</code> via gtag event <code>generate_lead</code>. Voor Google Ads conversion-tracking: vervang <code>AW-CONVERSION_ID/conv_label</code> placeholder op die page met je Google Ads conversion-ID.</p>
+  </div>
+</div>
+
+<script>
+const token=localStorage.getItem("t4c_token");
+const user=JSON.parse(localStorage.getItem("t4c_user")||"{}");
+if(!token||!["admin","staff","t4c"].includes(user.role)){location.href="/login/?next=/admin/analytics/";throw new Error("auth")}
+
+function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function fmtTime(iso){if(!iso)return"—";const d=new Date(iso);const now=new Date();const diff=(now-d)/60000;
+  if(diff<1)return"nu";
+  if(diff<60)return Math.floor(diff)+"m";
+  if(diff<1440)return Math.floor(diff/60)+"u";
+  return d.toLocaleDateString("nl-NL",{day:"2-digit",month:"short"});
+}
+
+document.getElementById("user-area").innerHTML=`<span class="name">${esc(user.name||user.username)}</span>
+  <button class="linkbtn" onclick="localStorage.clear();location.href='/login/'">Uitloggen</button>`;
+
+async function api(path){
+  const r=await fetch(path,{headers:{"Authorization":"Bearer "+token}});
+  if(r.status===401){localStorage.clear();location.href="/login/";throw new Error("401")}
+  return r.json();
+}
+
+async function load(){
+  try{
+    const [stats,inboxCount]=await Promise.all([
+      api("/api/admin/analytics/stats"),
+      api("/api/contact-requests/count")
+    ]);
+    if(!stats.ok)throw new Error(stats.error||"Fout");
+
+    // Inbox-badge
+    if(inboxCount.nieuw>0){const b=document.getElementById("nav-badge");b.textContent=inboxCount.nieuw;b.style.display=""}
+
+    // Aanmeldingen
+    document.getElementById("aanm-day").textContent=stats.aanmeldingen.vandaag;
+    document.getElementById("aanm-week").textContent=stats.aanmeldingen.week;
+    document.getElementById("aanm-month").textContent=stats.aanmeldingen.maand;
+    document.getElementById("aanm-total").textContent=stats.aanmeldingen.totaal;
+    document.getElementById("aanm-nieuw").textContent=stats.aanmeldingen.nieuw;
+    document.getElementById("aanm-ok").textContent=stats.aanmeldingen.goedgekeurd;
+    document.getElementById("aanm-rej").textContent=stats.aanmeldingen.afgewezen;
+    const ratio=stats.aanmeldingen.totaal>0?Math.round(stats.aanmeldingen.goedgekeurd/stats.aanmeldingen.totaal*100):0;
+    document.getElementById("aanm-conv").textContent=ratio+"%";
+
+    // Veilingen + biedingen
+    document.getElementById("veil-actief").textContent=stats.veilingen.actief;
+    document.getElementById("veil-week").textContent=stats.veilingen.gewonnen_week;
+    document.getElementById("bid-day").textContent=stats.biedingen.vandaag;
+    document.getElementById("bid-total").textContent=stats.biedingen.totaal;
+
+    // Users
+    document.getElementById("user-total").textContent=stats.users.totaal;
+    document.getElementById("user-kopers").textContent=stats.users.kopers;
+    document.getElementById("user-active").textContent=stats.users.actief_week;
+    const activeRate=stats.users.kopers>0?Math.round(stats.users.actief_week/stats.users.kopers*100):0;
+    document.getElementById("user-rate").textContent=activeRate+"%";
+
+    // Top actions
+    const ta=document.getElementById("top-actions");
+    if(!stats.top_actions||!stats.top_actions.length){ta.innerHTML='<div class="empty">— Geen activiteit deze week —</div>'}
+    else{
+      ta.innerHTML=stats.top_actions.map(a=>`<div class="action-row"><span class="name">${esc(a.action)}</span><span class="count">${a.c}</span></div>`).join("");
+      document.getElementById("top-meta").textContent=stats.top_actions.length+" actions";
+    }
+
+    // Recent
+    const re=document.getElementById("recent");
+    if(!stats.recent_activity||!stats.recent_activity.length){re.innerHTML='<div class="empty">— Nog geen audit-events —</div>'}
+    else{
+      re.innerHTML=stats.recent_activity.map(r=>{
+        const target=r.target_type?` ${esc(r.target_type)} #${r.target_id||"?"}`:"";
+        return `<div class="recent-row"><span class="id">#${r.id}</span><span class="name"><b>${esc(r.action)}</b>${target}</span><span class="time">${fmtTime(r.created_at)}</span></div>`;
+      }).join("");
+      document.getElementById("recent-meta").textContent="laatste "+stats.recent_activity.length;
+    }
+  }catch(e){
+    console.error("Analytics fout:",e);
+  }
+}
+
+load();
+setInterval(load,30000);
+</script>
+</body>
+</html>

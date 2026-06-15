@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mijn account — Transfer4Cars</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="/js/user-nav.js"></script>
+<style>
+:root{
+  --bg:#0b1216;--bg2:#0f181d;--card:#121d23;--card2:#17242b;
+  --line:rgba(255,255,255,.06);--line2:rgba(255,255,255,.12);
+  --ink:#ecf0ed;--ink2:#8a9591;--ink3:#5a6663;
+  --green:#00e68a;--green-d:#00cc7a;--green-glow:rgba(0,230,138,.18);
+  --warn:#f59e0b;--red:#ef4444;
+  --font:'Inter',system-ui,sans-serif;
+  --head:'Plus Jakarta Sans',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+/* TOP HEADER */
+.top-header{border-bottom:1px solid var(--line);background:rgba(11,18,22,.92);backdrop-filter:saturate(180%) blur(20px);position:sticky;top:0;z-index:50}
+.top-header-in{max-width:100%;margin:0 auto;padding:14px 32px;display:flex;align-items:center;gap:48px}
+.logo{font-size:19px;font-weight:800;letter-spacing:-.5px}.logo .n{color:var(--green);font-weight:900}
+nav.primary{display:flex;gap:32px;flex:1}
+nav.primary a{font-size:14px;color:var(--ink2);font-weight:500;transition:color .15s}
+nav.primary a:hover{color:var(--ink)}nav.primary a.active{color:var(--green)}
+.user{display:flex;align-items:center;gap:14px}
+.hamburger{display:none;background:0;border:0;color:var(--ink);cursor:pointer;padding:8px}
+@media(max-width:800px){nav.primary{display:none}.hamburger{display:block}.top-header-in{gap:16px;padding:14px 20px}}
+
+/* LAYOUT: sidebar + main */
+.layout{display:flex;min-height:calc(100vh - 56px)}
+
+/* SIDEBAR */
+.sb{width:260px;background:var(--bg2);border-right:1px solid var(--line);padding:24px 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+.sb-head{padding:0 20px 20px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.sb-head .ey{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:6px}
+.sb-head h2{font-family:var(--head);font-size:20px;font-weight:800;letter-spacing:-.5px}
+.sb-head h2 em{color:var(--green);font-style:normal}
+.sb-section{padding:4px 16px 4px;font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--mono);margin-top:16px;margin-bottom:4px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 20px;margin:2px 8px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;color:var(--ink2);transition:.15s;border:1px solid transparent}
+.sb-item:hover{color:var(--ink);background:rgba(255,255,255,.03)}
+.sb-item.on{color:var(--green);background:rgba(0,230,138,.06);border-color:rgba(0,230,138,.12)}
+.sb-item svg{width:18px;height:18px;opacity:.5;flex-shrink:0}
+.sb-item.on svg{opacity:1;stroke:var(--green)}
+.sb-badge{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:700;min-width:24px;text-align:center;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.06)}
+.sb-item.on .sb-badge{background:rgba(0,230,138,.12);color:var(--green)}
+
+/* MAIN */
+.main{flex:1;padding:32px 40px;overflow-y:auto}
+.main h1{font-family:var(--head);font-size:26px;font-weight:800;letter-spacing:-.8px;margin-bottom:24px}
+.main h1 .sub{font-size:14px;font-weight:400;color:var(--ink2);margin-left:12px}
+
+/* STATS ROW */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;transition:.15s}
+.stat:hover{border-color:var(--line2)}
+.stat .v{font-family:var(--mono);font-size:26px;font-weight:700;margin-bottom:2px}
+.stat .l{font-size:11px;color:var(--ink2);text-transform:uppercase;letter-spacing:.08em}
+
+/* CARDS & CONTENT */
+.panel{display:none}.panel.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin-bottom:14px}
+.card h3{font-family:var(--head);font-size:16px;font-weight:700;margin-bottom:12px}
+.empty{text-align:center;padding:48px 20px;color:var(--ink3)}
+.empty svg{margin-bottom:12px;opacity:.3}
+.empty p{margin:0}
+.badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;font-family:var(--mono)}
+.badge-g{background:rgba(0,230,138,.12);color:var(--green)}
+.badge-w{background:rgba(245,197,24,.12);color:var(--warn)}
+
+/* FORMS */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:700px){.form-row{grid-template-columns:1fr}}
+.field label{display:block;font-size:12px;color:var(--ink2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.field input{width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-size:14px;font-family:inherit}
+.field input:focus{outline:none;border-color:var(--green)}
+.btn-g{padding:10px 22px;background:var(--green);color:#001a0d;border-radius:10px;font-weight:700;font-size:14px;border:0;cursor:pointer;transition:.15s}
+.btn-g:hover{background:#0fff97;transform:translateY(-1px)}
+.btn-o{padding:10px 22px;background:transparent;color:var(--ink);border:1px solid var(--line2);border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;transition:.15s}
+.btn-o:hover{border-color:rgba(255,255,255,.25)}
+.btn-d{padding:10px 22px;background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.3);border-radius:10px;font-weight:600;font-size:13px;cursor:pointer}
+
+/* GATE */
+.gate{max-width:480px;margin:80px auto;padding:36px;background:var(--card);border:1px solid var(--line);border-radius:18px;text-align:center}
+.gate h2{font-family:var(--head);font-size:22px;font-weight:800;margin-bottom:12px}
+.gate p{color:var(--ink2);margin-bottom:24px}
+.gate .btns{display:flex;gap:10px;justify-content:center}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--card2);border:1px solid var(--line2);border-radius:12px;padding:14px 22px;font-size:14px;z-index:999;display:none;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+
+/* MOBILE */
+@media(max-width:900px){
+  .layout{flex-direction:column}
+  .sb{width:100%;height:auto;position:static;border-right:0;border-bottom:1px solid var(--line);padding:16px 0}
+  .sb-head{padding:0 20px 12px}
+  .sb-section{display:none}
+  .sb-nav{display:flex;overflow-x:auto;gap:4px;padding:0 12px}
+  .sb-item{white-space:nowrap;padding:8px 16px;margin:0}
+  .main{padding:24px 20px}
+}
+</style>
+</head>
+<body>
+
+<div class="top-header">
+  <div class="top-header-in">
+    <a class="logo" href="/">TRANSFER<span class="n">4</span>CARS</a>
+    <nav class="primary">
+      <a href="/aanbod/">Voorraad</a>
+      <a href="/veilingen/">Veilingen</a>
+      <a href="/verkoop/">Verkoop</a>
+      <a href="/transport/">Transport</a>
+      <a href="/account/" class="active">Account</a>
+    </nav>
+    <div class="user" id="user-area"></div>
+    <button class="hamburger" aria-label="Menu" onclick="this.parentElement.querySelector('nav.primary').classList.toggle('open')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</div>
+
+<div id="gate" class="gate" style="display:none">
+  <h2>Inloggen vereist</h2>
+  <p>Log in om je account te bekijken.</p>
+  <div class="btns">
+    <a href="/login/?next=/account/" class="btn-g">Inloggen</a>
+    <a href="/aanmelden/" class="btn-o">Aanmelden</a>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sb">
+    <div class="sb-head">
+      <div class="ey">Mijn account</div>
+      <h2>Hallo, <em id="uname">—</em></h2>
+    </div>
+
+    <div class="sb-section">Veilingen</div>
+    <div class="sb-nav" id="sb-nav">
+      <div class="sb-item on" data-p="overzicht">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Overzicht
+      </div>
+      <div class="sb-item" data-p="biedingen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Biedingen
+        <span class="sb-badge" id="b-actief">0</span>
+      </div>
+      <div class="sb-item" data-p="gewonnen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M10 22V8L6 9"/><path d="M14 22V8l4 1"/></svg>
+        Gewonnen
+        <span class="sb-badge" id="b-gewonnen">0</span>
+      </div>
+      <div class="sb-item" data-p="watchlist">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+        Watchlist
+        <span class="sb-badge" id="b-watchlist">0</span>
+      </div>
+      <div class="sb-item" data-p="facturen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Facturen
+        <span class="sb-badge" id="b-facturen">0</span>
+      </div>
+
+      <div class="sb-section">Account</div>
+      <div class="sb-item" data-p="profiel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Profiel
+      </div>
+      <div class="sb-item" data-p="privacy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Privacy &amp; AVG
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- OVERZICHT -->
+    <div class="panel on" id="p-overzicht">
+      <h1>Overzicht</h1>
+      <div class="stats">
+        <div class="stat"><div class="v" id="s-actief">0</div><div class="l">Actieve biedingen</div></div>
+        <div class="stat"><div class="v" id="s-gewonnen">0</div><div class="l">Gewonnen</div></div>
+        <div class="stat"><div class="v" id="s-watchlist">0</div><div class="l">Watchlist</div></div>
+        <div class="stat"><div class="v" id="s-historie">0</div><div class="l">Historie</div></div>
+        <div class="stat"><div class="v" id="s-facturen">0</div><div class="l">Facturen</div></div>
+      </div>
+      <div id="recent-activity"></div>
+    </div>
+
+    <!-- BIEDINGEN -->
+    <div class="panel" id="p-biedingen">
+      <h1>Actieve biedingen</h1>
+      <div id="biedingen-list"></div>
+    </div>
+
+    <!-- GEWONNEN -->
+    <div class="panel" id="p-gewonnen">
+      <h1>Gewonnen veilingen</h1>
+      <div id="gewonnen-list"></div>
+    </div>
+
+    <!-- WATCHLIST -->
+    <div class="panel" id="p-watchlist">
+      <h1>Watchlist</h1>
+      <div id="watchlist-list"></div>
+    </div>
+
+    <!-- FACTUREN -->
+    <div class="panel" id="p-facturen">
+      <h1>Facturen</h1>
+      <div id="facturen-list"></div>
+    </div>
+
+    <!-- PROFIEL -->
+    <div class="panel" id="p-profiel">
+      <h1>Profiel</h1>
+      <div class="card">
+        <h3>Persoonlijke gegevens</h3>
+        <div class="form-row">
+          <div class="field"><label>Naam</label><input id="f-name" type="text"></div>
+          <div class="field"><label>E-mail</label><input id="f-email" type="email"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Telefoon</label><input id="f-phone" type="tel"></div>
+          <div class="field"><label>Bedrijf</label><input id="f-company" type="text"></div>
+        </div>
+        <div style="margin-top:16px"><button class="btn-g" onclick="saveProfiel()">Opslaan</button></div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <h3>Wachtwoord wijzigen</h3>
+        <div class="form-row">
+          <div class="field"><label>Huidig wachtwoord</label><input id="f-oldpw" type="password"></div>
+          <div class="field"><label>Nieuw wachtwoord</label><input id="f-newpw" type="password" minlength="8"></div>
+        </div>
+        <div style="margin-top:16px"><button class="btn-o" onclick="changePw()">Wachtwoord wijzigen</button></div>
+      </div>
+    </div>
+
+    <!-- PRIVACY & AVG -->
+    <div class="panel" id="p-privacy">
+      <h1>Privacy &amp; AVG</h1>
+      <div class="card">
+        <h3>Gegevens exporteren (Art. 15 AVG)</h3>
+        <p style="color:var(--ink2);margin-bottom:16px;font-size:14px">Download al je gegevens als JSON-bestand. Bevat profiel, biedingen, facturen en watchlist.</p>
+        <button class="btn-o" onclick="exportData()">Download mijn gegevens</button>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <h3>Account verwijderen (Art. 17 AVG)</h3>
+        <p style="color:var(--ink2);margin-bottom:16px;font-size:14px">Je account wordt geanonimiseerd. Factuurgegevens blijven bewaard conform fiscale wetgeving (7 jaar).</p>
+        <button class="btn-d" onclick="deleteAccount()">Account verwijderen</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var T=localStorage.getItem('t4c_token'),U=JSON.parse(localStorage.getItem('t4c_user')||'{}');
+var H={'Authorization':'Bearer '+T,'Content-Type':'application/json'};
+
+if(!T||!U.username){document.getElementById('gate').style.display='';document.getElementById('app').style.display='none'}
+else{document.getElementById('gate').style.display='none';document.getElementById('app').style.display='';document.getElementById('uname').textContent=U.name||U.username;load()}
+
+// Sidebar navigation
+document.getElementById('sb-nav').addEventListener('click',function(e){
+  var item=e.target.closest('.sb-item');if(!item)return;
+  document.querySelectorAll('.sb-item').forEach(function(x){x.classList.remove('on')});item.classList.add('on');
+  document.querySelectorAll('.panel').forEach(function(x){x.classList.remove('on')});
+  document.getElementById('p-'+item.dataset.p).classList.add('on');
+});
+
+function toast(msg,ok){var t=document.getElementById('toast');t.textContent=msg;t.style.borderColor=ok!==false?'var(--green)':'var(--red)';t.style.display='block';setTimeout(function(){t.style.display='none'},3000)}
+function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fmt(n){return Number(n||0).toLocaleString('nl-NL')}
+
+function renderList(id,items,emptyMsg,tpl){
+  var el=document.getElementById(id);
+  if(!items||!items.length){el.innerHTML='<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg><p>'+emptyMsg+'</p></div>';return}
+  el.innerHTML=items.map(tpl).join('');
+}
+
+function load(){
+  Promise.all([
+    fetch('/api/mijn-veilingen',{headers:H}).then(function(r){return r.json()}),
+    fetch('/api/mijn-facturen',{headers:H}).then(function(r){return r.json()}),
+    fetch('/api/profiel',{headers:H}).then(function(r){return r.json()})
+  ]).then(function(res){
+    var veil=res[0],fact=res[1],prof=res[2];
+    if(veil.ok){
+      var na=veil.actief?veil.actief.length:0;
+      var ng=veil.gewonnen?veil.gewonnen.length:0;
+      var nw=veil.watchlist?veil.watchlist.length:0;
+      var nh=veil.historie?veil.historie.length:0;
+      document.getElementById('s-actief').textContent=na;
+      document.getElementById('s-gewonnen').textContent=ng;
+      document.getElementById('s-watchlist').textContent=nw;
+      document.getElementById('s-historie').textContent=nh;
+      document.getElementById('b-actief').textContent=na;
+      document.getElementById('b-gewonnen').textContent=ng;
+      document.getElementById('b-watchlist').textContent=nw;
+
+      renderList('biedingen-list',veil.actief,'Geen actieve biedingen',function(r){return'<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>'+esc(r.titel||r.merk+' '+r.model)+'</strong><div style="color:var(--ink2);font-size:13px;margin-top:4px">Jouw bod: <span style="font-family:var(--mono);color:var(--green)">&euro;'+fmt(r.mijn_bod||r.bedrag)+'</span></div></div><a href="/veilingen/detail/?id='+(r.veiling_id||r.id)+'" class="btn-o" style="padding:8px 16px;font-size:13px">Bekijk</a></div></div>'});
+      renderList('gewonnen-list',veil.gewonnen,'Nog geen veilingen gewonnen',function(r){return'<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>'+esc(r.titel||r.merk+' '+r.model)+'</strong><div style="color:var(--ink2);font-size:13px;margin-top:4px">Gewonnen voor <span style="font-family:var(--mono);color:var(--green)">&euro;'+fmt(r.winnaar_bedrag||r.bedrag)+'</span></div></div><span class="badge badge-g">Gewonnen</span></div></div>'});
+      renderList('watchlist-list',veil.watchlist,'Je watchlist is leeg',function(r){return'<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>'+esc(r.titel||'Veiling #'+r.veiling_id)+'</strong></div><div style="display:flex;gap:8px;align-items:center"><a href="/veilingen/detail/?id='+r.veiling_id+'" class="btn-o" style="padding:8px 16px;font-size:13px">Bekijk</a><button class="btn-d" style="padding:6px 12px;font-size:12px" onclick="unwatch('+r.veiling_id+')">Verwijder</button></div></div></div>'});
+
+      // Recent activity on overview
+      var all=[];
+      (veil.actief||[]).forEach(function(r){all.push({type:'bid',label:'Bod geplaatst op '+esc(r.titel||r.merk+' '+r.model),amount:r.mijn_bod||r.bedrag,id:r.veiling_id||r.id})});
+      (veil.gewonnen||[]).forEach(function(r){all.push({type:'won',label:'Gewonnen: '+esc(r.titel||r.merk+' '+r.model),amount:r.winnaar_bedrag||r.bedrag,id:r.veiling_id||r.id})});
+      var actEl=document.getElementById('recent-activity');
+      if(all.length){
+        actEl.innerHTML='<h3 style="font-family:var(--head);font-size:16px;margin-bottom:14px">Recente activiteit</h3>'+all.slice(0,5).map(function(a){return'<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><span class="badge '+(a.type==='won'?'badge-g':'badge-w')+'">'+(a.type==='won'?'Gewonnen':'Bod')+'</span> <span style="margin-left:8px">'+a.label+'</span></div><span style="font-family:var(--mono);font-weight:700">&euro;'+fmt(a.amount)+'</span></div>'}).join('');
+      }else{
+        actEl.innerHTML='<div class="card" style="text-align:center;color:var(--ink3);padding:32px">Nog geen activiteit. <a href="/veilingen/" style="color:var(--green)">Bekijk veilingen &rarr;</a></div>';
+      }
+    }
+    if(fact.ok){
+      var nf=fact.facturen?fact.facturen.length:0;
+      document.getElementById('s-facturen').textContent=nf;
+      document.getElementById('b-facturen').textContent=nf;
+      renderList('facturen-list',fact.facturen,'Geen facturen',function(r){return'<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>'+esc(r.omschrijving||'Factuur #'+r.id)+'</strong><div style="color:var(--ink2);font-size:13px;margin-top:4px">'+esc(r.datum||'')+'</div></div><div style="text-align:right"><div style="font-family:var(--mono);font-size:18px;font-weight:700">&euro;'+fmt(r.bedrag)+'</div><span class="badge '+(r.status==='betaald'?'badge-g':'badge-w')+'">'+esc(r.status||'open')+'</span></div></div></div>'});
+    }
+    if(prof.ok&&prof.user){
+      document.getElementById('f-name').value=prof.user.name||'';
+      document.getElementById('f-email').value=prof.user.email||'';
+      document.getElementById('f-phone').value=prof.user.phone||'';
+      document.getElementById('f-company').value=prof.user.company||'';
+    }
+  }).catch(function(e){console.error('Load error:',e)});
+}
+
+function saveProfiel(){
+  fetch('/api/profiel',{method:'PUT',headers:H,body:JSON.stringify({name:document.getElementById('f-name').value,email:document.getElementById('f-email').value,phone:document.getElementById('f-phone').value,company:document.getElementById('f-company').value})}).then(function(r){return r.json()}).then(function(d){toast(d.ok?'Profiel opgeslagen':'Fout: '+(d.error||'onbekend'),d.ok)}).catch(function(){toast('Verbindingsfout',false)});
+}
+
+function changePw(){
+  var o=document.getElementById('f-oldpw').value,n=document.getElementById('f-newpw').value;
+  if(!o||!n||n.length<8){toast('Wachtwoord min. 8 tekens',false);return}
+  fetch('/api/profiel/password',{method:'POST',headers:H,body:JSON.stringify({current:o,newPassword:n})}).then(function(r){return r.json()}).then(function(d){toast(d.ok?'Wachtwoord gewijzigd':'Fout: '+(d.error||'onbekend'),d.ok);if(d.ok){document.getElementById('f-oldpw').value='';document.getElementById('f-newpw').value=''}}).catch(function(){toast('Verbindingsfout',false)});
+}
+
+function exportData(){
+  fetch('/api/profiel/export',{headers:H}).then(function(r){return r.blob()}).then(function(blob){var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='transfer4cars-export.json';a.click();URL.revokeObjectURL(url);toast('Download gestart')}).catch(function(){toast('Export mislukt',false)});
+}
+
+function deleteAccount(){
+  if(!confirm('Weet je zeker dat je je account wilt verwijderen? Dit kan niet ongedaan worden.'))return;
+  var code=prompt('Type DELETE ter bevestiging:');
+  if(code!=='DELETE'){toast('Verwijdering geannuleerd',false);return}
+  fetch('/api/profiel/verwijderen',{method:'POST',headers:H,body:JSON.stringify({confirm:'DELETE'})}).then(function(r){return r.json()}).then(function(d){if(d.ok){localStorage.removeItem('t4c_token');localStorage.removeItem('t4c_user');location.href='/'}else toast('Fout: '+(d.error||'onbekend'),false)}).catch(function(){toast('Verbindingsfout',false)});
+}
+
+function unwatch(vid){
+  fetch('/api/watchlist/'+vid,{method:'DELETE',headers:H}).then(function(r){return r.json()}).then(function(d){if(d.ok){toast('Verwijderd uit watchlist');load()}else toast('Fout',false)}).catch(function(){toast('Verbindingsfout',false)});
+}
+</script>
+</body>
+</html>

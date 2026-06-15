@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aanvraag ontvangen — Transfer4Cars</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="canonical" href="https://transfer4cars.com/aanmelden/ontvangen/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     GOOGLE ADS CONVERSION TRACKING — vul jouw IDs in als je ze hebt
+     ─────────────────────────────────────────────────────────────────
+     Conversion type: B2B aanmelding (Klanten melden zich aan voor service)
+     Page URL voor Google Ads: https://transfer4cars.com/aanmelden/ontvangen/
+     ════════════════════════════════════════════════════════════════════ -->
+
+<!-- GA4 Measurement ID: G-ECSBWCG10K (actief sinds 2026-06-10) -->
+<!-- TODO: Google Ads Conversion ID (AW-...) zodra Jurgen Ads-account heeft → vervang AW-CONVERSION_ID/conv_label in fireConversion() -->
+
+<script src="/js/consent.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ECSBWCG10K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-ECSBWCG10K');
+
+  // ▼ Vervang AW-CONVERSION_ID/conv_label met jouw Google Ads conversion-ID
+  function fireConversion(){
+    gtag('event', 'conversion', {
+      'send_to': 'AW-CONVERSION_ID/conv_label',
+      'value': 100.0,
+      'currency': 'EUR'
+    });
+    // GA4 lead-event (altijd, ook zonder Ads-ID)
+    gtag('event', 'generate_lead', {
+      'event_category': 'b2b_aanmelding',
+      'event_label': 'aanmelden_formulier',
+      'value': 100
+    });
+  }
+</script>
+
+<style>
+:root{
+  --bg:#0b1216;--bg-2:#0f181d;--card:#121d23;
+  --line:rgba(255,255,255,.06);--line-2:rgba(255,255,255,.12);
+  --ink:#ecf0ed;--ink-2:#8a9591;--ink-3:#5a6663;
+  --green:#00e68a;--green-glow:rgba(0,230,138,.18);
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg)}
+body{font-family:var(--font);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+header{border-bottom:1px solid var(--line);background:rgba(11,18,22,.92);backdrop-filter:blur(20px)}
+.head-in{max-width:1320px;margin:0 auto;padding:18px 32px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:19px;font-weight:800;letter-spacing:-.5px;color:var(--ink)}
+.logo .num{color:var(--green);font-weight:900}
+.linkbtn{font-size:14px;color:var(--ink-2);font-weight:500;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;transition:color .15s}
+.linkbtn:hover{color:var(--ink)}
+
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:60px 24px;position:relative}
+main::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(0,230,138,.08),transparent 60%);pointer-events:none}
+
+.card{position:relative;width:100%;max-width:540px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:48px 36px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.4)}
+.icon{width:80px;height:80px;border-radius:50%;background:rgba(0,230,138,.08);border:1px solid rgba(0,230,138,.25);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;color:var(--green);position:relative}
+.icon::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(0,230,138,.15);animation:halo 2s ease-out infinite}
+@keyframes halo{0%{transform:scale(1);opacity:1}100%{transform:scale(1.3);opacity:0}}
+
+.eyebrow{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:inline-flex;align-items:center;gap:10px;justify-content:center}
+.eyebrow::before,.eyebrow::after{content:'';width:18px;height:1px;background:rgba(0,230,138,.3)}
+
+.card h1{font-size:30px;font-weight:800;letter-spacing:-.8px;margin:0 0 12px;line-height:1.1}
+.card p{color:var(--ink-2);font-size:15px;margin:0 0 14px;line-height:1.7}
+.card p b{color:var(--ink)}
+
+.steps{margin:28px 0 8px;padding:20px;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:14px;text-align:left}
+.steps h3{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:1.5px;color:var(--ink-3);text-transform:uppercase;margin:0 0 14px}
+.step{display:grid;grid-template-columns:28px 1fr;gap:12px;padding:8px 0;align-items:start}
+.step:not(:last-child){border-bottom:1px solid var(--line)}
+.step__num{width:24px;height:24px;border-radius:50%;background:rgba(0,230,138,.1);border:1px solid rgba(0,230,138,.25);color:var(--green);font-family:var(--mono);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.step__txt{font-size:13.5px;color:var(--ink-2);line-height:1.55;padding-top:1px}
+.step__txt b{color:var(--ink);font-weight:600}
+
+.actions{margin-top:28px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.cta{display:inline-flex;align-items:center;justify-content:center;padding:12px 22px;border-radius:10px;font-size:14px;font-weight:700;background:var(--green);color:#001a0d;border:none;cursor:pointer;font-family:inherit;transition:.15s}
+.cta:hover{background:#0fff97;transform:translateY(-1px);box-shadow:0 6px 24px var(--green-glow)}
+.ghost{display:inline-flex;align-items:center;justify-content:center;padding:12px 22px;border-radius:10px;font-size:14px;font-weight:600;background:transparent;color:var(--ink);border:1px solid var(--line-2);transition:.15s;font-family:inherit;cursor:pointer}
+.ghost:hover{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.03)}
+
+.contact{margin-top:24px;font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.3px}
+.contact a{color:var(--green);font-weight:600}
+
+footer{border-top:1px solid var(--line);background:var(--bg-2);padding:24px 32px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+footer a{color:var(--ink-2)}footer a:hover{color:var(--green)}
+
+@media(max-width:480px){
+  .card{padding:36px 24px}
+  .card h1{font-size:24px}
+  .actions{flex-direction:column}
+  .actions a{width:100%}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <a class="logo" href="/">TRANSFER<span class="num">4</span>CARS</a>
+    <a class="linkbtn" href="/">← Terug naar home</a>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="icon">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <div class="eyebrow">Aanvraag ontvangen</div>
+    <h1>Bedankt voor je aanvraag<span style="color:var(--green)">.</span></h1>
+    <p>We hebben je B2B-aanmelding<span id="bedrijf-spot"></span> in goede orde ontvangen.</p>
+
+    <div class="steps">
+      <h3>Wat gebeurt er nu</h3>
+      <div class="step">
+        <div class="step__num">1</div>
+        <div class="step__txt">We controleren je bedrijfsgegevens en KvK-registratie. <b>Binnen 24 uur</b> nemen we contact op.</div>
+      </div>
+      <div class="step">
+        <div class="step__num">2</div>
+        <div class="step__txt">Na goedkeuring ontvang je <b>per e-mail je inloggegevens</b> (gebruikersnaam + tijdelijk wachtwoord).</div>
+      </div>
+      <div class="step">
+        <div class="step__num">3</div>
+        <div class="step__txt">Je kunt direct inloggen op de veilingen en je wachtwoord wijzigen via je account.</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="cta" href="/">Terug naar home</a>
+      <a class="ghost" href="/transport/">Bekijk transport-tarieven</a>
+    </div>
+
+    <div class="contact">
+      Vragen? Bel <a href="tel:+31687997168">+31 6 87 99 71 68</a> of mail <a href="mailto:info@transfer4cars.com">info@transfer4cars.com</a>
+    </div>
+  </div>
+</main>
+
+<footer>© 2026 Transfer4Cars · JHVT Holding B.V. · KvK 88503925 · <a href="/voorwaarden/">Voorwaarden</a> · <a href="/privacy/">Privacy</a></footer>
+
+<script>
+// Toon bedrijfsnaam als die in sessionStorage staat (zet /aanmelden/ daar bij submit)
+try{
+  const b=sessionStorage.getItem("t4c_aanmelding_bedrijf");
+  if(b){
+    document.getElementById("bedrijf-spot").textContent=" van "+b;
+    sessionStorage.removeItem("t4c_aanmelding_bedrijf");
+  }
+}catch{}
+
+// Conversion-event vuren — Google Ads + GA4 picken dit op
+try{ fireConversion(); }catch{}
+</script>
+</body>
+</html>

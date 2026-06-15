@@ -571,7 +571,7 @@ router.put("/api/veiling/:id", authMiddleware, staffOnly, express.json(), (req, 
         disclosureChanges[f] = { from: v[f], to: req.body[f] }
       }
     }
-    run("UPDATE veilingen SET "+Object.keys(req.body).map(k=>k+"=?").join(",")+",updated_at=datetime('now') WHERE id=?", [...Object.values(req.body), req.params.id])
+    { const _vCols=["voorraad_id","kenteken","titel","beschrijving","merk","model","bouwjaar","km","brandstof","kleur","minimumprijs","startprijs","huidige_bod","aantal_biedingen","start_datum","eind_datum","ronde","status","winnaar_user_id","winnaar_bod","transport_status","transport_keuze","transport_kosten","leverdatum","created_by","channel_type","verwachte_prijs","atx_job_id"]; const _vk=Object.keys(req.body).filter(k=>_vCols.includes(k)); if(_vk.length) run("UPDATE veilingen SET "+_vk.map(k=>k+"=?").join(",")+",updated_at=datetime('now') WHERE id=?", [..._vk.map(k=>req.body[k]), req.params.id]); }
     if(v.voorraad_id&&oldS!==newS){if(newS==="geannuleerd"||newS==="verlopen")run("UPDATE voorraad SET status='te_koop', updated_at=datetime('now') WHERE id=?",[v.voorraad_id]);else if(newS==="gewonnen")run("UPDATE voorraad SET status='verkocht', updated_at=datetime('now') WHERE id=?",[v.voorraad_id]);else if(newS==="actief"&&oldS==="gepland")run("UPDATE voorraad SET status='in_veiling', updated_at=datetime('now') WHERE id=?",[v.voorraad_id])}
     // Log disclosure-changes — onveranderbaar audit-spoor (art. 15+20 AVG + anti-fraude)
     if (Object.keys(disclosureChanges).length > 0) {

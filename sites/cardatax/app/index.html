@@ -944,6 +944,13 @@ function renderResult(){
     </div>
     ${warns?'<div class="warns">'+warns+'</div>':''}
 
+    ${r.channel ? `
+    <div class="channel-banner" style="margin:0 0 14px;padding:14px 16px;border-radius:12px;background:var(--card2);border-left:6px solid ${r.channel.afzetkanaal.kleur}">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)">Advies afzetkanaal</span><span style="font-size:20px;font-weight:800;color:${r.channel.afzetkanaal.kleur}">${r.channel.afzetkanaal.emoji} ${r.channel.afzetkanaal.label}</span></div>
+      ${r.channel.afzetkanaal.redenen&&r.channel.afzetkanaal.redenen.length?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${r.channel.afzetkanaal.redenen.join(' · ')}</div>`:''}
+      <div style="font-size:12px;color:var(--text2);margin-top:8px">datazekerheid <b>${r.channel.datazekerheid}%</b> · courantheid <b>${r.channel.courantheid}/10</b> · verkooptijd <b>~${r.channel.verwachteVerkooptijdDagen}d</b>${r.channel.motorRisico?` · <span style="color:var(--orange)">⚠ ${r.channel.motorRisico}</span>`:''}</div>
+      ${r.channel.kanaalWaardes?`<div style="font-size:12px;color:var(--text3);margin-top:6px">dealer ${E(r.channel.kanaalWaardes.dealer)} · universeel ${E(r.channel.kanaalWaardes.universeel)} · b2b ${E(r.channel.kanaalWaardes.b2b)} · export ${E(r.channel.kanaalWaardes.export)} · outlet ${E(r.channel.kanaalWaardes.outlet)}</div>`:''}
+    </div>` : ''}
     <!-- 5 PRICE CARDS -->
     <div class="price-row">
       <div class="pcard"><div class="pcard-label">Inkoop range</div><div class="pcard-val">${E(r.inkoopLow||0)} — ${E(r.inkoopHigh||0)}</div><div class="pcard-sub">Handelswaarde: <b>${E(hw)}</b></div></div>
