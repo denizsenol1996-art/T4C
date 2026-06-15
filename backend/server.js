@@ -416,6 +416,9 @@ app.use(require("./routes/market"))
 // AI chat
 app.use(require("./routes/ai-chat"))
 
+// Leer-lus (grondwaarheid-koppeling + accuratesse-meting, additief, localhost-gated)
+app.use(require("./routes/groundtruth"))
+
 // Admin (last — catch-all admin routes)
 app.use(require("./routes/admin"))
 
