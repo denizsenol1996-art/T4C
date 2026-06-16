@@ -120,10 +120,10 @@ async function getExpertPriceEstimate(vehicle) {
   try {
     const resp = await axios.post("https://api.openai.com/v1/responses", {
       model: process.env.T4C_VALUATION_MODEL || "gpt-5.4",
-      temperature: 0,
-      max_output_tokens: 400,
+      ...(/^gpt-5\.5/.test(process.env.T4C_VALUATION_MODEL || "") ? { reasoning: { effort: "low" } } : { temperature: 0 }),
+      max_output_tokens: /^gpt-5\.5/.test(process.env.T4C_VALUATION_MODEL || "") ? 1500 : 400,
       input: sys + "\n\n" + usr
-    }, { headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" }, timeout: 8000 })
+    }, { headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" }, timeout: /^gpt-5\.5/.test(process.env.T4C_VALUATION_MODEL || "") ? 20000 : 8000 })
 
     const outBlocks = resp.data.output || []
     const textBlock = outBlocks.find(b => b.type === "message")
