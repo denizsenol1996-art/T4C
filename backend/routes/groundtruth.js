@@ -88,4 +88,17 @@ router.post('/api/groundtruth/resolve', localOnly, (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// POST vervuilde taxatie verwijderen op id (localhost only). ?id=4320
+router.post('/api/groundtruth/delete-taxatie', localOnly, (req, res) => {
+  try {
+    const id = parseInt(req.query.id);
+    if (!(id > 0)) return res.status(400).json({ error: 'id>0 vereist (?id=)' });
+    const before = queryOne("SELECT id, kenteken, make, model FROM taxaties WHERE id=?", [id]);
+    if (!before) return res.status(404).json({ error: 'taxatie niet gevonden' });
+    run("DELETE FROM taxaties WHERE id=?", [id]);
+    forceSave();
+    res.json({ ok: true, deleted: id, was: before });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
