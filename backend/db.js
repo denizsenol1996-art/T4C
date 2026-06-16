@@ -107,10 +107,24 @@ function scheduleSave() {
 function forceSave() {
   if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null }
   if (!db) return
-  try { db.run("PRAGMA integrity_check") } catch (intErr) {
-    console.error("[DB] INTEGRITY CHECK FAILED — checkpoint GEWEIGERD:", intErr.message); return
-  }
+  // Post-WAL (2026-06-16): writes zijn al synchronous to disk via journal_mode=WAL +
+  // synchronous=NORMAL. forceSave doet nu alleen WAL→main checkpoint + truncate.
+  // PRAGMA integrity_check ZAT op elke 30s-tick + elke SIGTERM = multi-sec CPU-baseline
+  // op 192MB DB. Verplaatst naar integrityCheck() voor expliciet gebruik (admin/cron).
   try { db.pragma('wal_checkpoint(TRUNCATE)') } catch (e) { console.error("[DB] checkpoint error:", e.message) }
+}
+
+// Expliciete integriteits-check — alleen aanroepen vanuit admin-endpoint of cron,
+// NIET vanuit forceSave/SIGTERM (post-WAL niet nodig + duur op grote DB).
+function integrityCheck() {
+  if (!db) return { ok: false, error: 'DB not initialized' }
+  try {
+    const rows = db.exec("PRAGMA integrity_check")[0]?.values || []
+    const result = rows.map(r => r[0]).join(', ')
+    return { ok: result === 'ok', result }
+  } catch (e) {
+    return { ok: false, error: e.message }
+  }
 }
 
 // ── Initialize ──
@@ -1225,7 +1239,7 @@ function backup() {
 // ══════════════════════════════════════════════
 
 module.exports = {
-  initDB, db: () => db, stmts, DATA_DIR, DB_PATH, BACKUP_DIR, backup, forceSave,
+  initDB, db: () => db, stmts, DATA_DIR, DB_PATH, BACKUP_DIR, backup, forceSave, integrityCheck,
   queryOne, queryAll, run,
 
   getJwtSecret() {
