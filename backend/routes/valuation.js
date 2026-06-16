@@ -881,7 +881,7 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
 
         console.log('[AI-FIRST] Calling GPT-5.4 + web search for', d.make, d.model, year, km + 'km')
         const aiResp = await axios.post("https://api.openai.com/v1/responses", {
-          model: "gpt-5.4",
+          model: process.env.T4C_VALUATION_MODEL || "gpt-5.4",
           temperature: 0,
           max_output_tokens: 1200,
           tools: [{ type: "web_search_preview" }],

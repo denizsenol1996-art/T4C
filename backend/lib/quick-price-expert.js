@@ -119,7 +119,7 @@ async function getExpertPriceEstimate(vehicle) {
 
   try {
     const resp = await axios.post("https://api.openai.com/v1/responses", {
-      model: "gpt-5.4",
+      model: process.env.T4C_VALUATION_MODEL || "gpt-5.4",
       temperature: 0,
       max_output_tokens: 400,
       input: sys + "\n\n" + usr
