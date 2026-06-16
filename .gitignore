@@ -47,5 +47,9 @@ FULL-STATE-BACKUPS/
 *.auto1-stijl-discarded*
 wal-poc/wal-*
 wal-poc/*.md
+backend/wal-poc/wal-*
+backend/wal-poc/*.md
 backend/db.bsqlite.js
+backend/db.js.WORKING-*
+backend/db.sqljs.bak.js
 *-discarded-*
