@@ -419,6 +419,9 @@ app.use(require("./routes/ai-chat"))
 // Leer-lus (grondwaarheid-koppeling + accuratesse-meting, additief, localhost-gated)
 app.use(require("./routes/groundtruth"))
 
+// Externe API (key-beveiligd) voor eigen koppelingen — /api/v1/taxatie
+app.use(require("./routes/external-api"))
+
 // Admin (last — catch-all admin routes)
 app.use(require("./routes/admin"))
 
