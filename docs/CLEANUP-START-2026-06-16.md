@@ -105,7 +105,5 @@ Apart commit ac97e8c — geen pricing-logic-wijziging, alleen env-flag condition
 - Git working tree: schoon, 4 commits sinds Fase 1-start
 
 ## Wat de USER nu moet beslissen
-1. **Echte rm op staging-folder** — pas na visuele review. Commando: `rm -rf /opt/t4c/_pending-delete-fase2-20260616/`
-2. **Of wachten** 24-48u, dan rm.
-3. **Bij twijfel**: spot-check `du -sh /opt/t4c/_pending-delete-fase2-20260616/*` en open enkele files.
+~~Echte rm op staging-folder~~ — **UITGEVOERD 2026-06-16 22:57** door user-akkoord. 4,5 GB vrijgemaakt. Disk gebruikt: 38 GB → 34 GB (Use% 3% → 2%). Productie: 200 OK, geen restart.
 
