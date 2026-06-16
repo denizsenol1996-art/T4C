@@ -52,4 +52,7 @@ backend/wal-poc/*.md
 backend/db.bsqlite.js
 backend/db.js.WORKING-*
 backend/db.sqljs.bak.js
+
+# Schoonmaak Fase 2 (2026-06-16) — staging vóór echte rm
+_pending-delete-*/
 *-discarded-*
