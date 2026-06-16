@@ -6,7 +6,7 @@
  */
 const path = require("path")
 const fs = require("fs")
-const initSqlJs = require("sql.js")
+const initSqlJs = require("./wal-poc/sqljs-compat.js").initCompat
 const { parseTitle } = require('./lib/title-parser')
 const { normalizeListing } = require('./lib/listing-normalizer')
 
@@ -96,42 +96,21 @@ let _saveTimer = null
 function tmpPathFor() { return DB_PATH + "." + process.pid + ".tmp" }
 
 function scheduleSave() {
+  // WAL: writes staan al op disk. Debounced checkpoint i.p.v. full export.
   if (_saveTimer) return
-  // Jitter 5000-7000ms ontkoppelt eventuele gelijktijdige writes.
-  const delay = 5000 + Math.floor(Math.random() * 2000)
   _saveTimer = setTimeout(() => {
     _saveTimer = null
-    if (!db) return
-    const tmpPath = tmpPathFor()
-    try {
-      const data = db.export()
-      if (data.length < 10000) { console.error("[DB] scheduleSave: export te klein (" + data.length + " bytes) — GEWEIGERD"); return }
-      fs.writeFileSync(tmpPath, Buffer.from(data))
-      fs.renameSync(tmpPath, DB_PATH)
-    } catch (e) {
-      console.error("[DB] Save error:", e.message)
-      try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath) } catch {}
-    }
-  }, delay)
+    try { if (db) db.pragma('wal_checkpoint(PASSIVE)') } catch (e) {}
+  }, 5000)
 }
 
 function forceSave() {
   if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null }
   if (!db) return
-  const tmpPath = tmpPathFor()
-  try {
-    try { db.run("PRAGMA integrity_check") } catch(intErr) {
-      console.error("[DB] INTEGRITY CHECK FAILED — save GEWEIGERD:", intErr.message)
-      return
-    }
-    const data = db.export()
-    if (data.length < 1000) { console.error("[DB] Export too small (" + data.length + " bytes) — save GEWEIGERD"); return }
-    fs.writeFileSync(tmpPath, Buffer.from(data))
-    fs.renameSync(tmpPath, DB_PATH)
-  } catch (e) {
-    console.error("[DB] Force save error:", e.message)
-    try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath) } catch {}
+  try { db.run("PRAGMA integrity_check") } catch (intErr) {
+    console.error("[DB] INTEGRITY CHECK FAILED — checkpoint GEWEIGERD:", intErr.message); return
   }
+  try { db.pragma('wal_checkpoint(TRUNCATE)') } catch (e) { console.error("[DB] checkpoint error:", e.message) }
 }
 
 // ── Initialize ──
@@ -148,7 +127,7 @@ async function initDB() {
       if (!restored) { db = new SQL.Database(); console.log("[DB] Created fresh database after failed restore") }
     } else {
       try {
-        db = new SQL.Database(buffer)
+        db = new SQL.Database(DB_PATH)
         // Quick integrity check
         try { db.run("SELECT count(*) FROM sqlite_master") } catch(intErr) {
           console.error("[DB] CORRUPT TABLES — attempting backup restore")

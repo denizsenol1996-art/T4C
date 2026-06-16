@@ -45,6 +45,7 @@ FULL-STATE-BACKUPS/
 *.dna-dark-*
 *.two-tone-*
 *.auto1-stijl-discarded*
-wal-poc/
+wal-poc/wal-*
+wal-poc/*.md
 backend/db.bsqlite.js
 *-discarded-*
