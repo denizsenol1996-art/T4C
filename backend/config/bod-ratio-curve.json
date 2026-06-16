@@ -1,0 +1,11 @@
+{
+  "_comment": "bod = verkoopadvies x ratio[prijsklasse][leeftijd]. Geleerd uit 661 echte Jurgen-deals 2026-06-16. Held-out validatie: mediaan bias +11% -> -1%, binnen-20% 54% -> 60%. Vervangt de platte 0.70-omrekening die op goedkoop/oud +100% te hoog bood.",
+  "min": 0.18,
+  "max": 0.78,
+  "table": {
+    "lt2000":      { "y0_5": 0.27, "y6_10": 0.27, "y11_15": 0.27, "y16plus": 0.31 },
+    "2000_5000":   { "y0_5": 0.48, "y6_10": 0.48, "y11_15": 0.51, "y16plus": 0.43 },
+    "5000_10000":  { "y0_5": 0.63, "y6_10": 0.64, "y11_15": 0.64, "y16plus": 0.59 },
+    "gte10000":    { "y0_5": 0.72, "y6_10": 0.69, "y11_15": 0.64, "y16plus": 0.39 }
+  }
+}

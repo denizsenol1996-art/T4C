@@ -11,6 +11,7 @@ const { authMiddleware, staffOnly } = require("../lib/auth")
 const { getTwinListings } = require("../lib/twins")
 const { writeLog } = require("../lib/state")
 const { calculateTradeBid } = require('../lib/trade-engine')
+const { curveBod, curveRatio } = require('../lib/bod-curve')
 const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, calculateMargeScore, calculateVergelijkScore, calculateTotalScore, generateDealerAdvice } = require("../lib/scoring")
 const { buildComparableSet } = require("../lib/comparable-engine")
 const { getExpertPriceEstimate, getHealthStats: getExpertHealth } = require("../lib/quick-price-expert")
@@ -1023,6 +1024,20 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
         console.log("[BOD-ADJ]", d.make, d.model, ":", _tag, "×", _matched.factor, "→ bod", _bodBase, "→", finalBod)
       } else {
         _bodAdjustment = { base: _bodBase, adjusted: finalBod, tag: null, factor: 1.0 }
+      }
+    }
+
+    // ═══ BOD-CURVE (datagedreven, 2026-06-16) — vervangt platte 0.70/handelswaarde-bod ═══
+    // bod = verkoopadvies × ratio(prijsklasse, leeftijd), geleerd uit 661 echte Jurgen-deals.
+    // Held-out: mediaan bias +11% → −1%. Uit met env T4C_BOD_CURVE=0. Faalt veilig terug op finalBod.
+    if (process.env.T4C_BOD_CURVE !== '0') {
+      const _preCurve = finalBod
+      const _curveBod = curveBod(finalVerkoop, d.year || year, finalBod)
+      if (_curveBod > 0 && _curveBod !== finalBod) {
+        finalBod = _curveBod
+        finalInkoopHigh = finalBod
+        finalInkoopLow = Math.round(finalBod * 0.92 / 50) * 50
+        console.log("[BOD-CURVE]", d.make, d.model, "retail", finalVerkoop, "ratio", curveRatio(finalVerkoop, d.year || year), "→ bod", _preCurve, "→", finalBod)
       }
     }
 
