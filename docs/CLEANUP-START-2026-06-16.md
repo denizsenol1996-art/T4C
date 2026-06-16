@@ -107,3 +107,66 @@ Apart commit ac97e8c — geen pricing-logic-wijziging, alleen env-flag condition
 ## Wat de USER nu moet beslissen
 ~~Echte rm op staging-folder~~ — **UITGEVOERD 2026-06-16 22:57** door user-akkoord. 4,5 GB vrijgemaakt. Disk gebruikt: 38 GB → 34 GB (Use% 3% → 2%). Productie: 200 OK, geen restart.
 
+---
+
+# Fase 5a — Veilige infra-wins 2026-06-16 23:00
+
+## ✅ atx-admin restart-bescherming
+`/opt/atx-pipeline/ecosystem.config.js` had GEEN restart-bescherming. Defaults PM2 (1.6s/1s/16/0ms) → syntax-error = 16× restart-loop in <0.5s. Toegevoegd:
+```js
+kill_timeout: 5000,
+min_uptime: '10s',
+max_restarts: 8,
+restart_delay: 3000,
+```
+Restart uitgevoerd via `pm2 startOrReload`. Atx-admin draait 200 OK, 4 pollers actief (mail/scraper/taxatie/markt).
+
+Backup: `/opt/atx-pipeline/ecosystem.config.js.bak-pre-restartprot-20260616`.
+**Niet in git** (atx-pipeline is geen git-repo).
+
+## ✅ db.js forceSave skip PRAGMA integrity_check (post-WAL)
+`forceSave()` draaide elke 30s + bij elke SIGTERM/SIGINT/exit een integrity-check op 192 MB DB. Multi-seconden CPU per call. Pre-WAL nodig (sql.js export gate), post-WAL (commit d5c6dcb 16-06 10:54) overbodig — WAL+synchronous=NORMAL maakt writes al duurzaam.
+
+Gewijzigd in commit `c502678`:
+- `forceSave()`: nu alleen `wal_checkpoint(TRUNCATE)` — snel.
+- Nieuwe `integrityCheck()`: expliciete functie voor admin-endpoint of cron (db-snapshot.sh doet al `PRAGMA quick_check`).
+
+Verificatie na reload: memory 656 MB → 290 MB (lockfile fris), pricing-smoke OK (Mazda 2 €1050 bod, src=ai).
+
+Backup: `backend/db.js.bak-pre-forcesave-fix-20260616`.
+
+## 📋 cloudflared TLS-mismatch (alleen documentatie, fix vereist Cloudflare-dashboard)
+Sinds 5 dagen continue error in `journalctl -u cloudflared`:
+```
+tls: failed to verify certificate: x509: certificate signed by unknown authority
+originService=https://localhost:9090
+```
+Geen impact op `transfer4cars.com` (andere ingress-rule). Wel logvervuiling die echte fouten verbergt.
+
+**Wat USER moet doen** (kan ik niet, vereist CF-dashboard-toegang):
+- Open Zero Trust → Networks → Tunnels → t4c-tunnel → Public Hostnames
+- Zoek ingress-rule met `https://localhost:9090` als origin
+- Verander naar `http://localhost:9090` (cardatax-server serveert plain HTTP)
+- Of: verwijder die ingress-rule als hij niet gebruikt wordt
+- Test: `journalctl -u cloudflared | grep -i 9090` zou stoppen
+
+## Commits sessie totaal
+- `0f3b516` Fase 1: backup-cron herstel + phantoms
+- `ac97e8c` gpt-5.5 env-flag conditional
+- `9a45759` Fase 1 doc
+- `35c885f` Fase 2: 4,5 GB naar staging
+- `8f6b01f` Fase 2 doc
+- `993fcd8` Fase 2 rm uitgevoerd
+- `c502678` Fase 5a: db.js forceSave skip integrity_check
+
+(+ atx-ecosystem niet in git, alleen lokaal backup).
+
+## Wat NOG open staat
+- **Off-site backup (rclone)** — vereist Backblaze B2 / S3 / GDrive credentials van USER
+- **Watchdog push-alert** (mail-direct) — bij FAILED nu alleen lokaal log
+- **OpenAI timeouts uniformeren** — 8s/30s/45s nu inconsistent
+- **valuation.js opsplitsen** (1637 regels → 4-5 modulen) — groter werk, op bench
+- **Fase 3 pricing dead-code**: B1 + kmCorrection + channel-engine — wachten op Jurgen's vervolg
+- **Fase 4 Jurgen-regels** — wachten op zijn volledige verhaal
+- **Fase 6 doc-consolidatie** — klein werk, kan tussendoor
+
