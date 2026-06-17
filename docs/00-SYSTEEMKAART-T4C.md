@@ -1,5 +1,48 @@
 # 🗺️ 00 — SYSTEEMKAART T4C (geverifieerd op de live server)
-*De ENE bron van waarheid. Elke regel is read-only geverifieerd op `ssh t4c` op 2026-06-15 (5 parallelle code/data-audits, file:line + exacte counts). Vervangt losse audit-docs. Niks gewijzigd op de server bij het maken.*
+*De ENE bron van waarheid. Elke regel is read-only geverifieerd op `ssh t4c` op 2026-06-15 (5 parallelle code/data-audits, file:line + exacte counts). Vervangt losse audit-docs.*
+
+---
+
+## ⚡ UPDATE-OVERLAY 2026-06-17 — wat veranderd is sinds 2026-06-15
+
+**LEES DEZE OVERLAY EERST.** Onderstaande hoofd-tekst is van 2026-06-15. De volgende wijzigingen zijn sinds die datum doorgevoerd en overschrijven de oudere claims:
+
+### DB-engine
+- ❌ ~~sql.js in-memory~~ → ✅ **better-sqlite3 + WAL** (cutover commit `d5c6dcb`, 16-06 10:54)
+- `forceSave()` doet **geen PRAGMA integrity_check meer** op 30s-tick + SIGTERM (commit `c502678`, 16-06 23:00). Aparte `integrityCheck()` voor admin/cron.
+
+### Restart-cijfers — context
+- "92 restarts" en "106 restarts" in §1 zijn **PM2-lifetime-counters**, geen daily-crash-cijfer. Vandaag (16-06): 9 echte boots voor t4c-server, 3 voor atx-admin — allemaal handmatig (SIGINT, geen crashes).
+- **Atx-admin restart-bescherming** toegevoegd (16-06 22:55): `kill_timeout: 5000, min_uptime: '10s', max_restarts: 8, restart_delay: 3000`. Eerder ontbrak elk vangnet → 16× restart-loop in <0.5s mogelijk.
+
+### Backup-cron
+- ❌ ~~`backup.sh` daily-cron 03:00 werkt~~ → was **stil kapot sinds 30-04** (53 false-positives, cp-glob bug). **Gefixt 16-06** in commit `0f3b516`. Verifieerd: `db_20260616_2243.db` (193 MB) staat in `/opt/t4c/backups/`.
+
+### Schoonmaak Fase 1+2+5a (16-06)
+- **4,5 GB rotzooi** verwijderd: oude .bak DB-files (849 MB), data/backups/ sqljs-tijdperk (1,6 GB), backups/cleanup-/archived-/atx- snapshots (1,7 GB), FULL-STATE-BACKUPS (386 MB), 22× backend/*.bak-* + PATCH-READY + STAGED-*
+- **3 phantom files weg**: `=` (0b), `manifest_new.json` (0b), `db.js.WORKING-sqljs-20260616` (66 KB)
+- **`.gitignore` prefix-fix**: `backend/wal-poc/wal-*` + `backend/wal-poc/*.md` + `backend/db.js.WORKING-*` + `backend/db.sqljs.bak.js`
+
+### Pricing-bias-cijfers — nieuwe meting met enrichment-payload
+- ❌ ~~Mediaan +11%, bias +59%, +198% op <€2k~~ (was tegen `our_bod` = eigen output, fout)
+- ✅ **Mediaan +5%** vs Jurgen-bod (`sold_price`) op 660 cases met enrichment-payload
+- Resterende blinde vlekken: <€2k auto's (+38%), 16+j gemengd
+- **Onthulling 16-06**: `sold_price` IS Jurgen-bod (niet `our_bod` zoals eerder gedacht). `dealer_feedback.kenteken` is wel gevuld (eerder gedacht: leeg).
+
+### Pricing-leerlus
+- ❌ ~~0 sold_price-rijen~~ → de **662 dealer_feedback-rijen** zijn de echte ground truth (Jurgen-bod via `eigen_bod` → `sold_price` kolom). Bod-curve van 16-06 is hieruit gefit.
+
+### Session-bootstrap (17-06)
+- `/opt/t4c/CLAUDE.md` herschreven met verplichte leeslijst
+- `/opt/t4c/docs/SESSION-START-PROTOCOL.md` nieuw — 12-stap checklist
+- `/home/deniz/CLAUDE.md` nieuw — home-bootstrap
+- Memory-trigger boven aan `MEMORY.md`
+
+### Jurgen-DNA ronde 2 (17-06)
+- `JURGEN-PRICING-DNA-2026-06-17.md` complete framework
+- Memory `project_jurgen_pricing_rules.md` uitgebreid met scorematrix per dimensie
+
+---
 
 > **Hoe te lezen:** ✅ = werkt & is aangesloten · ⚠️ = draait maar half/risico · ☠️ = dood/niet-aangesloten (de "schok").
 

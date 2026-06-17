@@ -189,3 +189,36 @@ Wanneer 3+ vergelijkbare entries zijn: maak een `feedback`- of `project`-memory 
 
 ### Zombie wget-procs (motd-warning)
 10× `[wget] <defunct>`, parent = traefik (Docker-managed door Coolify). Healthcheck-lekkage in Docker container. Niet acuut: zombies blokkeren niks, alleen PID-tabel-bloat. Fix vereist traefik-container herstart (= Coolify-stack reload). Documenteer, doe niet nu.
+
+---
+
+## 2026-06-16 → 2026-06-17 — Schoonmaak-sessie (Fase 1+2+5a) + Jurgen-DNA ronde 2
+
+**Geen crashes.** Wel een lange werksessie met substantiële wijzigingen — gedocumenteerd hier voor toekomst-context.
+
+### Werk-overzicht
+- **Fase 1** (16-06 22:40): backup-cron stil-defect (cp-glob bug) **gerepareerd na 47 dagen** (53 false-positives in backup.log sinds 30-04). 3 phantom files weg (`=`, `manifest_new.json`, `db.js.WORKING-sqljs-*`). `.gitignore` prefix-fix.
+- **Fase 2** (16-06 22:50): **4,5 GB rotzooi** via staging-folder verwijderd na user-akkoord. Disk 38GB → 34GB. Productie ongemoeid.
+- **Fase 5a** (16-06 23:00): atx-admin restart-bescherming (kill_timeout/min_uptime/max_restarts/restart_delay). `db.js` forceSave skip PRAGMA integrity_check post-WAL (memory na reload 656MB → 290MB).
+- **Pricing-analyse**: 660-cases benchmark, eerst tegen verkeerde kolom (`our_bod`), correctie naar `sold_price` (echte Jurgen-bod). Mediaan-bias +5% vs Jurgen. <€2k blinde vlek (+38%) blijft.
+- **Bench-instance** gebouwd + 4 wijzigingen getest + afgesloten (was niet duidelijk beter).
+- **Jurgen-DNA ronde 2** (17-06 00:00): complete framework via ChatGPT-conversatie. 8 hoofdblokken, concrete aftrek-cijfers, motor-categorieën, km-grenzen per brandstof, T4C-Liquiditeitsscore 0-100.
+- **Session-bootstrap** (17-06 00:20): nieuwe `CLAUDE.md` + `SESSION-START-PROTOCOL.md` + `/home/deniz/CLAUDE.md` + memory-trigger. Dwingt elke volgende Claude tot leeslijst vóór actie.
+- **Docs-update** (17-06 00:30): SESSION-STATE.md + 00-SYSTEEMKAART overlay + dit log + 4 oudere docs review (Stap 4 nog te doen).
+
+### Belangrijkste leerpunten (om niet te vergeten)
+1. **`sold_price` IS Jurgen-bod**, niet `our_bod` (= T4C-systeem-output). Eerdere analyses tegen `our_bod` waren misleidend.
+2. **dealer_feedback.kenteken IS gevuld** (eerder claim: leeg). 662/662.
+3. **DB is better-sqlite3 + WAL** sinds 16-06, niet sql.js.
+4. **"102 restarts" was PM2-lifetime**, niet daily-crash. Echte boots 16-06: 9× t4c-server, allemaal handmatig.
+5. **Bench-fix-richting was niet beter**: na schone re-analyse met `sold_price` zat prod al goed (+5% mediaan), bench was iets slechter (+6,1%).
+6. **Multipliers per-merk variëren**: sommige (Note, Auris, VW Up, Skoda Fabia, Hyundai i10) zijn terecht, andere (Megane, Fiesta, Venga, C1) zijn te streng.
+
+### Commits sessie (10)
+`0f3b516` `ac97e8c` `9a45759` `35c885f` `8f6b01f` `993fcd8` `c502678` `a08a9d5` `e1fe315` `0e15be7`
+
+### Volgende sessie pakt op
+- RSPP-doc schrijven (`ROCK-SOLID-PIPELINE-2026-06-17.md`)
+- Staging-instance als permanente fixture bouwen
+- AI-research voor 6 open Jurgen-vragen
+- Bootstrap-test: laat user nieuwe sessie openen (local + `ssh t4c`) om te zien of Claude de leeslijst echt naloopt

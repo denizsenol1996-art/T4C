@@ -1,21 +1,66 @@
-# SESSION STATE — laatst bijgewerkt 2026-06-15 door Claude
+# SESSION STATE — laatst bijgewerkt 2026-06-17 00:30 door Claude
 
-## Waar zijn we
-Schoonmaak-/werkend-maken-traject van het hele T4C-systeem, na een complete read-only audit (zie `docs/00-SYSTEEMKAART-T4C.md` = bron van waarheid). Werkwijze: 1 fix per keer, backup + test + bewijs, niks breken.
+## Waar we zijn
+T4C-stack in **stabielere staat** dan ooit deze maand. Cleanup-traject Fase 1+2+5a voltooid op 16-06 (avond). Jurgen's volledige pricing-DNA gevangen in ronde 2 op 17-06. Klaar voor RSPP-fase (Rock-Solid Pricing Pipeline) — proces dat elke pricing-wijziging door 6 gates dwingt.
 
-## Klaar (deze sessie)
-- **Veiligheidsbasis**: t4c.db-backup + baseline-commit `6769bbe` (live code = git) + Postgres-dumps dev/live.
-- **Cockpit-portaal**: pm2 `t4c-cockpit` :3300 (read-only: live-staat + bestand-browser + kaart + accuratesse). `ssh -L 3300:127.0.0.1:3300 t4c` → Admin / Prive12345!.
-- **atx-dashboard beveiligd**: wachtwoord uit code → .env (Prive12345!), cookie ondertekend.
-- **Leer-lus aangesloten** (commit `7ff0f38`): `routes/groundtruth.js` koppelt dealer_feedback op kenteken (662/662), `/api/groundtruth/stats` meet accuratesse (mediaan 17%, bias +11%, binnen-5% 23,8%). Cockpit-tab Accuratesse.
-- **B1 getest, NIET toegepast**: risico-bod is slechter op 660 echte deals (mediaan 20,4% vs 17%). bod=handelswaarde blijft.
+## Klaar (sessie 16-17 juni)
+- **Backup-cron hersteld** na 47 dagen stilte (cp-glob bug fix in `backup.sh`)
+- **4,5 GB disk-rotzooi** verwijderd via staging-folder → user-akkoord → rm
+- **Phantom files weg**: `=`, `manifest_new.json`, `db.js.WORKING-sqljs-*`
+- **`.gitignore` fix**: backend/wal-poc prefix-bug + db.js.WORKING + db.sqljs.bak.js
+- **atx-admin restart-bescherming**: `kill_timeout/min_uptime/max_restarts/restart_delay` toegevoegd
+- **db.js forceSave fix**: PRAGMA integrity_check skip op 30s-tick + SIGTERM (was multi-sec CPU per call; post-WAL niet nodig)
+- **`integrityCheck()` apart**: voor expliciet admin-/cron-gebruik
+- **Session-bootstrap**: nieuwe `CLAUDE.md` + `SESSION-START-PROTOCOL.md` + `/home/deniz/CLAUDE.md` + memory-trigger
+- **Jurgen-DNA ronde 2**: complete framework in memory + `JURGEN-PRICING-DNA-2026-06-17.md`
+
+## Commits sessie (10 totaal)
+- `0f3b516` Fase 1 backup-cron + phantoms
+- `ac97e8c` gpt-5.5 env-flag conditional
+- `9a45759` Fase 1 doc
+- `35c885f` Fase 2 staging 4,5 GB
+- `8f6b01f` Fase 2 doc update
+- `993fcd8` Fase 2 rm uitgevoerd
+- `c502678` Fase 5a db.js forceSave skip
+- `a08a9d5` Fase 5a doc (atx + db.js + cloudflared todo)
+- `e1fe315` Jurgen pricing-DNA compleet (ronde 2)
+- `0e15be7` Session-bootstrap (CLAUDE.md + protocol)
+
+## Productie-status nu
+- t4c-server: 200 OK, better-sqlite3 + WAL DB-engine (sinds 16-06 10:54 cutover `d5c6dcb`)
+- atx-admin: 200 OK met nieuwe restart-bescherming
+- Daily backup-cron: zal morgen 03:00 echt een `db_20260618_0300.db` produceren
+- Disk: 34 GB gebruikt (2%), 1.7 TB vrij
+- Bench: afgesloten, dir staat nog in `/home/deniz/t4c-bench/`
+
+## Pricing-status (na alle benchmarks)
+- **Mediaan bias vs Jurgen-bod**: +5% (gemeten op 660 cases met enrichment-payload — goed)
+- **Blinde vlekken**: <€2k auto's (+38%), 16+j gedeeltelijk
+- **B1 (`finalBod = finalHandel`)** nog actief — trade-engine `maxBid` weggegooid. Volgens RSPP-aanpak straks via gates herstellen.
+- **bod-curve** van 16-06 actief, geleerd uit 661 dealer_feedback rijen
+- **Multipliers**: alle 19 in `bod-adjustments.json` actief
+- **Onthulling 16-06**: `sold_price` IS Jurgen-bod (niet `our_bod` zoals eerder gedacht — fix in analyse-script)
 
 ## Volgende stap
-- #8 doc-wildgroei archiveren naar één bron (00-SYSTEEMKAART). #9 auto-start afronden (deze hooks).
+- **RSPP-doc schrijven** (`ROCK-SOLID-PIPELINE-2026-06-17.md`) — proces voor alle pricing-wijzigingen
+- **Staging-instance** als permanente fixture (vervangt ad-hoc bench)
+- **AI-research voor 6 open Jurgen-vragen** (recon-bedrag, marge-fit, incourant-lijst, seizoen, voorraad-drempel, sloop-route)
+- **Test sessie-bootstrap** door nieuwe Claude-sessie te openen (zowel local als `ssh t4c`)
 
 ## Geparkeerd (op gebruiker)
-- #4 CarDataX dev/live (Jurgen-beslissing) · #6 cardatax-dev-fixes (hangt aan #4) · #7 opruimen/wissen (archiveren-vs-wissen keuze).
+- **Cloudflare-dashboard**: TLS-mismatch op localhost:9090 → http://localhost:9090 (5d log-spam)
+- **Off-site backup**: vereist Backblaze B2 / S3 credentials + GPG-key
+- **Watchdog push-alert** (mail/Telegram)
+- **Memory-trim**: `project_pricing_baseline_kpi` mogelijk verouderd vs Jurgen-DNA
 
 ## Open issues / feiten
-- live t4c.db = sql.js in-memory → nooit extern schrijven; via app-db-laag. t4c-server start traag (~10s).
-- CarDataX prod draait zonder engine op lege DB (kern van #4).
+- **DB-engine**: better-sqlite3 + WAL (NIET sql.js zoals oudere docs claimen)
+- **JWT_SECRET**: in `settings.jwt_secret` (DB), niet alleen .env
+- **OpenAI API key**: in `settings.api_key_OPENAI_API_KEY`, .env is fallback
+- **CarDataX live**: draait zonder engine op lege DB (separaat traject, niet T4C)
+
+## Bij volgende sessie
+1. Lees `/opt/t4c/CLAUDE.md` + `/opt/t4c/docs/SESSION-START-PROTOCOL.md` (verplicht)
+2. Beschrijf state aan user vóór actie
+3. Wacht op user-akkoord
+4. Doorlopen 12-stap-checklist
