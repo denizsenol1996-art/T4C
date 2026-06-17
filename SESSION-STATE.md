@@ -1,4 +1,4 @@
-# SESSION STATE — laatst bijgewerkt 2026-06-17 00:30 door Claude
+# SESSION STATE — laatst bijgewerkt 2026-06-17 01:05 door Claude
 
 ## Waar we zijn
 T4C-stack in **stabielere staat** dan ooit deze maand. Cleanup-traject Fase 1+2+5a voltooid op 16-06 (avond). Jurgen's volledige pricing-DNA gevangen in ronde 2 op 17-06. Klaar voor RSPP-fase (Rock-Solid Pricing Pipeline) — proces dat elke pricing-wijziging door 6 gates dwingt.
@@ -41,11 +41,46 @@ T4C-stack in **stabielere staat** dan ooit deze maand. Cleanup-traject Fase 1+2+
 - **Multipliers**: alle 19 in `bod-adjustments.json` actief
 - **Onthulling 16-06**: `sold_price` IS Jurgen-bod (niet `our_bod` zoals eerder gedacht — fix in analyse-script)
 
-## Volgende stap
-- **RSPP-doc schrijven** (`ROCK-SOLID-PIPELINE-2026-06-17.md`) — proces voor alle pricing-wijzigingen
-- **Staging-instance** als permanente fixture (vervangt ad-hoc bench)
-- **AI-research voor 6 open Jurgen-vragen** (recon-bedrag, marge-fit, incourant-lijst, seizoen, voorraad-drempel, sloop-route)
-- **Test sessie-bootstrap** door nieuwe Claude-sessie te openen (zowel local als `ssh t4c`)
+## Volgende stap — ALLES KLAARGEZET voor andere Claude (2026-06-17 01:00)
+
+**RSPP-fundament + tooling staat klaar.** Andere Claude pakt op met deze takenlijst:
+
+### Wat al klaar is (NIET opnieuw doen)
+- ✅ `docs/ROCK-SOLID-PIPELINE-2026-06-17.md` — RSPP-doc met 6 gates (commit `085901e`)
+- ✅ `backend/config/engine-blacklist.json` — 10 motor-categorieën uit DNA (klaargezet, NIET aangesloten)
+- ✅ `backend/config/pricing-rules.json` — marge-floor/standtijd/km-thresholds/aftrek-scores (klaargezet)
+- ✅ `backend/config/sloop-detection.json` — <€2k sloop-criteria (klaargezet)
+- ✅ `/home/deniz/t4c-staging/` — skelet + ecosystem.config.js (poort 3009, NIET gestart)
+- ✅ `scripts/staging-snapshot.sh` + `staging-sync.sh` (executable, niet in cron)
+- ✅ `scripts/build-golden-cases.js` — gegenereerd
+- ✅ `fixtures/golden-cases-100.json` — 100 gestratificeerde cases klaar
+- ✅ `scripts/replay.js` — Gate 4 CLI tool, automatische pass/fail-check
+- ✅ `scripts/jurgen-research.js` — top-N modellen GPT-research-tool (NIET gerund, kost credits)
+- ✅ Session-bootstrap: nieuwe Claude leest leeslijst automatisch (getest, werkt)
+
+### Wat de andere Claude moet doen (in volgorde)
+
+**Acute fix (vond hij zelf):**
+- [ ] Backup-cron 17-06 03:00 heeft niet gedraaid → diagnose + fix
+
+**Daarna eerste RSPP-cyclus:**
+- [ ] Eerste echte RSPP-cyclus: `RSPP/engine-blacklist-v1`
+  - Gate 1 SPEC: `docs/specs/RSPP-2026-06-17-engine-blacklist-v1.md`
+  - Gate 2 REVIEW: tegen JURGEN-DNA + protocol
+  - Gate 3 UNIT: matchBodAdjustment-uitbreiding test
+  - Gate 4 REPLAY: staging eerst opstarten, dan `node /opt/t4c/scripts/replay.js`
+  - Gate 5 SHADOW: 24u op live
+  - Gate 6 SIGNOFF: Jurgen op 10 spread-cases
+  - PROMOTE
+
+**Wanneer staging niet draait:**
+- [ ] Eenmalig opstarten: `staging-sync.sh && staging-snapshot.sh && pm2 start /home/deniz/t4c-staging/ecosystem.config.js`
+- [ ] Cron-regel toevoegen: `0 4 * * * /opt/t4c/scripts/staging-snapshot.sh`
+
+**Niet urgent maar nuttig:**
+- [ ] `jurgen-research.js` runnen (top-100 modellen, ~€5-10 GPT-cost) → vult `backend/config/model-profiles.json`
+- [ ] Off-site backup (rclone)
+- [ ] Cloudflared TLS-mismatch in CF-dashboard
 
 ## Geparkeerd (op gebruiker)
 - **Cloudflare-dashboard**: TLS-mismatch op localhost:9090 → http://localhost:9090 (5d log-spam)
