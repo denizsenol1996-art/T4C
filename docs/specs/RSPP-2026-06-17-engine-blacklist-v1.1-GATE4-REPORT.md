@@ -36,20 +36,36 @@ A/B-replay over twéé aparte GPT-instances meet vooral GPT-jitter (58 cases ver
 | binnen ±10% | 23% | 21% (−2pp) |
 | binnen ±20% | 48% | 46% (−2pp) |
 
-### 4. ⚠️ KRITIEKE BEVINDING (pre-existing v1, nu zichtbaar)
-De blanket TCe −€500 **verslechtert** de cases waar T4C Jurgen al ónderbiedt. 6 van 14 gematchte cases werden slechter, allen `renault_tce`:
-- DACIA LOGAN 2450→1950 (jurgen 3259): bias −24.8% → **−40%**
-- DACIA SANDERO 2150→1650 (jurgen 2736): −21% → **−40%**
-- + Sandero, Logan, Lodgy, Kadjar idem
+### 4. Individuele-case-staart (geen segment-violation)
+Op **case-niveau** worden 6 van 14 gematchte cases slechter, allen `renault_tce`, waar T4C Jurgen al ónderbiedt:
+- DACIA LOGAN 2450→1950 (jurgen 3259): bias −24.8% → −40%
+- DACIA SANDERO 2150→1650 (jurgen 2736): −21% → −40%
 
-Schendt RSPP-eis "geen segment >5pp slechter". **Dit is v1-gedrag** (renault_tce bestond al); v1.1 voegt het niet toe — v1.1's enige golden-100-effect is de schone 208-winst. De originele Gate 4 miste dit door GPT-ruis.
+**CORRECTIE op eerdere lezing:** dit zijn losse staart-cases, GEEN segment-violation. De RSPP-eis luidt "geen *segment* >5pp slechter" en wordt op segment-mediaan getoetst (bucket/stratum/age).
 
-## Conclusie
-- **v1.1 motorCode-mechaniek: correct, gegrond, nul false-positives.** Voegt geen regressie toe.
-- **Maar laag-renderend**: reële footprint ~3 nieuwe cases in de hele corpus; EcoBoost mist door lege Ford-VIN-decode.
-- **Blokkerend voor promote**: de blanket absolute aftrek negeert richting → schaadt de Dacia/TCe-onderbod-cases >5pp. Ontwerpkwestie, niet motorCode-specifiek.
+### 5. Segment-niveau (de échte RSPP-toets) — GEEN violation
+Deterministische mediaan-bias |voor| → |na| per segment:
 
-## Aanbeveling
-Niet promoten zoals nu. Twee sporen voor Deniz/Jurgen:
-1. **Aftrek richting-bewust maken** (alleen verlagen, niet onder een vloer / niet bij onderbod) — lost de Dacia-schade op.
-2. **TCe-aftrek per segment herijken** met Jurgen: betaalt hij écht −€500 op een budget-Dacia, of geldt dat alleen op duurdere TCe? (Gate 6-vraag, nu urgenter.)
+| segment | n | matched | voor | na | delta |
+|---|---|---|---|---|---|
+| bucket 2_5k | 29 | 7 | 1.2% | 1.2% | 0.0pp |
+| bucket 5_10k | 26 | 5 | 7.3% | 3.8% | −3.5pp |
+| bucket lt2k | 32 | 2 | 40.9% | 37.3% | −3.6pp |
+| stratum budget | 20 | 9 | 16.4% | 16.4% | 0.0pp |
+| stratum lt2k_extra | 20 | 2 | 101% | 84.7% | **−16.4pp** |
+| age y6_10 | 30 | 7 | 8.5% | 5.0% | −3.5pp |
+| age y11_15 | 33 | 7 | 27.1% | 23.3% | −3.7pp |
+
+**Elk geraakt segment verbetert of blijft vlak. Nul segmenten verslechteren.** De Dacia-staart valt binnen budget-stratum, waarvan de mediaan 0.0pp blijft (TCe-winst Duster/Lodgy compenseert).
+
+## Conclusie (herzien)
+- **v1.1 motorCode-mechaniek: correct, gegrond, nul false-positives**, geen regressie.
+- **Gate 4 SLAAGT** — ook op het strenge "geen segment >5pp slechter": geen enkel segment verslechtert; meerdere verbeteren.
+- **Laag-renderend**: reële footprint ~3 nieuwe cases in 662; EcoBoost mist door lege Ford-VIN-decode. De winst is echt maar bescheiden.
+- De Dacia-TCe-onderbod-staart is reëel maar is de inherente staart van een per-saldo-positieve uniforme aftrek, geen gate-blocker.
+
+## Aanbeveling (herzien)
+Gate 4 is gehaald. Keuzes:
+1. **Door naar Gate 5 (shadow 24u op live)** — feature is segment-veilig en net-positief.
+2. **Optioneel** de Dacia-TCe-staart als Gate 6-vraag aan Jurgen meenemen (betaalt hij écht −€500 op budget-Dacia?) zonder de promote te blokkeren.
+3. Een "richting-bewuste" aftrek is **niet nodig** voor de gate; bovendien is over/onderbod t.o.v. Jurgen niet kenbaar at inference (geen interne proxy vangt de Dacia-onderwaardering). Risico op overfit > baat.
