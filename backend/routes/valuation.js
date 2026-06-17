@@ -16,6 +16,7 @@ const { calculateQualityScore, calculateTechniekScore, calculateCourantScore, ca
 const { buildComparableSet } = require("../lib/comparable-engine")
 const { getExpertPriceEstimate, getHealthStats: getExpertHealth } = require("../lib/quick-price-expert")
 const { getModelLifecycle } = require("../lib/model-lifecycle")
+const { matchEngineProfile, applyEngineAftrek } = require("../lib/engine-profile")
 let _bodAdjustments = { rules: [] }
 try { _bodAdjustments = require("../config/bod-adjustments.json") } catch(e) { console.log("[BOD-ADJ] geen config geladen:", e.message) }
 
@@ -1041,6 +1042,20 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       }
     }
 
+    // ═══ RSPP/engine-blacklist-v1 — motor-betrouwbaarheid → absolute EUR-aftrek ═══
+    // Achter flag T4C_ENGINE_BLACKLIST (default UIT tot promote). DNA r.93-100.
+    // Guardrails (cap 25% + floor 0) in lib/engine-profile.js. Ná bod-curve.
+    if (process.env.T4C_ENGINE_BLACKLIST === '1') {
+      const _eng = matchEngineProfile({ make: d.make, model: d.model, fuel: d.fuel, km, year: d.year || year, engineLabel: d.engineLabel, motorCode: d.motorCode, transmissionType: d.transmissionType, transmissionDetail: d.transmissionDetail, subModel: d.subModel })
+      if (_eng && _eng.aftrek_eur > 0 && finalBod > 0) {
+        const _pre = finalBod
+        finalBod = applyEngineAftrek(finalBod, _eng.aftrek_eur)
+        finalInkoopHigh = finalBod
+        finalInkoopLow = Math.round(finalBod * 0.92 / 50) * 50
+        console.log("[ENGINE-BL]", d.make, d.model, ":", _eng.id, "score", _eng.score, "req", _eng.aftrek_eur, "→ bod", _pre, "→", finalBod)
+      }
+    }
+
     // ═══ v10.18.64 SOFT CONFIDENCE-TAG (geen cap, alleen hint) ═══
     const _dataConfidence = deriveDataConfidence(compResult, mCount)
     if (_dataConfidence.level === "low") {
@@ -1359,6 +1374,17 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
         _bodAdjustment.tag = _matched.id || _matched.tag
         _bodAdjustment.factor = _matched.factor
         console.log("[QUICK-BOD-ADJ]", v.make, v.model, ":", _bodAdjustment.tag, "×", _matched.factor)
+      }
+    }
+
+    // ═══ RSPP/engine-blacklist-v1 — motor-aftrek (flag T4C_ENGINE_BLACKLIST) ═══
+    if (process.env.T4C_ENGINE_BLACKLIST === '1') {
+      const _eng = matchEngineProfile({ make: v.make, model: v.model, fuel: v.fuel, km, year: v.year, engineLabel: v.engineLabel, motorCode: v.motorCode, transmissionType: v.transmissionType || v.transmission, transmissionDetail: v.transmissionDetail, subModel: v.subModel || v.specificModel })
+      if (_eng && _eng.aftrek_eur > 0 && bod > 0) {
+        const _pre = bod
+        bod = applyEngineAftrek(bod, _eng.aftrek_eur)
+        _bodAdjustment.engine_tag = _eng.id
+        console.log("[QUICK-ENGINE-BL]", v.make, v.model, ":", _eng.id, "score", _eng.score, "req", _eng.aftrek_eur, "→ bod", _pre, "→", bod)
       }
     }
 
