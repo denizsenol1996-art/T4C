@@ -6,6 +6,12 @@ module.exports = {
     exec_mode: "fork",
     instances: 1,
 
+    // RSPP/engine-blacklist Gate 5 — SHADOW aan (rekent+logt naar data/bench/engine-shadow.jsonl,
+    // past het bod NIET aan). Echte flag blijft UIT. Verwijderen na 24u shadow-evaluatie.
+    env: {
+      T4C_ENGINE_BLACKLIST_SHADOW: "1"
+    },
+
     // Graceful-shutdown ruimte: sql.js export + writeSync van 179MB DB kan 3-5s duren.
     // Default 1600ms was te kort → zombies bij elke restart.
     kill_timeout: 10000,

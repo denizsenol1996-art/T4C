@@ -1056,6 +1056,21 @@ Bepaal nu de juiste prijzen voor DIT specifieke voertuig.`
       }
     }
 
+    // ═══ RSPP/engine-blacklist Gate 5 — SHADOW (rekent + logt, past bod NIET aan) ═══
+    // Actief als T4C_ENGINE_BLACKLIST_SHADOW=1 én de echte flag UIT staat. try/catch:
+    // een log-fout mag een live-taxatie nooit breken. finalBod blijft ongemoeid.
+    if (process.env.T4C_ENGINE_BLACKLIST_SHADOW === '1' && process.env.T4C_ENGINE_BLACKLIST !== '1') {
+      try {
+        const _shEng = matchEngineProfile({ make: d.make, model: d.model, fuel: d.fuel, km, year: d.year || year, engineLabel: d.engineLabel, motorCode: d.motorCode, transmissionType: d.transmissionType, transmissionDetail: d.transmissionDetail, subModel: d.subModel })
+        if (_shEng && _shEng.aftrek_eur > 0 && finalBod > 0) {
+          const _shBod = applyEngineAftrek(finalBod, _shEng.aftrek_eur)
+          const _rec = { ts: new Date().toISOString(), path: "dealer/price", plate: d.plate || null, make: d.make, model: d.model, year: d.year || year, motorCode: d.motorCode || null, rule: _shEng.id, score: _shEng.score, live_bod: finalBod, shadow_aftrek: finalBod - _shBod, shadow_bod: _shBod }
+          require("fs").appendFileSync("/opt/t4c/data/bench/engine-shadow.jsonl", JSON.stringify(_rec) + "\n")
+          console.log("[ENGINE-BL-SHADOW]", d.make, d.model, ":", _shEng.id, "live", finalBod, "→ zou", _shBod)
+        }
+      } catch (e) { console.log("[ENGINE-BL-SHADOW] err:", e.message) }
+    }
+
     // ═══ v10.18.64 SOFT CONFIDENCE-TAG (geen cap, alleen hint) ═══
     const _dataConfidence = deriveDataConfidence(compResult, mCount)
     if (_dataConfidence.level === "low") {
@@ -1386,6 +1401,19 @@ router.post("/api/dealer/quick-price", express.json(), async (req, res) => {
         _bodAdjustment.engine_tag = _eng.id
         console.log("[QUICK-ENGINE-BL]", v.make, v.model, ":", _eng.id, "score", _eng.score, "req", _eng.aftrek_eur, "→ bod", _pre, "→", bod)
       }
+    }
+
+    // ═══ RSPP/engine-blacklist Gate 5 — SHADOW (rekent + logt, past bod NIET aan) ═══
+    if (process.env.T4C_ENGINE_BLACKLIST_SHADOW === '1' && process.env.T4C_ENGINE_BLACKLIST !== '1') {
+      try {
+        const _shEng = matchEngineProfile({ make: v.make, model: v.model, fuel: v.fuel, km, year: v.year, engineLabel: v.engineLabel, motorCode: v.motorCode, transmissionType: v.transmissionType || v.transmission, transmissionDetail: v.transmissionDetail, subModel: v.subModel || v.specificModel })
+        if (_shEng && _shEng.aftrek_eur > 0 && bod > 0) {
+          const _shBod = applyEngineAftrek(bod, _shEng.aftrek_eur)
+          const _rec = { ts: new Date().toISOString(), path: "quick-price", plate: kenteken || null, make: v.make, model: v.model, year: v.year, motorCode: v.motorCode || null, rule: _shEng.id, score: _shEng.score, live_bod: bod, shadow_aftrek: bod - _shBod, shadow_bod: _shBod }
+          require("fs").appendFileSync("/opt/t4c/data/bench/engine-shadow.jsonl", JSON.stringify(_rec) + "\n")
+          console.log("[QUICK-ENGINE-BL-SHADOW]", v.make, v.model, ":", _shEng.id, "live", bod, "→ zou", _shBod)
+        }
+      } catch (e) { console.log("[QUICK-ENGINE-BL-SHADOW] err:", e.message) }
     }
 
     // v10.18.71 — STAAT_FACTORS multiplier + rijdt×0.50 multiplier zijn VERWIJDERD.
