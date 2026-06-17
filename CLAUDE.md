@@ -16,7 +16,7 @@ Voor je iets doet aan T4C, lees in deze volgorde:
 
 5. **`/opt/t4c/docs/JURGEN-PRICING-DNA-2026-06-17.md`** — Jurgen's framework
 6. **`/opt/t4c/docs/T4C-PRICING-ROOTCAUSE-2026-06-16.md`** — bekende biases
-7. **`/opt/t4c/docs/ROCK-SOLID-PIPELINE-2026-06-17.md`** (zodra geschreven) — RSPP
+7. **`/opt/t4c/docs/ROCK-SOLID-PIPELINE-2026-06-17.md`** — **RSPP, verplicht voor elke pricing-wijziging** (6 gates: spec/code-review/unit/golden-replay/shadow/sign-off)
 
 **Voor infra/restart-werk**:
 

@@ -1,0 +1,167 @@
+{
+  "_meta": {
+    "version": "1.0-draft",
+    "created": "2026-06-17",
+    "source": "JURGEN-PRICING-DNA-2026-06-17.md technische-betrouwbaarheid blok",
+    "status": "klaargezet, nog NIET aangesloten — wacht op matchBodAdjustment uitbreiding via RSPP/engine-blacklist-v1",
+    "note": "Aftrek-bedragen in EUR zijn richtgetallen op auto rond €5-10k. Aanpassing nodig bij integratie."
+  },
+  "engines": [
+    {
+      "id": "ecoboost_1_0",
+      "score": 1,
+      "aftrek_eur": 1500,
+      "match": {
+        "engineLabel_contains": ["ecoboost", "1.0", "ecob"],
+        "fuel": "benzine",
+        "make": "FORD"
+      },
+      "evidence": "Jurgen DNA: bekend kettingprobleem + waterpomp + consumenten lezen het op internet. Score 1 / aftrek €1.500."
+    },
+    {
+      "id": "ecoboost_1_5",
+      "score": 1,
+      "aftrek_eur": 1500,
+      "match": {
+        "engineLabel_contains": ["ecoboost", "1.5"],
+        "fuel": "benzine",
+        "make": "FORD"
+      },
+      "evidence": "DNA: zelfde categorie als 1.0/1.6 — niet houdbaar."
+    },
+    {
+      "id": "ecoboost_1_6",
+      "score": 1,
+      "aftrek_eur": 1500,
+      "match": {
+        "engineLabel_contains": ["ecoboost", "1.6"],
+        "fuel": "benzine",
+        "make": "FORD"
+      },
+      "evidence": "DNA: idem, geheel EcoBoost-lijn risico."
+    },
+    {
+      "id": "thp_1_6",
+      "score": 1,
+      "aftrek_eur": 1800,
+      "match": {
+        "engineLabel_contains": ["thp", "1.6"],
+        "make_in": ["PEUGEOT", "CITROEN", "DS", "BMW", "MINI"]
+      },
+      "evidence": "DNA: 1.6 THP = grootste alarmbel. Hoogste aftrek in deze lijst."
+    },
+    {
+      "id": "thp_1_2",
+      "score": 2,
+      "aftrek_eur": 1200,
+      "match": {
+        "engineLabel_contains": ["thp", "1.2"],
+        "make_in": ["PEUGEOT", "CITROEN", "DS"]
+      },
+      "evidence": "DNA: kleinere THP, iets minder erg dan 1.6 maar nog steeds risico."
+    },
+    {
+      "id": "puretech_1_2",
+      "score": 4,
+      "aftrek_eur": 800,
+      "match": {
+        "engineLabel_contains": ["puretech", "1.2"],
+        "make_in": ["PEUGEOT", "CITROEN", "DS", "OPEL"]
+      },
+      "evidence": "DNA: PureTech is bekend probleem op 3-cilinder (distributieriem in olie). Score 4."
+    },
+    {
+      "id": "renault_tce",
+      "score": 4,
+      "aftrek_eur": 500,
+      "match": {
+        "engineLabel_contains": ["tce"],
+        "make_in": ["RENAULT", "DACIA", "NISSAN"]
+      },
+      "evidence": "DNA: TCE-motor geen eeuwige levensduur, minder erg dan THP/EcoBoost. −€500 standaard."
+    },
+    {
+      "id": "nissan_cvt_high_km",
+      "score": 3,
+      "aftrek_eur": 1000,
+      "match": {
+        "make": "NISSAN",
+        "transmissionDetail_contains": ["cvt"],
+        "km_gte": 150000
+      },
+      "evidence": "DNA: Nissan CVT-automaat boven 150.000 km = vrijwel afgeschreven."
+    },
+    {
+      "id": "bmw_n47_diesel",
+      "score": 4,
+      "aftrek_eur": 1000,
+      "match": {
+        "motorCode_contains": ["n47"],
+        "make": "BMW",
+        "fuel": "diesel"
+      },
+      "evidence": "DNA score 4: bekende distributiekettingproblemen."
+    },
+    {
+      "id": "opel_1_4_turbo",
+      "score": 4,
+      "aftrek_eur": 700,
+      "match": {
+        "engineLabel_contains": ["1.4 turbo", "1.4t"],
+        "make": "OPEL"
+      },
+      "evidence": "DNA score 4."
+    }
+  ],
+  "positives": [
+    {
+      "id": "toyota_hybride",
+      "score": 10,
+      "bonus_eur": 300,
+      "match": {
+        "make": "TOYOTA",
+        "fuel_contains": ["hybride", "hybrid"]
+      },
+      "evidence": "DNA: zeer betrouwbaar, korte marge mag (€500 op bod-up). Top-categorie."
+    },
+    {
+      "id": "lexus_hybride",
+      "score": 10,
+      "bonus_eur": 400,
+      "match": {
+        "make": "LEXUS",
+        "fuel_contains": ["hybride", "hybrid"]
+      },
+      "evidence": "DNA: top-categorie."
+    },
+    {
+      "id": "honda_benzine",
+      "score": 10,
+      "bonus_eur": 200,
+      "match": {
+        "make": "HONDA",
+        "fuel": "benzine"
+      },
+      "evidence": "DNA: zeer betrouwbaar."
+    },
+    {
+      "id": "mazda_skyactiv",
+      "score": 10,
+      "bonus_eur": 200,
+      "match": {
+        "make": "MAZDA",
+        "engineLabel_contains": ["skyactiv"]
+      },
+      "evidence": "DNA: zeer betrouwbaar Skyactiv-generatie."
+    },
+    {
+      "id": "suzuki",
+      "score": 10,
+      "bonus_eur": 200,
+      "match": {
+        "make": "SUZUKI"
+      },
+      "evidence": "DNA: top-categorie betrouwbaarheid."
+    }
+  ]
+}

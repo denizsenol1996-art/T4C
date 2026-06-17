@@ -1,0 +1,68 @@
+{
+  "_meta": {
+    "version": "1.0-draft",
+    "created": "2026-06-17",
+    "source": "JURGEN-PRICING-DNA-2026-06-17.md <€2k blok",
+    "status": "klaargezet, nog NIET aangesloten — wacht op valuation.js integratie via RSPP-cyclus",
+    "purpose": "Detecteer wanneer een <€2k-auto naar sloop/export-route ipv reguliere taxatie moet"
+  },
+  "trigger_price_threshold_eur": 2000,
+  "criteria": [
+    {
+      "id": "geen_airco",
+      "weight": 1,
+      "match": { "options_lacks": ["airco", "klimaatregeling", "ac"] },
+      "evidence": "DNA: kale Toyota Aygo zonder airco = sloop-richting"
+    },
+    {
+      "id": "geen_stuurbekrachtiging",
+      "weight": 1,
+      "match": { "options_lacks": ["stuurbekrachtiging", "power steering", "esp"] },
+      "evidence": "DNA: ZONDER stuurbekrachtiging tikt naar sloop"
+    },
+    {
+      "id": "drie_deurs_waar_vijfdeurs_courant",
+      "weight": 1,
+      "match": { "body_contains": ["3-deurs", "3-drs", "3dr"], "model_typical_doors": 5 },
+      "evidence": "DNA: 3-deurs waar 5-deurs courant = sloop-richting"
+    },
+    {
+      "id": "apk_verlopen_of_bijna",
+      "weight": 1,
+      "match": { "apk_days_remaining_lte": 30 },
+      "evidence": "DNA: APK verlopen/binnen-30d zonder buffer = forse aftrek"
+    },
+    {
+      "id": "zichtbare_schade",
+      "weight": 1,
+      "match": { "schade_correctie_active": true },
+      "evidence": "DNA: schade + lage prijs = sloop-route"
+    },
+    {
+      "id": "technisch_mankement_engine",
+      "weight": 2,
+      "match": { "mankement_in": ["motorlampje_met_inhouden", "stotteren_of_overslag", "bak_slipt"] },
+      "evidence": "DNA: motor/bak-mankement op <€2k auto = direct sloop"
+    },
+    {
+      "id": "hoge_km_benzine",
+      "weight": 1,
+      "match": { "fuel": "benzine", "km_gte": 225000 },
+      "evidence": "DNA: benzine >225k km op budget-auto = sloop-richting"
+    },
+    {
+      "id": "incourant_model",
+      "weight": 1,
+      "match": { "market_listings_count_lte": 40 },
+      "evidence": "DNA: <40 te koop = terug naar basis, niet agressief bieden"
+    }
+  ],
+  "sloop_threshold_weight": 3,
+  "_note": "Wanneer de som van geactiveerde criteria-weights >= 3, switch naar sloop-route met scherpe bod-curve (ratio 0.15-0.20 ipv reguliere 0.27).",
+  "sloop_bod_curve": {
+    "lt2000": { "y0_5": 0.18, "y6_10": 0.18, "y11_15": 0.18, "y16plus": 0.20 },
+    "_min_eur": 200,
+    "_max_eur": 500,
+    "_note": "Sloop-route geeft typisch €200-500 als bod. Onderdelen-handel + export-koper-prijzen."
+  }
+}

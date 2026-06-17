@@ -1,0 +1,122 @@
+{
+  "_meta": {
+    "version": "1.0-draft",
+    "created": "2026-06-17",
+    "source": "JURGEN-PRICING-DNA-2026-06-17.md standtijd-&-marge + km-grenzen blokken",
+    "status": "klaargezet, nog NIET aangesloten — wacht op trade-engine integratie via RSPP-cyclus"
+  },
+  "margin": {
+    "floor_eur": 700,
+    "quick_sale_acceptable_eur": 750,
+    "note": "Jurgen DNA: minimaal €600-700 zichtbare marge vereist. Bij zekere snelle verkoop neemt hij genoegen met €750."
+  },
+  "standtijd": {
+    "target_days": 60,
+    "cost_price_threshold_days": 60,
+    "loss_zone_days": 180,
+    "buckets": {
+      "snel":     { "max_days": 60,  "margin_pct_target": 8 },
+      "normaal":  { "max_days": 120, "margin_pct_target": 12 },
+      "langzaam": { "max_days": 180, "margin_pct_target": 18 },
+      "verlies":  { "max_days": null, "margin_pct_target": 25 }
+    },
+    "note": "Jurgen DNA: 2 maanden = target. Daarna kostprijs eraf. 6 maanden = verlies-zone (technisch mankement-risico stijgt + markt verschuift)."
+  },
+  "km_thresholds": {
+    "benzine": {
+      "neutral_max": 180000,
+      "light_max":   225000,
+      "heavy_max":   250000,
+      "niche_max":   999999
+    },
+    "diesel": {
+      "neutral_max": 300000,
+      "light_max":   350000,
+      "heavy_max":   999999,
+      "niche_max":   999999,
+      "_export_cilinder_threshold_cc": 2000,
+      "_export_note": "Diesel <2.0L exporteerbaar zonder heffing. >2.0L = importheffing in andere landen. Stand-op-kenteken 2L maar werkelijk 1999cc = vrij van invoerbeveiliging."
+    },
+    "bus_v_kenteken": {
+      "neutral_max": 400000,
+      "light_max":   500000,
+      "heavy_max":   600000,
+      "niche_max":   999999
+    }
+  },
+  "km_per_year_normaal": {
+    "min": 8000,
+    "max": 12000,
+    "_note": "Particulier gebruik. Auto's onder gemiddeld = positief. 25% boven = licht negatief. 50% boven = fors negatief. 100% boven = zwaar negatief."
+  },
+  "owner_count_aftrek_score": {
+    "1": 0,
+    "2": -0.25,
+    "3": -0.5,
+    "4": -1,
+    "5_plus": -1.5,
+    "_note": "Score-punten aftrek (start = 10)."
+  },
+  "service_history_aftrek_score": {
+    "full_boekje_stempels": 0,
+    "dealer_onderhouden_bonus": 0.2,
+    "gedeeltelijk_facturen": -0.75,
+    "geen_historie": -1.5
+  },
+  "key_count_aftrek_score": {
+    "2": 0,
+    "1": -0.35
+  },
+  "import_aftrek_score": {
+    "origineel_nl": 0,
+    "logical_import_1y_plus": -0.5,
+    "recent_import_under_3m": -1.5,
+    "suspicious_low_bpm": -2.5,
+    "damage_import": -4
+  },
+  "past_use_aftrek_score": {
+    "none": 0,
+    "taxi": -3,
+    "wok": -4,
+    "rijschool": -2,
+    "cd_kenteken": -2,
+    "_note_pct_equivalent": { "taxi": "-20%", "wok": "-30%", "rijschool": "-15%", "cd_kenteken": "-15%" }
+  },
+  "mankement_aftrek_score": {
+    "motorlampje_zonder_klachten": -1,
+    "motorlampje_met_inhouden": -3,
+    "stotteren_of_overslag": -4,
+    "bak_slipt_of_schakelt_slecht": -4,
+    "airco_defect": -0.75,
+    "voorruit_barst_verzekering": -0.75,
+    "cosmetische_schade_licht": -0.5,
+    "cosmetische_schade_middel": -1,
+    "scheve_bumpers": -1.5,
+    "dashboard_storingen": -1.5
+  },
+  "trim_factor": {
+    "basis_kaal": -0.05,
+    "comfortline_midden": 0.02,
+    "highline_topuitvoering": 0.05,
+    "_note": "Percentage op verkoop. Jurgen-voorbeeld: VW Golf Trendline -5%, Comfortline +2%, Highline +5%."
+  },
+  "bedrijfspsychologie": {
+    "veel_verkocht_recent_pct": 2,
+    "weinig_verkocht_recent_pct": -2,
+    "voorraad_te_laag_pct": 2,
+    "voorraad_te_hoog_pct": -2,
+    "seizoen_gunstig_pct": 2,
+    "seizoen_ongunstig_pct": -2,
+    "_cap_pct": 3,
+    "_note": "Bedrijfsvariabele, niet hoofdvariabele. Cap op ±3% totaal."
+  },
+  "t4c_liquidity_score": {
+    "buy_direct_min": 90,
+    "buy_aggressive_min": 80,
+    "buy_normal_min": 70,
+    "buy_sharp_only_min": 60,
+    "niche_min": 50,
+    "do_not_buy_max": 49,
+    "_note": "Eindscore 0-100. Vervangt ATR/ETR voor T4C-eind-uitvoer."
+  }
+}
