@@ -29,7 +29,7 @@ T4C-stack in **stabielere staat** dan ooit deze maand. Cleanup-traject Fase 1+2+
 ## Productie-status nu
 - t4c-server: 200 OK, better-sqlite3 + WAL DB-engine (sinds 16-06 10:54 cutover `d5c6dcb`)
 - atx-admin: 200 OK met nieuwe restart-bescherming
-- Daily backup-cron: zal morgen 03:00 echt een `db_20260618_0300.db` produceren
+- Daily backup-cron: gefixte `backup.sh` bewezen werkend via handmatige dry-run 17-06 01:17 (`db_20260617_0117.db`, 193 MB, `quick_check=ok`). Eerste echte cron-run = vannacht 17-06 03:00.
 - Disk: 34 GB gebruikt (2%), 1.7 TB vrij
 - Bench: afgesloten, dir staat nog in `/home/deniz/t4c-bench/`
 
@@ -61,7 +61,7 @@ T4C-stack in **stabielere staat** dan ooit deze maand. Cleanup-traject Fase 1+2+
 ### Wat de andere Claude moet doen (in volgorde)
 
 **Acute fix (vond hij zelf):**
-- [ ] Backup-cron 17-06 03:00 heeft niet gedraaid → diagnose + fix
+- [x] Backup-cron 17-06 03:00 — VALSE PREMISSE (17-06 ~01:20). Diagnose: het was op het moment van checken nog vóór 03:00, dus de cron had nog niet kunnen draaien. Geen failure. Gefixte `backup.sh` bewezen via dry-run (`db_20260617_0117.db`, 193 MB, `quick_check=ok`, taxaties=5546/dealer_feedback=662). Cron leeft (watchdog elke min), crontab + script correct. Eerste echte run = vannacht 03:00 → zal slagen. GEEN code-fix gemaakt (niets stuk).
 
 **Daarna eerste RSPP-cyclus:**
 - [ ] Eerste echte RSPP-cyclus: `RSPP/engine-blacklist-v1`
