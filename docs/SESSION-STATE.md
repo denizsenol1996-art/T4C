@@ -20,6 +20,13 @@
 - Rapporten: `docs/specs/RSPP-2026-06-17-engine-blacklist-v1.1-GATE4-REPORT.md`.
 
 ## Volgende stap (na 24u shadow, ~18-06 ~12:00)
+> ⚙️ **GEAUTOMATISEERD (17-06):** one-shot cron `0 10 18 6 *` (= 12:00 CEST) draait `scripts/gate5-shadow-eval.sh` → read-only `scripts/analyze-engine-shadow.js` → rapport `docs/specs/RSPP-2026-06-18-engine-blacklist-GATE5-SHADOW-ANALYSIS.md`. Cron verwijdert zichzelf na afloop. Log: `logs/gate5-shadow-eval.log`. Crontab-backup: `backups/crontab-pre-gate5cron-20260617.txt`. Stap 1 hieronder is dus al gedaan zodra je morgen kijkt; pak op bij stap 2.
+>
+> ✅ **Cron-verificatie (17-06 ~14:55 UTC):**
+> - Cron-user = `deniz`; `engine-shadow.jsonl` is `deniz:deniz rw`, hele dir-keten heeft traversal-`x`, feitelijke leestest geslaagd → script kan morgen lezen. Output-dir `docs/specs` schrijfbaar.
+> - Self-remove sandbox-getest tegen crontab-kopie (live onaangeroerd): verwijdert exact 1 regel (8→7), alle 6 andere cron-jobs intact, live crontab nog = 1 match.
+> - node + bash syntax-check OK. Smoke-run gaf correct "0 echte hits, 2 seeds"; test-rapport daarna verwijderd zodat morgen verse generatie volgt.
+> - Server-tijdzone = UTC → 10:00 UTC bewust gekozen voor 12:00 Amsterdam (CEST).
 1. Analyseer `engine-shadow.jsonl`: hoeveel echte taxaties geraakt, welke rules, spreiding aftrek.
 2. **Gate 6**: Jurgen sign-off op 10 spread-cases + bevestig motorCode-mapping (vooral Ford-EcoBoost-codes + TCe-aftrek op budget-Dacia).
 3. Bij akkoord: promote (`T4C_ENGINE_BLACKLIST=1`, shadow-flag eruit) + één commit.
