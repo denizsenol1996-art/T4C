@@ -55,7 +55,37 @@ eq(m({ make: "TOYOTA", fuel: "hybride", engineLabel: "1.8 Hybrid" }), null,
 eq(m({ make: "VOLVO", engineLabel: "1.6 THP" }), null,
    "Volvo 1.6 THP → null (make_in dekt VOLVO niet)")
 
-// 10. leeg/undefined → null, geen crash
+// ── v1.1 motorCode-regels (gegrond op echte RDW-VIN-decode 2026-06-17) ──
+// 11. PSA THP via motorCode (engineLabel mist 'thp'-tekst) → thp_ep6_motorcode
+eq(m({ make: "PEUGEOT", motorCode: "EP6FDTX", engineLabel: "200pk" }),
+   { id: "thp_ep6_motorcode", score: 1, aftrek_eur: 1800 }, "Peugeot EP6FDTX → thp_ep6_motorcode")
+eq(m({ make: "CITROEN", motorCode: "EP6CDT", engineLabel: "156pk" }),
+   { id: "thp_ep6_motorcode", score: 1, aftrek_eur: 1800 }, "Citroen EP6CDT → thp_ep6_motorcode")
+// 12. KRITIEK: betrouwbare 1.6 VTi N/A (EP6/EP6C) mag NIET matchen
+eq(m({ make: "CITROEN", motorCode: "EP6", engineLabel: "120pk" }), null,
+   "Citroen EP6 N/A → null (geen 'dt', betrouwbare VTi)")
+eq(m({ make: "PEUGEOT", motorCode: "EP6C", engineLabel: "120pk" }), null,
+   "Peugeot EP6C N/A → null")
+// 13. PureTech via motorCode: EB2 (N/A) + EB2DT/EB2ADTS (turbo) → puretech_eb2_motorcode
+eq(m({ make: "CITROEN", motorCode: "EB2", engineLabel: "82pk" }),
+   { id: "puretech_eb2_motorcode", score: 4, aftrek_eur: 800 }, "Citroen EB2 → puretech_eb2_motorcode")
+eq(m({ make: "OPEL", motorCode: "EB2ADTS", engineLabel: "130pk" }),
+   { id: "puretech_eb2_motorcode", score: 4, aftrek_eur: 800 }, "Opel EB2ADTS → puretech_eb2_motorcode")
+// 14. Mini Prince-turbo N14/N18 (Mini gebruikt BMW-codes, geen EP6)
+eq(m({ make: "MINI", motorCode: "N14B16A", engineLabel: "175pk" }),
+   { id: "thp_n14_motorcode", score: 1, aftrek_eur: 1800 }, "Mini N14 → thp_n14_motorcode")
+// 15. KRITIEK: betrouwbare Mini-broers N12 (N/A) en B38 (modern) mogen NIET matchen
+eq(m({ make: "MINI", motorCode: "N12B14A", engineLabel: "95pk" }), null,
+   "Mini N12 N/A → null")
+eq(m({ make: "MINI", motorCode: "B38A15A", engineLabel: "136pk" }), null,
+   "Mini B38 modern → null")
+// 16. Ford 1.0 EcoBoost via motorCode → ecoboost_m1j_motorcode; lege Duratec-code → null
+eq(m({ make: "FORD", fuel: "benzine", motorCode: "M1JE", engineLabel: "101pk" }),
+   { id: "ecoboost_m1j_motorcode", score: 1, aftrek_eur: 1500 }, "Ford M1JE → ecoboost_m1j_motorcode")
+eq(m({ make: "FORD", fuel: "benzine", motorCode: "", engineLabel: "65pk" }), null,
+   "Ford lege code (Duratec) → null")
+
+// 17. leeg/undefined → null, geen crash
 eq(m({}), null, "leeg object → null")
 eq(m(null), null, "null → null")
 

@@ -1,10 +1,10 @@
 {
   "_meta": {
-    "version": "1.0-draft",
+    "version": "1.1-draft",
     "created": "2026-06-17",
     "source": "JURGEN-PRICING-DNA-2026-06-17.md technische-betrouwbaarheid blok",
-    "status": "klaargezet, nog NIET aangesloten — wacht op matchBodAdjustment uitbreiding via RSPP/engine-blacklist-v1",
-    "note": "Aftrek-bedragen in EUR zijn richtgetallen op auto rond €5-10k. Aanpassing nodig bij integratie."
+    "status": "v1.1 — motorCode-regels toegevoegd na Gate 4-bevinding (engineLabel bevat geen marketingnaam; motorCode wel via VIN-decode). Tekst-regels blijven als fallback.",
+    "note": "Aftrek-bedragen in EUR zijn richtgetallen op auto rond €5-10k. motorCode-mapping gegrond op echte RDW-VIN-decode 2026-06-17 (EP6+DT=THP turbo, EP6/EP6C=betrouwbaar N/A NIET flaggen; EB2*=PureTech; N14/N18=Mini/BMW Prince-THP; M1J=Ford 1.0 EcoBoost). Ford VIN-coverage lacunair → deels-dekkend. Jurgen bevestigt mapping bij Gate 6."
   },
   "engines": [
     {
@@ -41,6 +41,17 @@
       "evidence": "DNA: idem, geheel EcoBoost-lijn risico."
     },
     {
+      "id": "ecoboost_m1j_motorcode",
+      "score": 1,
+      "aftrek_eur": 1500,
+      "match": {
+        "motorCode_contains": ["m1j"],
+        "make": "FORD",
+        "fuel": "benzine"
+      },
+      "evidence": "motorCode-grounded 2026-06-17: M1JE/M1JA/M1JB = 1.0 EcoBoost (Fox). engineLabel-regels vuren niet (geen 'ecoboost'-tekst). LET OP: Ford VIN-decode lacunair (3/6 Fiesta lege code) → deels-dekkend. 1.5/1.6/2.0 EcoBoost-codes (R9DA=2.0) nog niet toegevoegd: te weinig samples, Jurgen bij Gate 6."
+    },
+    {
       "id": "thp_1_6",
       "score": 1,
       "aftrek_eur": 1800,
@@ -59,6 +70,46 @@
         "make_in": ["PEUGEOT", "CITROEN", "DS"]
       },
       "evidence": "DNA: kleinere THP, iets minder erg dan 1.6 maar nog steeds risico."
+    },
+    {
+      "id": "thp_ep6_motorcode",
+      "score": 1,
+      "aftrek_eur": 1800,
+      "match": {
+        "motorCode_contains": ["ep6", "dt"],
+        "make_in": ["PEUGEOT", "CITROEN", "DS", "OPEL"]
+      },
+      "evidence": "motorCode-grounded 2026-06-17: EP6DT/EP6CDT/EP6FDTX = 1.6 THP turbo. AND-paar ['ep6','dt'] vangt alle turbo-varianten en sluit de BETROUWBARE EP6/EP6C (1.6 VTi N/A, bv. C3 56LKD1) uit. engineLabel-regel thp_1_6 vuurt niet (geen 'thp'-tekst)."
+    },
+    {
+      "id": "thp_n14_motorcode",
+      "score": 1,
+      "aftrek_eur": 1800,
+      "match": {
+        "motorCode_contains": ["n14"],
+        "make_in": ["MINI", "BMW"]
+      },
+      "evidence": "motorCode-grounded 2026-06-17: Mini gebruikt BMW-codes, GEEN EP6. N14 = Prince Gen1 turbo (Cooper S) = THP-equivalent, zelfde kettingprobleem. Betrouwbare broers N12 (N/A), B38 (modern), W10 worden NIET geraakt."
+    },
+    {
+      "id": "thp_n18_motorcode",
+      "score": 1,
+      "aftrek_eur": 1800,
+      "match": {
+        "motorCode_contains": ["n18"],
+        "make_in": ["MINI", "BMW"]
+      },
+      "evidence": "motorCode-grounded 2026-06-17: N18 = Prince Gen2 turbo (Cooper S facelift). Idem N14."
+    },
+    {
+      "id": "puretech_eb2_motorcode",
+      "score": 4,
+      "aftrek_eur": 800,
+      "match": {
+        "motorCode_contains": ["eb2"],
+        "make_in": ["PEUGEOT", "CITROEN", "DS", "OPEL"]
+      },
+      "evidence": "motorCode-grounded 2026-06-17: EB2 (82pk N/A, bv. C4 Cactus G-954-FN) en EB2DT (110pk turbo, bv. C3 RF-653-X) = 1.2 PureTech 3-cil, natte distributieriem. 'eb2'-prefix vangt beide. engineLabel-regel puretech_1_2 vuurt niet."
     },
     {
       "id": "puretech_1_2",

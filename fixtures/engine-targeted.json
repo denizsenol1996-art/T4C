@@ -1,0 +1,100 @@
+{
+ "_meta": {
+  "created": "2026-06-17",
+  "purpose": "RSPP engine-blacklist v1.1 — alleen cases die een motorCode/engineLabel-rule raken",
+  "n": 7
+ },
+ "cases": [
+  {
+   "kenteken": "SG-345-T",
+   "make": "BMW",
+   "model": "320ED",
+   "year": 2014,
+   "km": 120000,
+   "jurgen_bod": 4500,
+   "fuel": "Diesel",
+   "motorCode": "N47D20C",
+   "engineLabel": " 163pk",
+   "_rule": "bmw_n47_diesel",
+   "_aftrek": 1000
+  },
+  {
+   "kenteken": "7-XLN-45",
+   "make": "BMW",
+   "model": "X3 XDRIVE 20D",
+   "year": 2014,
+   "km": 120000,
+   "jurgen_bod": 6509,
+   "fuel": "Diesel",
+   "motorCode": "N47D20C",
+   "engineLabel": " 184pk",
+   "_rule": "bmw_n47_diesel",
+   "_aftrek": 1000
+  },
+  {
+   "kenteken": "44-ZDJ-7",
+   "make": "BMW",
+   "model": "3ER REIHE",
+   "year": 2012,
+   "km": 120000,
+   "jurgen_bod": 1650,
+   "fuel": "Diesel",
+   "motorCode": "N47D20C",
+   "engineLabel": " 184pk",
+   "_rule": "bmw_n47_diesel",
+   "_aftrek": 1000
+  },
+  {
+   "kenteken": "1-SGZ-83",
+   "make": "BMW",
+   "model": "320ED",
+   "year": 2013,
+   "km": 120000,
+   "jurgen_bod": 4689,
+   "fuel": "Diesel",
+   "motorCode": "N47D20C",
+   "engineLabel": " 163pk",
+   "_rule": "bmw_n47_diesel",
+   "_aftrek": 1000
+  },
+  {
+   "kenteken": "GZ-056-H",
+   "make": "PEUGEOT",
+   "model": "2008",
+   "year": 2015,
+   "km": 120000,
+   "jurgen_bod": 1759,
+   "fuel": "Benzine",
+   "motorCode": "EB2",
+   "engineLabel": " 82pk",
+   "_rule": "puretech_eb2_motorcode",
+   "_aftrek": 800
+  },
+  {
+   "kenteken": "N-095-PX",
+   "make": "OPEL",
+   "model": "ASTRA SPORTS TOURER+",
+   "year": 2021,
+   "km": 120000,
+   "jurgen_bod": 5289,
+   "fuel": "Benzine",
+   "motorCode": "EB2ADTS",
+   "engineLabel": " 110pk",
+   "_rule": "puretech_eb2_motorcode",
+   "_aftrek": 800
+  },
+  {
+   "kenteken": "7-ZJB-72",
+   "make": "PEUGEOT",
+   "model": "208",
+   "year": 2015,
+   "km": 120000,
+   "jurgen_bod": 6400,
+   "fuel": "Benzine",
+   "motorCode": "EP6FDTX",
+   "engineLabel": " 200pk",
+   "_rule": "thp_ep6_motorcode",
+   "_aftrek": 1800
+  }
+ ]
+}
